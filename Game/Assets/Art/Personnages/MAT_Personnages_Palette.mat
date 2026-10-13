@@ -30,6 +30,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _DirtStrength: 0.6
+    - _Rim: 0.35
     - _Smoothness: 0.15
     m_Colors:
     - _BaseColor: {r: 0.82, g: 0.82, b: 0.8, a: 1}
