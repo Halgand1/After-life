@@ -100,6 +100,7 @@ namespace AfterCity.Game
 
             gameObject.AddComponent<OrderTool>().Init(this);
             gameObject.AddComponent<Minimap>().Init(this);
+            gameObject.AddComponent<NightLights>().Init(this);
             gameObject.AddComponent<Hud>().Init(this);
             Debug.Log($"[AfterCity] Carte {width}x{height} graine {seed}, ferme en {Map.FarmCenter}, {Colony.Villagers.Count} survivants");
         }

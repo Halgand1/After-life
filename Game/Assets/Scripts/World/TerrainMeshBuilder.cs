@@ -56,7 +56,7 @@ namespace AfterCity.Game.World
                 float z0 = bottom.z - h.z, z1 = bottom.z + h.z;
                 float y0 = bottom.y, y1 = bottom.y + size.y;
                 Quad(new Vector3(x0, y1, z0), new Vector3(x0, y1, z1), new Vector3(x1, y1, z1), new Vector3(x1, y1, z0), Vector3.up, col);
-                Color side = col * 0.85f; side.a = 1;
+                Color side = col * 0.85f; side.a = col.a;
                 Quad(new Vector3(x0, y0, z0), new Vector3(x0, y1, z0), new Vector3(x1, y1, z0), new Vector3(x1, y0, z0), Vector3.back, side);
                 Quad(new Vector3(x1, y0, z1), new Vector3(x1, y1, z1), new Vector3(x0, y1, z1), new Vector3(x0, y0, z1), Vector3.forward, side);
                 Quad(new Vector3(x0, y0, z1), new Vector3(x0, y1, z1), new Vector3(x0, y1, z0), new Vector3(x0, y0, z0), Vector3.left, side);
@@ -111,6 +111,12 @@ namespace AfterCity.Game.World
         }
 
         static Color Lin(Color c) => c.linear;
+
+        /// <summary>Couleur emissive (toujours allumee : flammes).</summary>
+        static Color Emit(Color c) { var l = c.linear; l.a = 0f; return l; }
+
+        /// <summary>Couleur emissive la nuit seulement (fenetres).</summary>
+        static Color NightGlow(Color c) { var l = c.linear; l.a = 0.1f; return l; }
 
         static bool InFarm(GeneratedMap map, GridPos p) =>
             Mathf.Abs(p.X - map.FarmCenter.X) <= MapGenerator.FarmRadius &&
@@ -178,6 +184,8 @@ namespace AfterCity.Game.World
                         case 3: md.Quad(new Vector3(x0, nTop, z0), new Vector3(x0, top, z0), new Vector3(x1, top, z0), new Vector3(x1, nTop, z0), Vector3.back, sideCol); break;
                     }
                 }
+
+                if (p.Equals(map.FarmCenter)) { AddCampfire(md, new Vector3((x + 0.5f) * CellSize, top, (y + 0.5f) * CellSize)); continue; }
 
                 // Decor : vient de la grille (arbres, rochers, epaves) pour pouvoir etre recolte
                 var c = new Vector3((x + 0.5f) * CellSize, top, (y + 0.5f) * CellSize);
@@ -267,6 +275,22 @@ namespace AfterCity.Game.World
             }
         }
 
+        /// <summary>Feu de camp au milieu de la cour : cercle de pierres, buches, flammes emissives.</summary>
+        static void AddCampfire(MeshData md, Vector3 c)
+        {
+            var stone = Lin(new Color(0.45f, 0.44f, 0.42f));
+            for (int i = 0; i < 8; i++)
+            {
+                float a = i * Mathf.PI / 4f;
+                md.Box(c + new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)) * 0.55f, new Vector3(0.22f, 0.16f, 0.22f), stone);
+            }
+            var log = Lin(new Color(0.35f, 0.24f, 0.15f));
+            md.Box(c + Vector3.up * 0.02f, new Vector3(0.8f, 0.12f, 0.14f), log);
+            md.Box(c + Vector3.up * 0.06f, new Vector3(0.14f, 0.12f, 0.8f), log);
+            md.Cone(c + Vector3.up * 0.1f, 0.32f, 0.75f, 5, Emit(new Color(1f, 0.45f, 0.10f)), 0.3f);
+            md.Cone(c + Vector3.up * 0.1f, 0.18f, 1.0f, 4, Emit(new Color(1f, 0.80f, 0.30f)), 1.1f);
+        }
+
         static void AddRoundTree(MeshData md, Vector3 at, float r)
         {
             float s = 0.8f + r * 0.5f;
@@ -310,7 +334,7 @@ namespace AfterCity.Game.World
             md.Tri(new Vector3(center.x + 1.6f, y0, center.z + 1.5f), new Vector3(center.x, y1 - 0.05f, center.z + 1.5f), new Vector3(center.x - 1.6f, y0, center.z + 1.5f), wall);
             // Porte et fenetre
             md.Box(center + new Vector3(0, 0, -1.51f), new Vector3(0.7f, 1.2f, 0.04f), Lin(new Color(0.25f, 0.18f, 0.12f)));
-            md.Box(center + new Vector3(1.0f, 0.9f, -1.51f), new Vector3(0.5f, 0.45f, 0.04f), Lin(new Color(0.85f, 0.70f, 0.40f)));
+            md.Box(center + new Vector3(1.0f, 0.9f, -1.51f), new Vector3(0.5f, 0.45f, 0.04f), NightGlow(new Color(0.95f, 0.70f, 0.35f)));
         }
 
         /// <summary>Champ 2 x 2 : terre labouree, rangs de cultures, petite cloture.</summary>
@@ -352,6 +376,8 @@ namespace AfterCity.Game.World
             md.Box(b, new Vector3(3.4f, 2.4f, 3.6f), Lin(new Color(0.55f, 0.24f, 0.18f)));
             md.Box(b + Vector3.up * 2.4f, new Vector3(3.8f, 0.25f, 4.0f), Lin(new Color(0.30f, 0.28f, 0.27f)));
             md.Box(b + new Vector3(0, 0, -1.81f), new Vector3(1.4f, 1.8f, 0.04f), Lin(new Color(0.85f, 0.80f, 0.70f)));
+            md.Box(b + new Vector3(1.0f, 1.5f, -1.82f), new Vector3(0.5f, 0.4f, 0.04f), NightGlow(new Color(0.95f, 0.70f, 0.35f)));
+            md.Box(b + new Vector3(-1.0f, 1.5f, -1.82f), new Vector3(0.5f, 0.4f, 0.04f), NightGlow(new Color(0.95f, 0.70f, 0.35f)));
         }
 
         /// <summary>Poste d'expedition 2 x 2 : garage en tole, porte roulante, antenne radio, pick-up devant.</summary>

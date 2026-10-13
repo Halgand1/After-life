@@ -21,6 +21,9 @@ Shader "AfterCity/VertexColorLit"
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
             #pragma multi_compile_fog
+            #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
+            #pragma multi_compile _ _FORWARD_PLUS
+            #pragma multi_compile _ _CLUSTER_LIGHT_LOOP
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
@@ -28,6 +31,7 @@ Shader "AfterCity/VertexColorLit"
             // Ambiance reglee par le jeu (cycle jour/nuit)
             half4 _AC_AmbientSky;
             half4 _AC_AmbientGround;
+            half _AC_Night;
 
             CBUFFER_START(UnityPerMaterial)
                 half4 _BaseColor;
@@ -70,7 +74,25 @@ Shader "AfterCity/VertexColorLit"
                 half ndl = saturate(dot(n, light.direction));
                 half3 sky = lerp(_AC_AmbientGround.rgb, _AC_AmbientSky.rgb, n.y * 0.5 + 0.5);
                 half3 lit = light.color * ndl * light.shadowAttenuation + sky * _Ambient;
+
+                // Lumieres additionnelles (feu de camp, lanternes)
+                #if defined(_ADDITIONAL_LIGHTS)
+                InputData inputData = (InputData)0;
+                inputData.positionWS = i.positionWS;
+                inputData.normalWS = n;
+                inputData.normalizedScreenSpaceUV = GetNormalizedScreenSpaceUV(i.positionCS);
+                uint pixelLightCount = GetAdditionalLightsCount();
+                LIGHT_LOOP_BEGIN(pixelLightCount)
+                    Light add = GetAdditionalLight(lightIndex, i.positionWS, half4(1, 1, 1, 1));
+                    lit += add.color * add.distanceAttenuation * (saturate(dot(n, add.direction)) * 0.8 + 0.2);
+                LIGHT_LOOP_END
+                #endif
+
                 half3 col = i.color.rgb * lit;
+                // Alpha 0 = surface emissive (flammes, fenetres eclairees) : pas d'ombre, assez forte pour le bloom
+                // Alpha 0,1 = emissive seulement la nuit (fenetres)
+                half emissive = max(step(i.color.a, 0.01), step(0.05, i.color.a) * step(i.color.a, 0.15) * _AC_Night);
+                col = lerp(col, i.color.rgb * 3.0, emissive);
                 col = MixFog(col, i.fog);
                 return half4(col, 1);
             }
