@@ -93,12 +93,12 @@ namespace AfterCity.Game.World
         {
             switch (b)
             {
-                case Biome.Plains: return new Color(0.45f, 0.53f, 0.30f);
-                case Biome.Meadow: return new Color(0.54f, 0.56f, 0.34f);
-                case Biome.DenseForest: return new Color(0.27f, 0.35f, 0.22f);
+                case Biome.Plains: return new Color(0.42f, 0.43f, 0.27f);
+                case Biome.Meadow: return new Color(0.49f, 0.46f, 0.30f);
+                case Biome.DenseForest: return new Color(0.24f, 0.28f, 0.19f);
                 case Biome.Rock: return new Color(0.52f, 0.50f, 0.47f);
                 case Biome.Water: return new Color(0.22f, 0.40f, 0.48f);
-                case Biome.Marsh: return new Color(0.38f, 0.42f, 0.30f);
+                case Biome.Marsh: return new Color(0.33f, 0.35f, 0.27f);
                 default: return Color.magenta;
             }
         }

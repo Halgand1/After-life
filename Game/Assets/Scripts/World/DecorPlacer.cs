@@ -77,6 +77,18 @@ namespace AfterCity.Game.World
             TryProp(map, l, "Ferme_CorpsDeFerme_Ruine", new GridPos(farm.X - 5, farm.Y + 2), 1, 90f, 1f, true);
             TryProp(map, l, "Ferme_Silo_Fini", new GridPos(farm.X + 5, farm.Y - 4), 0, 20f, 1f, true);
             TryProp(map, l, "Puits_Fini", new GridPos(farm.X - 2, farm.Y - 5), 0, 0f, 1f, true);
+            // Tracteur a l'abandon pres de la grange, accessoires de ferme sur le pourtour
+            TryProp(map, l, "Tracteur_Epave", new GridPos(farm.X + 6, farm.Y + 2), 0, 110f, 0.9f, true);
+            TryProp(map, l, "Prop_BotteFoin_Ronde", new GridPos(farm.X - 3, farm.Y + 5), 0, 30f, 1f, true);
+            TryProp(map, l, "Prop_BotteFoin_Ronde", new GridPos(farm.X - 2, farm.Y + 6), 0, 75f, 1f, true);
+            TryProp(map, l, "Prop_BottesFoin_Carrees", new GridPos(farm.X + 1, farm.Y + 5), 0, 0f, 1f, true);
+            TryProp(map, l, "Prop_Brouette", new GridPos(farm.X - 5, farm.Y - 2), 0, 200f, 1f, true);
+            TryProp(map, l, "Prop_Charrue", new GridPos(farm.X + 5, farm.Y - 1), 0, 80f, 1f, true);
+            TryProp(map, l, "Prop_OutilsFerme", new GridPos(farm.X - 6, farm.Y - 1), 0, 90f, 1f, true);
+            TryProp(map, l, "Prop_BidonsLait", new GridPos(farm.X + 3, farm.Y + 5), 0, 15f, 1f, true);
+            TryProp(map, l, "Prop_BoiteAuxLettres", new GridPos(farm.X, farm.Y - 6), 0, 180f, 1f, true);
+            TryProp(map, l, "Prop_PanneauAVendre", new GridPos(farm.X + 2, farm.Y - 6), 0, 170f, 1f, true);
+            TryProp(map, l, "Ferme_Poulailler_Fini", new GridPos(farm.X + 5, farm.Y + 5), 0, 220f, 0.8f, true);
 
             // Maisons en ruine et debris dans les zones de ruines
             string[] houses = { "Maison_Pavillon_Ruine", "Maison_Etage_Ruine", "Cabane_Jardin_Ruine", "Maison_Pavillon_Ruine", "StationService_Ruine", "Barrage_Militaire_Ruine" };
@@ -196,6 +208,7 @@ namespace AfterCity.Game.World
             {
                 case CellFeature.Tree:
                     if (!kd.Add(TreeName(map, p), c + jitter, TreeYaw(p), TreeScale(p))) return false;
+                    SoilDetail(kd, map, p, biome, c);
                     if (biome == Biome.DenseForest)
                     {
                         // Foret serree : un ou deux jeunes pins en plus dans la case
@@ -236,6 +249,7 @@ namespace AfterCity.Game.World
         {
             if (road || farm || Covered(map, p)) return;
             int x = p.X, y = p.Y;
+            SoilDetail(kd, map, p, biome, c);
             float r = Hash(x, y, 500);
             var o = new Vector3(Hash(x, y, 501) - 0.5f, 0, Hash(x, y, 502) - 0.5f) * 1.4f;
             float yaw = Hash(x, y, 503) * 360f;
@@ -268,6 +282,34 @@ namespace AfterCity.Game.World
                 case Biome.Rock:
                     if (r < 0.15f) kd.Add(Pick(Hash(x, y, 509), "Cailloux_A", "Cailloux_B"), c + o, yaw, 1.3f);
                     else if (r < 0.22f) kd.Add("Herbe_B", c + o, yaw, 1.2f);
+                    break;
+            }
+        }
+
+        /// <summary>Details plats au sol (feuilles, branches, flaques, boue, ossements) : texture du sol, se cumulent avec le reste.</summary>
+        public static void SoilDetail(DecorKit.Builder kd, GeneratedMap map, GridPos p, Biome biome, Vector3 c)
+        {
+            int x = p.X, y = p.Y;
+            float r = Hash(x, y, 700);
+            var o = new Vector3(Hash(x, y, 701) - 0.5f, 0, Hash(x, y, 702) - 0.5f) * 1.2f;
+            float yaw = Hash(x, y, 703) * 360f, s = 1.0f + Hash(x, y, 704) * 0.4f;
+            bool ruin = Get(map).Ruin[x, y];
+            switch (biome)
+            {
+                case Biome.DenseForest:
+                    if (r < 0.40f) kd.Add(Pick(Hash(x, y, 705), "Tapis_Feuilles_A", "Tapis_Feuilles_B", "Tapis_Feuilles_Automne"), c + o, yaw, s);
+                    else if (r < 0.58f) kd.Add(Pick(Hash(x, y, 706), "Branches_Mortes_A", "Branches_Mortes_B"), c + o, yaw, s);
+                    else if (r < 0.63f) kd.Add("Boue_A", c + o, yaw, s);
+                    break;
+                case Biome.Marsh:
+                    if (r < 0.30f) kd.Add(Pick(Hash(x, y, 707), "Flaque_A", "Flaque_B", "Boue_A", "Boue_B"), c + o, yaw, s);
+                    break;
+                case Biome.Plains:
+                case Biome.Meadow:
+                    if (ruin && r < 0.06f) kd.Add("Ossements", c + o, yaw, s);
+                    else if (r < (ruin ? 0.16f : 0.05f)) kd.Add(Pick(Hash(x, y, 708), "Flaque_A", "Boue_A", "Boue_B", "Flaque_B"), c + o, yaw, s);
+                    else if (r < (ruin ? 0.22f : 0.08f)) kd.Add(Pick(Hash(x, y, 709), "Branches_Mortes_A", "Branches_Mortes_B"), c + o, yaw, s);
+                    else if (r < 0.11f && Hash(x, y, 710) < 0.5f) kd.Add("Tapis_Feuilles_Automne", c + o, yaw, s);
                     break;
             }
         }

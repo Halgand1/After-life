@@ -132,8 +132,8 @@ namespace AfterCity.EditorTools
             var ca = profile.Add<ColorAdjustments>(true);
             ca.postExposure.Override(0.25f);
             ca.contrast.Override(14f);
-            ca.saturation.Override(-30f);
-            ca.colorFilter.Override(new Color(0.93f, 0.97f, 0.90f)); // gris-vert apocalyptique
+            ca.saturation.Override(-40f);
+            ca.colorFilter.Override(new Color(0.90f, 0.94f, 0.93f)); // gris-vert apocalyptique
             var smh = profile.Add<ShadowsMidtonesHighlights>(true);
             smh.shadows.Override(new Vector4(0.90f, 0.96f, 1.10f, 0f));
             smh.highlights.Override(new Vector4(1.05f, 1.0f, 0.93f, 0f));
@@ -142,7 +142,7 @@ namespace AfterCity.EditorTools
             bloom.threshold.Override(1.0f);
             bloom.scatter.Override(0.6f);
             var vig = profile.Add<Vignette>(true);
-            vig.intensity.Override(0.30f);
+            vig.intensity.Override(0.38f);
             vig.smoothness.Override(0.45f);
             var grain = profile.Add<FilmGrain>(true);
             grain.type.Override(FilmGrainLookup.Thin1);
@@ -189,8 +189,8 @@ namespace AfterCity.EditorTools
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.Linear;
             RenderSettings.fogColor = new Color(0.68f, 0.67f, 0.62f);
-            RenderSettings.fogStartDistance = 45f;
-            RenderSettings.fogEndDistance = 210f;
+            RenderSettings.fogStartDistance = 70f;
+            RenderSettings.fogEndDistance = 280f;
 
             var sun = new GameObject("Sun");
             var light = sun.AddComponent<Light>();
@@ -238,6 +238,7 @@ namespace AfterCity.EditorTools
             boot.freeCamera = freeCam;
             boot.decorKit = DecorKitBuilder.Build();
             boot.animalPrefabs = EnsureAnimals("SK_Cerf", "SK_Sanglier");
+            boot.chickenPrefabs = EnsureAnimals("SK_Poule_Blanche", "SK_Poule_Rousse", "SK_Poule_Noire");
             boot.sun = light;
 
             var bench = new GameObject("Benchmark").AddComponent<Phase0Benchmark>();
@@ -379,14 +380,14 @@ namespace AfterCity.EditorTools
                 var model = AssetDatabase.LoadAssetAtPath<GameObject>(fbx);
                 if (model == null) continue;
                 var clips = AssetDatabase.LoadAllAssetsAtPath(fbx).OfType<AnimationClip>()
-                    .Where(c => !c.name.StartsWith("__preview__") && StateName(c.name, "Animal_") != null).ToArray();
+                    .Where(c => !c.name.StartsWith("__preview__") && AnimalState(c.name) != null).ToArray();
                 Debug.Log($"[AfterCity] {m} : clips {string.Join(", ", clips.Select(c => c.name))}");
                 string ctrlPath = $"{folder}AC_{m}.controller";
                 AssetDatabase.DeleteAsset(ctrlPath);
                 var controller = AnimatorController.CreateAnimatorControllerAtPath(ctrlPath);
                 var sm = controller.layers[0].stateMachine;
                 foreach (var clip in clips.OrderBy(c => c.name.EndsWith("Repos") ? 0 : 1))
-                    sm.AddState(StateName(clip.name, "Animal_")).motion = clip;
+                    sm.AddState(AnimalState(clip.name)).motion = clip;
                 var instance = (GameObject)PrefabUtility.InstantiatePrefab(model);
                 var animator = instance.GetComponent<Animator>();
                 if (animator == null) animator = instance.AddComponent<Animator>();
@@ -398,6 +399,9 @@ namespace AfterCity.EditorTools
             }
             return prefabs.ToArray();
         }
+
+        /// <summary>« ANIM_Animal_Marche » ou « Poule_Marche » -> « Marche ».</summary>
+        static string AnimalState(string clip) => StateName(clip, "Animal_") ?? StateName(clip, "Poule_");
 
         [MenuItem("After City/Phase 0/3. Build Windows (Builds/Phase0)")]
         public static void BuildPlayer()

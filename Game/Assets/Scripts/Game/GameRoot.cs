@@ -42,6 +42,8 @@ namespace AfterCity.Game
         public DecorKit decorKit;
         /// <summary>Animaux de la foret (cerfs, sangliers).</summary>
         public GameObject[] animalPrefabs;
+        /// <summary>Poules de la ferme.</summary>
+        public GameObject[] chickenPrefabs;
         public Light sun;
 
         public GeneratedMap Map { get; private set; }
@@ -75,6 +77,7 @@ namespace AfterCity.Game
             DecorKit.Current = decorKit;
             Terrain = TerrainView.Create(Map, terrainMaterial, transform);
             if (animalPrefabs != null && animalPrefabs.Length > 0) AnimalView.Populate(Map, animalPrefabs, transform, seed);
+            AnimalView.Chickens(Map, chickenPrefabs, transform, new GridPos(Map.FarmCenter.X + 4, Map.FarmCenter.Y + 4), 5, seed);
             Colony.CellChanged += Terrain.MarkDirty;
             var audio = gameObject.AddComponent<GameAudio>();
             audio.Init(this);
@@ -228,19 +231,19 @@ namespace AfterCity.Game
             // Soleil leve de 6 h a 20 h ; la nuit reste lisible (lune bleutee)
             float dayT = Mathf.InverseLerp(6f, 20f, h);
             bool isDay = h >= 6f && h <= 20f;
-            float elevation = isDay ? Mathf.Sin(dayT * Mathf.PI) * 60f + 8f : 35f;
+            float elevation = isDay ? Mathf.Sin(dayT * Mathf.PI) * 44f + 8f : 35f;
             float azimuth = isDay ? Mathf.Lerp(-100f, 100f, dayT) : 140f;
             sun.transform.rotation = Quaternion.Euler(elevation, azimuth, 0);
             // Ciel couvert : soleil voile, gris chaud ; nuits sombres et bleutees
-            var dayCol = Color.Lerp(new Color(0.95f, 0.66f, 0.45f), new Color(0.93f, 0.92f, 0.86f), Mathf.Sin(dayT * Mathf.PI));
+            var dayCol = Color.Lerp(new Color(0.90f, 0.62f, 0.45f), new Color(0.84f, 0.85f, 0.84f), Mathf.Sin(dayT * Mathf.PI));
             var nightCol = new Color(0.40f, 0.48f, 0.72f);
             float k = isDay ? Mathf.Clamp01(Mathf.Min(h - 6f, 20f - h) / 1.0f) : 0f;
             sun.color = Color.Lerp(nightCol, dayCol, k);
-            sun.intensity = Mathf.Lerp(0.16f, 1.05f, k);
+            sun.intensity = Mathf.Lerp(0.16f, 0.92f, k);
             RenderSettings.ambientIntensity = Mathf.Lerp(0.30f, 1f, k);
-            Shader.SetGlobalColor(AmbientSkyId, Color.Lerp(new Color(0.14f, 0.17f, 0.27f), new Color(0.72f, 0.75f, 0.74f), k));
-            Shader.SetGlobalColor(AmbientGroundId, Color.Lerp(new Color(0.09f, 0.09f, 0.13f), new Color(0.50f, 0.49f, 0.45f), k));
-            var fog = Color.Lerp(new Color(0.07f, 0.08f, 0.11f), new Color(0.58f, 0.60f, 0.56f), k);
+            Shader.SetGlobalColor(AmbientSkyId, Color.Lerp(new Color(0.14f, 0.17f, 0.27f), new Color(0.60f, 0.64f, 0.66f), k));
+            Shader.SetGlobalColor(AmbientGroundId, Color.Lerp(new Color(0.09f, 0.09f, 0.13f), new Color(0.42f, 0.41f, 0.38f), k));
+            var fog = Color.Lerp(new Color(0.07f, 0.08f, 0.11f), new Color(0.40f, 0.42f, 0.42f), k);
             RenderSettings.fogColor = fog;
             if (Camera.main != null) Camera.main.backgroundColor = fog;
         }

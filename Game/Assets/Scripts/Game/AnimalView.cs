@@ -54,11 +54,29 @@ namespace AfterCity.Game
             }
         }
 
-        static void Create(GeneratedMap map, GameObject prefab, Transform parent, GridPos home, int seed)
+        /// <summary>Poules autour du poulailler de la ferme : petits pas, picorent, restent pres de la cour.</summary>
+        public static void Chickens(GeneratedMap map, GameObject[] prefabs, Transform parent, GridPos home, int count, ulong seed)
+        {
+            if (prefabs == null || prefabs.Length == 0) return;
+            var rng = new System.Random((int)(seed % int.MaxValue) + 5);
+            var root = new GameObject("Poules").transform;
+            root.SetParent(parent, false);
+            for (int i = 0; i < count; i++)
+            {
+                var a = Create(map, prefabs[i % prefabs.Length], root, home, rng.Next(), 1.4f);
+                a._radius = 2;
+                a._speed = 0.6f;
+            }
+        }
+
+        int _radius = 5;
+        float _speed = Speed;
+
+        static AnimalView Create(GeneratedMap map, GameObject prefab, Transform parent, GridPos home, int seed, float scale = 1.3f)
         {
             var go = Instantiate(prefab, parent);
             go.name = prefab.name.Replace("PF_SK_", "");
-            go.transform.localScale = Vector3.one * 1.3f;
+            go.transform.localScale = Vector3.one * scale;
             var a = go.AddComponent<AnimalView>();
             a._grid = map.Grid;
             a._home = home;
@@ -69,6 +87,7 @@ namespace AfterCity.Game
             go.transform.rotation = Quaternion.Euler(0, a._rng.Next(360), 0);
             a._wait = (float)a._rng.NextDouble() * 4f;
             a.Play("Repos");
+            return a;
         }
 
         Vector3 Jitter() => new Vector3((float)_rng.NextDouble() - 0.5f, 0, (float)_rng.NextDouble() - 0.5f) * 1.2f;
@@ -98,7 +117,7 @@ namespace AfterCity.Game
             {
                 _wait -= dt;
                 if (_wait > 0) return;
-                _target = TerrainMeshBuilder.CellCenter(_grid, RandomCell(5)) + Jitter();
+                _target = TerrainMeshBuilder.CellCenter(_grid, RandomCell(_radius)) + Jitter();
                 _walking = true;
                 Play("Marche");
                 return;
@@ -111,10 +130,11 @@ namespace AfterCity.Game
                 _walking = false;
                 _wait = 3f + (float)_rng.NextDouble() * 6f;
                 Play(_rng.NextDouble() < 0.6 ? (_animator != null && _animator.HasState(0, Animator.StringToHash("Brouter")) ? "Brouter" : "Fouir") : "Repos");
+                if (_state == "Marche") Play("Repos"); // pas de clip de broutage (poules)
                 return;
             }
             var dir = to.normalized;
-            pos += dir * Mathf.Min(Speed * dt, to.magnitude);
+            pos += dir * Mathf.Min(_speed * dt, to.magnitude);
             int cx = Mathf.FloorToInt(pos.x / TerrainMeshBuilder.CellSize), cy = Mathf.FloorToInt(pos.z / TerrainMeshBuilder.CellSize);
             var cell = new GridPos(cx, cy);
             if (_grid.InBounds(cell)) pos.y = Mathf.Lerp(pos.y, TerrainMeshBuilder.TopY(_grid.GetLevel(cell)), dt * 8f);
