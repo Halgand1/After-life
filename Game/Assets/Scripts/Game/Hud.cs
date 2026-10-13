@@ -153,7 +153,7 @@ namespace AfterCity.Game
         void Toolbar(float w, float h)
         {
             var tools = OrderTool.Tools;
-            float bw = 112, bh = 78, gap = 8;
+            float bw = 100, bh = 78, gap = 6;
             var builds = OrderTool.Buildings;
             int count = tools.Length + builds.Length;
             float total = count * (bw + gap) - gap + 28 + 16;
@@ -401,8 +401,8 @@ namespace AfterCity.Game
 
         void Help(float w, float h)
         {
-            var r = Panel(new Rect(w - 292, h - 196, 280, 184));
-            GUI.Label(new Rect(r.x + 16, r.y + 10, 252, 168),
+            var r = Panel(new Rect(w - 262, h - 196, 250, 184));
+            GUI.Label(new Rect(r.x + 14, r.y + 10, 228, 168),
                 "<b>Camera</b>\nWASD / fleches / bords : bouger\nMolette : zoom    Q / E : tourner\n<b>Temps</b>\nEspace : pause    + / - : vitesse\nN : passer a la nuit\n<b>Image</b>\nF2 : effets visuels on/off",
                 new GUIStyle(_small) { alignment = TextAnchor.UpperLeft, wordWrap = true });
         }
