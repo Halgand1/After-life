@@ -44,6 +44,7 @@ namespace AfterCity.Game
                 // Les modeles de l'equipe 3D portent deja leur outil (hache, pioche...) sur les SOCKET_*
                 if (!prefab.name.StartsWith("PF_SK_")) view.CreateTool(model.transform, terrainMaterial);
             }
+            if (terrainMaterial != null) CreateRing(root.transform, Palette[v.Id % Palette.Length], terrainMaterial);
             view._y = TerrainMeshBuilder.TopY(grid.GetLevel(v.Cell));
             view.Sync(1f);
             return view;
@@ -63,6 +64,42 @@ namespace AfterCity.Game
         };
 
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+
+        /// <summary>
+        /// Anneau lumineux a la couleur du survivant, au sol : on repere chaque survivant d'un coup d'oeil
+        /// comme dans K&amp;C, meme de nuit ou au milieu des arbres (alpha 0 = emissif dans VertexColorLit).
+        /// </summary>
+        static void CreateRing(Transform parent, Color color, Material material)
+        {
+            const int seg = 28;
+            const float inner = 0.55f, outer = 0.72f, y = 0.06f;
+            var glow = color.linear * 0.45f;
+            glow.a = 0f;
+            var v = new Vector3[seg * 2];
+            var n = new Vector3[seg * 2];
+            var c = new Color[seg * 2];
+            var t = new int[seg * 6];
+            for (int i = 0; i < seg; i++)
+            {
+                float a = i * Mathf.PI * 2f / seg;
+                var d = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
+                v[i * 2] = d * inner + Vector3.up * y;
+                v[i * 2 + 1] = d * outer + Vector3.up * y;
+                n[i * 2] = n[i * 2 + 1] = Vector3.up;
+                c[i * 2] = c[i * 2 + 1] = glow;
+                int j = (i + 1) % seg;
+                t[i * 6] = i * 2; t[i * 6 + 1] = j * 2; t[i * 6 + 2] = i * 2 + 1;
+                t[i * 6 + 3] = i * 2 + 1; t[i * 6 + 4] = j * 2; t[i * 6 + 5] = j * 2 + 1;
+            }
+            var mesh = new Mesh { name = "SurvivorRing", vertices = v, normals = n, colors = c, triangles = t };
+            var go = new GameObject("Ring");
+            go.transform.SetParent(parent, false);
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            var r = go.AddComponent<MeshRenderer>();
+            r.sharedMaterial = material;
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            r.receiveShadows = false;
+        }
 
         static void Tint(GameObject model, Color jacket)
         {

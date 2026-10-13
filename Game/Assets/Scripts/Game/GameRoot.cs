@@ -116,6 +116,9 @@ namespace AfterCity.Game
             var farm = TerrainMeshBuilder.CellCenter(Map.Grid, Map.FarmCenter);
             if (freeCamera != null)
             {
+                // Premier cadrage : toute la ferme et ses abords, comme a l'ouverture d'une partie de K&C
+                freeCamera.Distance = 48f;
+                freeCamera.Yaw = 35f;
                 freeCamera.Focus(farm);
                 freeCamera.boundsMax = new Vector2(width * TerrainMeshBuilder.CellSize, height * TerrainMeshBuilder.CellSize);
             }

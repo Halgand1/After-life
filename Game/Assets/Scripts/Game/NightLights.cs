@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using AfterCity.Core.Sim;
 using AfterCity.Game.World;
 using UnityEngine;
@@ -21,7 +21,7 @@ namespace AfterCity.Game
         {
             _game = game;
             var p = TerrainMeshBuilder.CellCenter(game.Map.Grid, game.Map.FarmCenter);
-            _fire = MakeLight("Campfire", p + Vector3.up * 1.0f, new Color(1f, 0.55f, 0.22f), 14f);
+            _fire = MakeLight("Campfire", p + Vector3.up * 1.2f, new Color(1f, 0.50f, 0.18f), 22f);
         }
 
         Light MakeLight(string name, Vector3 pos, Color color, float range)
@@ -53,7 +53,7 @@ namespace AfterCity.Game
             Shader.SetGlobalFloat(NightId, night);
 
             float flicker = 0.85f + 0.15f * Mathf.PerlinNoise(Time.time * 6f, 0.3f);
-            _fire.intensity = Mathf.Lerp(0.6f, 6f, night) * flicker;
+            _fire.intensity = Mathf.Lerp(0.8f, 9f, night) * flicker;
 
             _check -= Time.deltaTime;
             if (_check <= 0)
