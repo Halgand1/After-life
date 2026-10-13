@@ -50,6 +50,7 @@ namespace AfterCity.Core.Sim
         public Job Job { get; internal set; }
         /// <summary>Progression du travail en cours, de 0 a 1.</summary>
         public double WorkProgress { get; internal set; }
+        internal double IdleTime;
         /// <summary>Direction du dernier deplacement (pour orienter le modele).</summary>
         public double FacingX { get; internal set; }
         public double FacingY { get; internal set; } = 1;
@@ -130,6 +131,9 @@ namespace AfterCity.Core.Sim
                 return c;
             }
         }
+
+        /// <summary>Les survivants sans ordre flanent autour de la ferme (desactive dans les tests unitaires).</summary>
+        public bool IdleWander { get; set; }
 
         /// <summary>Case ou arrivent les nouveaux survivants (la ferme).</summary>
         public GridPos Home { get; set; }
@@ -221,7 +225,7 @@ namespace AfterCity.Core.Sim
         /// <summary>Colonie de depart sur la ferme : survivants et vivres du camion (GDD 4.2).</summary>
         public static Colony StartAtFarm(GeneratedMap map, int survivors = 5)
         {
-            var c = new Colony(map.Grid) { Home = map.FarmCenter, HasFarm = true, Random = new Rng(map.Seed ^ 0xE4BED17105UL) };
+            var c = new Colony(map.Grid) { Home = map.FarmCenter, HasFarm = true, IdleWander = true, Random = new Rng(map.Seed ^ 0xE4BED17105UL) };
             for (int i = 0; i < survivors; i++)
             {
                 var p = new GridPos(map.FarmCenter.X - 1 + i % 3, map.FarmCenter.Y - 1 + i / 3);
@@ -492,8 +496,14 @@ namespace AfterCity.Core.Sim
                 if (v.Away) continue;
                 switch (v.State)
                 {
-                    case VillagerState.Idle: TryAssign(v); break;
-                    case VillagerState.Walking: Walk(v, dt); break;
+                    case VillagerState.Idle:
+                        TryAssign(v);
+                        if (v.State == VillagerState.Idle && IdleWander) Wander(v, dt);
+                        break;
+                    case VillagerState.Walking:
+                        if (v.Job == null) TryAssign(v); // une balade s'interrompt pour un ordre
+                        if (v.State == VillagerState.Walking) Walk(v, dt);
+                        break;
                     case VillagerState.Working: Work(v, dt); break;
                 }
             }
@@ -526,6 +536,22 @@ namespace AfterCity.Core.Sim
                 v.WorkProgress = 0;
                 return;
             }
+        }
+
+        /// <summary>De temps en temps, un survivant inoccupe va faire quelques pas pres de la ferme.</summary>
+        void Wander(Villager v, double dt)
+        {
+            v.IdleTime += dt;
+            if (v.IdleTime < 4 + (v.Id % 4)) return;
+            v.IdleTime = 0;
+            if (!Grid.InBounds(Home)) return;
+            int r = IsNight ? 2 : MapGenerator.FarmRadius;
+            var target = new GridPos(Home.X + Random.Range(-r, r + 1), Home.Y + Random.Range(-r, r + 1));
+            if (!Grid.InBounds(target) || Grid.GetLevel(target) != Grid.GetLevel(Home) || Grid.HasStructure(target) || Grid.HasWall(target)) return;
+            var path = _pathfinder.FindPath(v.Cell, new[] { target }, 2000);
+            if (path == null || path.Count == 0 || path.Count > 12) return;
+            foreach (var p in path) v.Path.Enqueue(p);
+            v.State = VillagerState.Walking;
         }
 
         /// <summary>

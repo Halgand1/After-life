@@ -184,6 +184,22 @@ namespace AfterCity.Core.Tests
             var path = new AfterCity.Core.Agents.Pathfinder(g).FindPath(new GridPos(2, 2), new[] { new GridPos(14, 2) });
             Assert.That(path, Has.Member(new GridPos(8, 1)));
         }
+
+        [Test]
+        public void IdleSurvivorsStrollButDropItForAnOrder()
+        {
+            var g = Flat(20);
+            var c = new Colony(g) { Home = new GridPos(10, 10), IdleWander = true };
+            var v = c.AddVillager(new GridPos(10, 10));
+            bool moved = false;
+            for (int i = 0; i < 400 && !moved; i++) { c.Tick(0.05); moved = v.State == VillagerState.Walking; }
+            Assert.That(moved, Is.True);
+            var tree = new GridPos(3, 3);
+            g.SetFeature(tree, CellFeature.Tree);
+            c.Order(JobType.Chop, tree);
+            c.Tick(0.05);
+            Assert.That(v.Job, Is.Not.Null);
+        }
     }
 }
 

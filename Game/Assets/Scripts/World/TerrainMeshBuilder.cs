@@ -208,6 +208,8 @@ namespace AfterCity.Game.World
                     default:
                         if (biome == Biome.Marsh && r < 0.25f && !InFarm(map, p))
                             md.Box(c + jitter, new Vector3(0.12f, 0.6f + r, 0.12f), Lin(new Color(0.45f, 0.48f, 0.28f)));
+                        else if ((biome == Biome.Plains || biome == Biome.Meadow) && road == RoadType.None && !InFarm(map, p))
+                            AddGroundDetail(md, c, x, y, col * shade);
                         break;
                 }
             }
@@ -228,6 +230,43 @@ namespace AfterCity.Game.World
         }
 
         /// <summary>Feuillu : tronc et couronne en losange facettee (deux cones opposes).</summary>
+        /// <summary>Petits details au sol : touffes d'herbe, fleurs, et de rares debris (pneu, planches) pour l'ambiance.</summary>
+        static void AddGroundDetail(MeshData md, Vector3 c, int x, int y, Color ground)
+        {
+            float r = Hash(x, y, 30);
+            if (r < 0.35f)
+            {
+                int n = 2 + (int)(Hash(x, y, 31) * 3);
+                var grass = Lin(ground * 1.15f);
+                for (int i = 0; i < n; i++)
+                {
+                    var o = new Vector3(Hash(x, y, 40 + i) - 0.5f, 0, Hash(x, y, 50 + i) - 0.5f) * 1.6f;
+                    md.Cone(c + o, 0.12f, 0.25f + Hash(x, y, 60 + i) * 0.2f, 3, grass, i);
+                }
+            }
+            else if (r < 0.42f)
+            {
+                var flower = Lin(Hash(x, y, 32) < 0.5f ? new Color(0.85f, 0.80f, 0.35f) : new Color(0.80f, 0.45f, 0.55f));
+                for (int i = 0; i < 3; i++)
+                {
+                    var o = new Vector3(Hash(x, y, 70 + i) - 0.5f, 0, Hash(x, y, 80 + i) - 0.5f) * 1.4f;
+                    md.Box(c + o, new Vector3(0.1f, 0.18f, 0.1f), flower);
+                }
+            }
+            else if (r < 0.432f)
+            {
+                // Vieux pneu
+                md.Box(c + new Vector3(0.3f, 0, -0.2f), new Vector3(0.6f, 0.18f, 0.6f), Lin(new Color(0.12f, 0.12f, 0.12f)));
+            }
+            else if (r < 0.442f)
+            {
+                // Planches abandonnees
+                var plank = Lin(new Color(0.45f, 0.36f, 0.26f));
+                md.Box(c + new Vector3(-0.2f, 0, 0.1f), new Vector3(1.1f, 0.06f, 0.18f), plank);
+                md.Box(c + new Vector3(0.1f, 0.06f, 0.2f), new Vector3(0.9f, 0.06f, 0.16f), plank * 0.9f);
+            }
+        }
+
         static void AddRoundTree(MeshData md, Vector3 at, float r)
         {
             float s = 0.8f + r * 0.5f;
