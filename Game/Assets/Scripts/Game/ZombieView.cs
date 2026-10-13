@@ -32,7 +32,7 @@ namespace AfterCity.Game
             {
                 var model = Instantiate(prefab, root.transform);
                 view._model = model.transform;
-                model.transform.localScale = Vector3.one * 1.3f;
+                model.transform.localScale = Vector3.one * 1.55f;
                 view._animator = model.GetComponentInChildren<Animator>();
                 if (view._animator != null) view._animator.speed = 0.85f + (z.Id % 5) * 0.06f;
             }

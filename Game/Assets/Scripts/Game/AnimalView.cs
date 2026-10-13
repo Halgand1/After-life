@@ -31,12 +31,20 @@ namespace AfterCity.Game
             for (int x = 0; x < g.Width; x++)
             {
                 var p = new GridPos(x, y);
-                if (g.GetBiome(p) == Biome.DenseForest) forest.Add(p);
+                // Lisiere : foret dense avec une case degagee a cote, les animaux restent visibles depuis la plaine
+                if (g.GetBiome(p) != Biome.DenseForest || g.GetFeature(p) == CellFeature.Tree) continue;
+                bool edge = false;
+                foreach (var d in GridPos.Neighbours4)
+                {
+                    var n = p + d;
+                    if (g.InBounds(n) && g.GetBiome(n) != Biome.DenseForest && g.GetBiome(n) != Biome.Water) edge = true;
+                }
+                if (edge) forest.Add(p);
             }
             if (forest.Count == 0) return;
             var root = new GameObject("Animaux").transform;
             root.SetParent(parent, false);
-            int herds = Mathf.Clamp(forest.Count / 250, 4, 12);
+            int herds = Mathf.Clamp(forest.Count / 20, 4, 12);
             for (int h = 0; h < herds; h++)
             {
                 var prefab = prefabs[h % prefabs.Length];
@@ -70,7 +78,7 @@ namespace AfterCity.Game
             for (int k = 0; k < 12; k++)
             {
                 var p = new GridPos(_home.X + _rng.Next(-radius, radius + 1), _home.Y + _rng.Next(-radius, radius + 1));
-                if (_grid.InBounds(p) && _grid.GetBiome(p) == Biome.DenseForest) return p;
+                if (_grid.InBounds(p) && _grid.GetBiome(p) != Biome.Water && _grid.GetFeature(p) != CellFeature.Tree) return p;
             }
             return _home;
         }

@@ -38,7 +38,7 @@ namespace AfterCity.Game
                 model.transform.localPosition = Vector3.zero;
                 model.transform.localRotation = Quaternion.identity;
                 view._model = model.transform;
-                model.transform.localScale = Vector3.one * 1.3f; // lisible de loin, garde le gabarit K&C
+                model.transform.localScale = Vector3.one * 1.55f; // lisible de loin, garde le gabarit K&C
                 Tint(model, Palette[v.Id % Palette.Length]);
                 view._animator = model.GetComponentInChildren<Animator>();
                 // Les modeles de l'equipe 3D portent deja leur outil (hache, pioche...) sur les SOCKET_*

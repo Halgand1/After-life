@@ -79,10 +79,11 @@ namespace AfterCity.Game.World
             TryProp(map, l, "Puits_Fini", new GridPos(farm.X - 2, farm.Y - 5), 0, 0f, 1f, true);
 
             // Maisons en ruine et debris dans les zones de ruines
-            string[] houses = { "Maison_Pavillon_Ruine", "Maison_Etage_Ruine", "Cabane_Jardin_Ruine", "Maison_Pavillon_Ruine" };
+            string[] houses = { "Maison_Pavillon_Ruine", "Maison_Etage_Ruine", "Cabane_Jardin_Ruine", "Maison_Pavillon_Ruine", "StationService_Ruine", "Barrage_Militaire_Ruine" };
             string[] debris = { "Debris_Pneus", "Debris_Toles", "Debris_Bidons", "Debris_Poubelles", "Debris_Gravats_Beton", "Debris_Gravats_Brique",
                 "Debris_Palettes", "Panneau_Stop", "Panneau_Direction", "Panneau_Limite", "Poteau_Electrique", "Lampadaire_Casse",
-                "Cloture_Bois_Cassee", "Cloture_Grillage_Cassee", "Barricade_Planches", "Panneau_Aide" };
+                "Cloture_Bois_Cassee", "Cloture_Grillage_Cassee", "Barricade_Planches", "Panneau_Aide",
+                "Conteneur_Ouvert", "Conteneur_Ferme", "Caisses_Fouille", "Barricade_SacsDeSable", "Barricade_ChevalDeFrise" };
             for (int y = 2; y < g.Height - 2; y++)
             for (int x = 2; x < g.Width - 2; x++)
             {
@@ -222,10 +223,10 @@ namespace AfterCity.Game.World
                 case CellFeature.Berries:
                     return kd.Add(Hash(x, y, 420) < 0.6f ? "Buisson_Baies_Rouges" : "Buisson_Baies_Bleues", c + jitter * 0.5f, Hash(x, y, 421) * 360f, 1.6f);
                 case CellFeature.Wreck:
-                    return kd.Add(Pick(Hash(x, y, 430), "Epave_Berline_A", "Epave_Berline_B", "Epave_Camionnette", "Epave_Pickup"), c, Hash(x, y, 431) * 360f, 0.75f);
+                    return kd.Add(Pick(Hash(x, y, 430), "Epave_Berline_A", "Epave_Berline_B", "Epave_Camionnette", "Epave_Pickup", "Epave_Berline_A", "Epave_Bus", "Epave_Camion_Militaire"), c, Hash(x, y, 431) * 360f, 0.75f);
                 case CellFeature.WreckSearched:
                     // Epave fouillee : portes ouvertes / carcasse brulee, on voit d'un coup d'oeil qu'elle a ete visitee
-                    return kd.Add("Epave_Berline_Brulee", c, Hash(x, y, 431) * 360f, 0.75f);
+                    return kd.Add(Pick(Hash(x, y, 430), "Epave_Berline_Brulee", "Epave_Pickup_Brule", "Epave_4x4_Brule"), c, Hash(x, y, 431) * 360f, 0.75f);
             }
             return false;
         }

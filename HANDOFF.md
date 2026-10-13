@@ -35,6 +35,17 @@
   - Zombies : Marche, Attaque ou Repos.
 - Testé avec un humanoïde d'essai : avatar valide (humanoïde) et matériau assigné. L'essai a été retiré du dossier.
 
+## Art de l'equipe 3D branche (13/10, soir)
+
+- **Animations** : les FBX v0.3 n'avaient aucune animation (export NLA vide). Les v0.3b (pose de repos en T) les contiennent ; `Builds/Logs/03_scene.log` liste les clips par controleur. Script de secours si un export revient vide : on recharge le .blend par armature, on ne garde que ses actions, export `bake_anim_use_all_actions`.
+- **DecorKit** (`Scripts/World/DecorKit.cs`, `Editor/DecorKitBuilder.cs`) : chaque SM_ de `Decor/Nature`, `Decor/Ruines`, `Batiments` est cuit en un maillage LOD0 (`Assets/Art/Baked/DecorKit.asset`) ; le terrain les fusionne par morceau de 32 x 32 cases dans un second maillage (`Decor_i_j`), materiau `MAT_Decor_Palette` (shader palette, texture `Batiments/T_Batiments_1024.png`). Recolter un arbre reconstruit le morceau comme avant.
+- **DecorPlacer** (`Scripts/World/DecorPlacer.cs`) : choix des modeles par biome (pins serres en foret dense, feuillus/bouleaux en plaine, arbres morts, souches et debris dans un rayon de 4 cases autour des epaves = zones de ruines), rochers, cailloux, baies, epaves (brulees une fois fouillees), maisons en ruine, ferme abandonnee (corps de ferme en ruine, silo, puits), batiments du moteur (abri = cabane, poste d'expedition = tas de stockage, atelier = hangar, champ = potager, tour de guet, grange en ruine), barricades = palissades. Un decor fixe disparait si on construit dessus.
+- **Animaux** : `AnimalView` (cerfs et sangliers) errent en foret dense, Repos/Marche/Brouter/Fouir, pas de chasse.
+- **Zombies** : 6 sur 10 sont des rodeurs, puis coureur, cogneur, grimpeur, brute (`GameRoot.ZombieType`).
+- **Survivants** : modele = role par ordre d'arrivee (Ouvrier, Carrier, Milicien, Pisteur, Medecin, Nettoyeur, Militaire) ; pas encore de `Villager.Role` dans Core. Les nouveaux modeles gardent leur outil d'origine (pas d'outil procedural en plus).
+- Le shader palette utilise maintenant l'ambiance du jeu (`_AC_AmbientSky/Ground`), comme le terrain : personnages et decor s'assombrissent la nuit.
+- Mesure : le benchmark ajoute `screenshot_ensemble.png`, `screenshot_survivants.png`, `screenshot_foret.png`.
+
 ## À faire ensuite
 
 1. Déposer les vrais FBX, relancer `phase0.ps1`, lire dans `Builds/Logs/03_scene.log` les lignes `[AfterCity] AC_Humain …`, `avatar valide=…` et `materiau …`.

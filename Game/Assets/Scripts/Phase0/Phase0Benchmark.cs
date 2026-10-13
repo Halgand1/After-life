@@ -198,7 +198,7 @@ namespace AfterCity.Game.Phase0
                 var animal = FindAnyObjectByType<AnimalView>();
                 if (animal != null)
                 {
-                    freeCamera.Distance = 16f;
+                    freeCamera.Distance = 14f;
                     freeCamera.Focus(animal.transform.position);
                     yield return Wait(0.5f);
                     freeCamera.Focus(animal.transform.position);
