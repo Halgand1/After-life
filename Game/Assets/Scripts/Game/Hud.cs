@@ -159,8 +159,8 @@ namespace AfterCity.Game
             {
                 double hours = (_game.Horde.NextHordeDay - _game.Day) * 24.0 + (20.5 - _game.Hour);
                 if (hours < 0) hours += 24;
-                int d = (int)(hours / 24), hh = (int)(hours % 24);
-                string when = d > 0 ? $"{d} j {hh} h" : $"{hh} h {(int)((hours - (int)hours) * 60):00}";
+                int d = (int)(hours / 24), hrs = (int)(hours % 24);
+                string when = d > 0 ? $"{d} j {hrs} h" : $"{hrs} h {(int)((hours - (int)hours) * 60):00}";
                 string col = hours < 6 ? "#ff9a7a" : "#c8c8b8";
                 GUI.Label(new Rect(x, r.y, 220, r.height), $"<color={col}>Horde dans <b>{when}</b></color>", _label);
             }
