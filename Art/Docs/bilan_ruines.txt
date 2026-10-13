@@ -41,3 +41,16 @@ SM_Panneau_Aide                1 x 1 cases  hauteur 1.30 m  triangles LOD0/1/2 =
 SM_Lampadaire_Casse            1 x 1 cases  hauteur 2.20 m  triangles LOD0/1/2 = 92/80/40  accroches = aucune  · lampadaire plié par une voiture
 SM_Poteau_Electrique           1 x 1 cases  hauteur 3.20 m  triangles LOD0/1/2 = 200/68/40  accroches = aucune  · poteau électrique en bois, câbles coupés
 
+[Lieux]
+SM_StationService_Ruine        3 x 2 cases  hauteur 2.66 m  triangles LOD0/1/2 = 556/400/288  accroches = SOCKET_Porte, SOCKET_Travail_01, SOCKET_Travail_02, SOCKET_Stock_01  · station-service abandonnée : carburant résiduel et conserves
+SM_Barrage_Militaire_Ruine     2 x 1 cases  hauteur 1.91 m  triangles LOD0/1/2 = 480/348/168  accroches = SOCKET_Travail_01, SOCKET_Stock_01  · barrage militaire tombé : munitions et équipement militaire
+SM_Epave_Camion_Militaire      1 x 3 cases  hauteur 1.89 m  triangles LOD0/1/2 = 560/376/228  accroches = SOCKET_Travail_01, SOCKET_Travail_02, SOCKET_Stock_01, SOCKET_Fumee  · camion militaire : pièces rares, carburant, munitions
+SM_Epave_Bus                   1 x 3 cases  hauteur 1.53 m  triangles LOD0/1/2 = 496/292/136  accroches = SOCKET_Porte, SOCKET_Travail_01, SOCKET_Travail_02  · bus scolaire échoué : abri de fortune, sièges et tôle
+
+[Fouille]
+SM_Conteneur_Ouvert            1 x 2 cases  hauteur 1.36 m  triangles LOD0/1/2 = 312/168/24  accroches = SOCKET_Travail_01, SOCKET_Stock_01  · conteneur abandonné : caisses à fouiller, peut servir d'entrepôt
+SM_Conteneur_Ferme             1 x 2 cases  hauteur 1.36 m  triangles LOD0/1/2 = 288/144/12  accroches = SOCKET_Travail_01, SOCKET_Stock_01  · conteneur abandonné : caisses à fouiller, peut servir d'entrepôt
+SM_Caisses_Fouille             1 x 1 cases  hauteur 1.00 m  triangles LOD0/1/2 = 120/72/36  accroches = SOCKET_Travail_01  · caisses et cartons à fouiller
+SM_Epave_4x4_Brule             1 x 2 cases  hauteur 1.12 m  triangles LOD0/1/2 = 196/172/136  accroches = SOCKET_Travail_01  · 4x4 calciné sur le toit : ferraille uniquement
+SM_Epave_Pickup_Brule          1 x 2 cases  hauteur 1.01 m  triangles LOD0/1/2 = 388/244/160  accroches = SOCKET_Travail_01, SOCKET_Travail_02  · pick-up calciné : ferraille et pièces
+

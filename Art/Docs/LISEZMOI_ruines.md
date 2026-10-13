@@ -1,6 +1,6 @@
 # Décor urbain abandonné (ruines) · After City
 
-29 objets fixes prêts pour Unity, générés par `../scripts/generer_decor_ruines.py` (Blender 4.2+ ou module `bpy`).
+38 objets fixes prêts pour Unity, générés par `../scripts/generer_decor_ruines.py` (Blender 4.2+ ou module `bpy`).
 Régénérer : `blender --background --python ../scripts/generer_decor_ruines.py -- --sortie .` (ajouter `--sans-rendu` pour sauter l'aperçu).
 
 ## Contenu
@@ -24,6 +24,8 @@ LOD : pas de décimation ; chaque pièce porte un niveau (grands volumes dans le
 | Maisons | Pavillon (2 × 2, toit percé), Maison à étage effondrée (3 × 2), Cabane de jardin (1 × 1) | voir colonne | `SOCKET_Porte`, `SOCKET_Travail_01/02` |
 | Clôtures | Bois, Bois cassée, Grillage, Grillage cassé (segment d'une case le long de X) | 1 × 1 | — |
 | Barricades | Planches, Sacs de sable, Cheval de frise, Palettes | 1 × 1 | — |
+| Lieux | Station-service (3 × 2, auvent, pompes, boutique pillée), Barrage militaire (2 × 1, guérite, barrière, sacs, herses), Camion militaire (1 × 3), Bus scolaire (1 × 3) | voir colonne | `SOCKET_Porte`, `SOCKET_Travail_01/02`, `SOCKET_Stock_01` |
+| Fouille | Conteneur ouvert, Conteneur fermé (1 × 2), Caisses (1 × 1), 4x4 calciné retourné, Pick-up calciné (1 × 2) | voir colonne | `SOCKET_Travail_01`, `SOCKET_Stock_01` sur les conteneurs |
 | Panneaux | Stop, Limite, Direction (2 × 1), « AIDE » peint, Lampadaire cassé, Poteau électrique | 1 × 1 | — |
 
 Budgets : véhicules 290–390 triangles, débris 90–430, petit bâtiment 180, pavillon 1 036, maison à étage 1 588, clôtures 108–180, barricades 204–288 (sous les 250 d'un segment de palissade sauf palettes et planches, à 264–288).
