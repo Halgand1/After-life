@@ -83,6 +83,17 @@ namespace AfterCity.Core.Sim
         /// <summary>Ce que contient l'etagere de la maison.</summary>
         public int Shelf(ResourceType r) => _shelf.TryGetValue(r, out var n) ? n : 0;
         internal void SetShelf(ResourceType r, int n) => _shelf[r] = n;
+        /// <summary>Place sur l'etagere pour cette ressource (0 si la maison ne la reclame pas) ; les vivres sont limites a deux jours par habitant.</summary>
+        public int ShelfCapacity(ResourceType r)
+        {
+            var spec = Home;
+            bool wanted = false;
+            if (spec != null) foreach (var w in spec.Wants) wanted |= w == r;
+            if (!wanted) return 0;
+            int cap = spec.ShelfPerResource;
+            if (r == ResourceType.Food) cap = System.Math.Min(cap, 2 * _residents.Count * (int)System.Math.Ceiling(spec.FoodPerResident));
+            return cap;
+        }
         /// <summary>Jours d'affilee ou l'etagere avait tout ce que la maison reclame.</summary>
         public int ComfortDays { get; internal set; }
         public const int DaysToComfort = 3;

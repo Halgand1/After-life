@@ -109,6 +109,24 @@ namespace AfterCity.Core.Tests
         }
 
         [Test]
+        public void ShelfCapacityFollowsTheHomeAndItsResidents()
+        {
+            var c = Flat();
+            var hostel = c.AddPrebuilt(BuildingType.Hostel, new GridPos(10, 10));
+            Assert.That(hostel.ShelfCapacity(ResourceType.Medicine), Is.EqualTo(0), "le foyer ne reclame pas de medicaments");
+            Assert.That(hostel.ShelfCapacity(ResourceType.Wood), Is.EqualTo(20));
+            Assert.That(hostel.ShelfCapacity(ResourceType.Food), Is.EqualTo(0), "personne n'y vit encore");
+            for (int i = 0; i < 3; i++) c.AddVillager(new GridPos(2 + i, 2));
+            c.AssignHomes();
+            Assert.That(hostel.ShelfCapacity(ResourceType.Food), Is.EqualTo(6), "deux jours de vivres pour trois habitants");
+            c.Stock.Add(ResourceType.Food, 50);
+            c.Stock.Add(ResourceType.Wood, 50);
+            c.RefillShelves();
+            Assert.That(hostel.Shelf(ResourceType.Food), Is.EqualTo(hostel.ShelfCapacity(ResourceType.Food)));
+            Assert.That(hostel.Shelf(ResourceType.Wood), Is.EqualTo(20));
+        }
+
+        [Test]
         public void ComfortableHomesMakeTheirResidentsWorkFaster()
         {
             double TimeToChop(bool comfy)

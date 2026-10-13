@@ -326,10 +326,8 @@ namespace AfterCity.Core.Sim
                 if (!b.Built || b.Home == null || b.ResidentList.Count == 0) continue;
                 foreach (var r in b.Home.Wants)
                 {
-                    int cap = b.Home.ShelfPerResource;
                     // Pas plus de deux jours de vivres par habitant : le reste sert aux survivants sans toit
-                    if (r == ResourceType.Food) cap = Math.Min(cap, 2 * b.ResidentList.Count * (int)Math.Ceiling(b.Home.FoodPerResident));
-                    int room = cap - b.Shelf(r);
+                    int room = b.ShelfCapacity(r) - b.Shelf(r);
                     int take = Math.Min(room, Stock.Get(r));
                     if (take <= 0 || !Stock.TrySpend(r, take)) continue;
                     b.SetShelf(r, b.Shelf(r) + take);
