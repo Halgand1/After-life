@@ -62,6 +62,7 @@ namespace AfterCity.Game
                 string hurt = e.DamageTaken < 10 ? "sans blessure" : e.DamageTaken < 25 ? "blessures legeres" : "blesses";
                 Say($"Retour de {e.Target.Name} : {(e.Succeeded ? "reussite" : "echec")} ({(int)(e.Outcome * 100)} %),{loot}, {hurt}");
             };
+            Colony.Salvaged += (p, loot) => Say("Epave demontee :" + Describe(loot));
             Colony.SurvivorArrived += v =>
             {
                 _villagerViews[v] = VillagerView.Create(v, villagerPrefab, Map.Grid, transform);
@@ -99,8 +100,17 @@ namespace AfterCity.Game
                 case ResourceType.Electronics: return "electronique";
                 case ResourceType.Steel: return "acier";
                 case ResourceType.Medicine: return "medicaments";
+                case ResourceType.Metal: return "metal";
+                case ResourceType.Ceramic: return "ceramique";
                 default: return t.ToString().ToLowerInvariant();
             }
+        }
+
+        public static string Describe(System.Collections.Generic.Dictionary<ResourceType, int> loot)
+        {
+            var sb = new System.Text.StringBuilder();
+            foreach (var kv in loot) sb.Append($" +{kv.Value} {ResourceName(kv.Key)}");
+            return sb.ToString();
         }
 
         public void Say(string alert)

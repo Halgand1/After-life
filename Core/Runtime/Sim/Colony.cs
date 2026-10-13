@@ -140,6 +140,17 @@ namespace AfterCity.Core.Sim
         /// <summary>Une expedition est rentree (resultat dans l'objet).</summary>
         public event Action<Expedition> ExpeditionReturned;
         public Rng Random { get; set; } = new Rng(0xC0105EED);
+        /// <summary>Une epave a ete demontee (case, pieces obtenues).</summary>
+        public event Action<GridPos, Dictionary<ResourceType, int>> Salvaged;
+
+        /// <summary>Atelier : demonte 5 ferrailles en 3 pieces tirees selon leur rarete. Null si impossible.</summary>
+        public Dictionary<ResourceType, int> RefineScrap()
+        {
+            if (!HasBuilt(BuildingType.Workshop) || !Stock.TrySpend(ResourceType.Scrap, AfterCity.Core.Sim.Salvage.ScrapPerBatch)) return null;
+            var parts = AfterCity.Core.Sim.Salvage.Roll(Random, AfterCity.Core.Sim.Salvage.PartsPerBatch);
+            foreach (var kv in parts) Stock.Add(kv.Key, kv.Value);
+            return parts;
+        }
         bool _wasNight;
         int _nextVillagerId;
         readonly List<Villager> _villagers = new List<Villager>();
@@ -566,10 +577,14 @@ namespace AfterCity.Core.Sim
                     Stock.Add(ResourceType.Stone, 3);
                     return true;
                 case JobType.Salvage:
+                {
                     if (Grid.GetFeature(p) != CellFeature.Wreck) return false;
                     Grid.SetFeature(p, CellFeature.None);
-                    Stock.Add(ResourceType.Scrap, 4);
+                    var loot = AfterCity.Core.Sim.Salvage.Wreck(Random);
+                    foreach (var kv in loot) Stock.Add(kv.Key, kv.Value);
+                    Salvaged?.Invoke(p, loot);
                     return true;
+                }
                 case JobType.Dig:
                     return Terraformer.Dig(p);
                 case JobType.Raise:

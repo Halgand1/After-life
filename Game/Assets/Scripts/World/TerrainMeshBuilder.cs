@@ -183,6 +183,7 @@ namespace AfterCity.Game.World
                         if (bt == BuildingType.Shelter) AddShelter(md, corner, Hash(x, y, 10));
                         else if (bt == BuildingType.ExpeditionPost) AddExpeditionPost(md, corner);
                         else if (bt == BuildingType.Farmhouse) AddFarmhouse(md, corner);
+                        else if (bt == BuildingType.Workshop) AddWorkshop(md, corner, Hash(x, y, 12));
                         else AddWatchtower(md, corner);
                     }
                     continue;
@@ -234,6 +235,23 @@ namespace AfterCity.Game.World
             // Porte et fenetre
             md.Box(center + new Vector3(0, 0, -1.51f), new Vector3(0.7f, 1.2f, 0.04f), Lin(new Color(0.25f, 0.18f, 0.12f)));
             md.Box(center + new Vector3(1.0f, 0.9f, -1.51f), new Vector3(0.5f, 0.45f, 0.04f), Lin(new Color(0.85f, 0.70f, 0.40f)));
+        }
+
+        /// <summary>Atelier de demontage 2 x 2 : appentis ouvert, etabli, tas de ferraille, cheminee.</summary>
+        static void AddWorkshop(MeshData md, Vector3 corner, float r)
+        {
+            var c = corner + new Vector3(CellSize, 0, CellSize);
+            var wood = Lin(new Color(0.46f, 0.36f, 0.25f));
+            var tole = Lin(new Color(0.50f, 0.36f, 0.26f));
+            for (int i = 0; i < 4; i++)
+                md.Box(c + new Vector3((i & 1) == 0 ? -1.5f : 1.5f, 0, i < 2 ? -1.5f : 1.5f), new Vector3(0.2f, 2.2f, 0.2f), wood);
+            md.Box(c + new Vector3(0, 0, 1.45f), new Vector3(3.2f, 2.0f, 0.15f), wood);
+            md.Box(c + Vector3.up * 2.2f, new Vector3(3.6f, 0.15f, 3.6f), tole);
+            md.Box(c + new Vector3(-0.6f, 0, 0.6f), new Vector3(1.6f, 0.8f, 0.7f), Lin(new Color(0.35f, 0.27f, 0.18f)));
+            md.Box(c + new Vector3(1.2f, 2.35f, 1.2f), new Vector3(0.3f, 1.0f, 0.3f), Lin(new Color(0.25f, 0.25f, 0.25f)));
+            var scrap = Lin(new Color(0.45f, 0.40f, 0.36f));
+            md.Cone(c + new Vector3(0.8f, 0, -0.7f), 0.6f, 0.6f, 5, scrap, r * 6f);
+            md.Box(c + new Vector3(0.5f, 0, -1.2f), new Vector3(0.5f, 0.3f, 0.4f), Lin(new Color(0.55f, 0.20f, 0.15f)));
         }
 
         /// <summary>Grange rouge delavee de la ferme de depart (2 x 2 cases).</summary>

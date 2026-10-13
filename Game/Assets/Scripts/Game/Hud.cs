@@ -100,7 +100,8 @@ namespace AfterCity.Game
             TopBar(w);
             Toolbar(w, h);
             Survivors();
-            ExpeditionPanel(w);
+            float bottom = ExpeditionPanel(w);
+            WorkshopPanel(w, bottom);
             Messages(w);
             AlertBanner(w);
             Welcome(w, h);
@@ -173,7 +174,7 @@ namespace AfterCity.Game
                 var b = builds[i];
                 var br = new Rect(r.x + 14 + 16 + (tools.Length + i) * (bw + gap), r.y + 12, bw, bh);
                 bool on = _tool.CurrentBuilding == b;
-                if (GUI.Button(br, $"<size=12><color=#9a9a96>{(tools.Length + i + 1) % 10}</color></size>\n{OrderTool.BuildingLabel(b)}", on ? _buttonOn : _button))
+                if (GUI.Button(br, $"<size=12><color=#9a9a96>{(tools.Length + i + 1 <= 10 ? ((tools.Length + i + 1) % 10).ToString() : " ")}</color></size>\n{OrderTool.BuildingLabel(b)}", on ? _buttonOn : _button))
                     _tool.CurrentBuilding = on ? (BuildingType?)null : b;
                 GUI.color = new Color(0.55f, 0.75f, 0.95f);
                 GUI.DrawTexture(new Rect(br.x + 10, br.y + 8, bw - 20, 5), _white);
@@ -220,15 +221,16 @@ namespace AfterCity.Game
 
         static readonly (ResourceType type, string name)[] Parts =
         {
-            (ResourceType.Plastic, "Plastique"), (ResourceType.Rubber, "Caoutchouc"), (ResourceType.Electronics, "Electronique"),
-            (ResourceType.Steel, "Acier"), (ResourceType.Medicine, "Medicaments"),
+            (ResourceType.Metal, "Metal"), (ResourceType.Plastic, "Plastique"), (ResourceType.Rubber, "Caoutchouc"),
+            (ResourceType.Ceramic, "Ceramique"), (ResourceType.Steel, "Acier"), (ResourceType.Electronics, "Electronique"),
+            (ResourceType.Medicine, "Medicaments"),
         };
 
         /// <summary>Panneau des expeditions en ville (visible des que le poste est construit).</summary>
-        void ExpeditionPanel(float w)
+        float ExpeditionPanel(float w)
         {
             var colony = _game.Colony;
-            if (!colony.HasBuilt(BuildingType.ExpeditionPost) && colony.Expeditions.Count == 0) return;
+            if (!colony.HasBuilt(BuildingType.ExpeditionPost) && colony.Expeditions.Count == 0) return 80;
             var targets = ExpeditionTarget.All;
             float rowH = 44;
             float height = 96 + targets.Length * rowH + colony.Expeditions.Count * 24 + 30;
@@ -268,9 +270,36 @@ namespace AfterCity.Game
                 GUI.Label(new Rect(r.x + 16, y, 350, 22), $"<color=#8fc0ff>{e.Target.Name}</color> : retour dans {Mathf.CeilToInt((float)e.Remaining)} s", _small);
                 y += 24;
             }
+            GUI.Label(new Rect(r.x + 16, r.y + r.height - 30, 360, 24), "<color=#9a9a96>Plus d'equipiers et moins de danger : meilleures chances.</color>", new GUIStyle(_small) { fontSize = 12 });
+            return r.yMax + 10;
+        }
+
+        /// <summary>Atelier de demontage et stock de pieces detachees.</summary>
+        void WorkshopPanel(float w, float top)
+        {
+            var colony = _game.Colony;
+            bool hasWorkshop = colony.HasBuilt(BuildingType.Workshop);
+            bool anyPart = false;
+            foreach (var (type, _) in Parts) if (colony.Stock.Get(type) > 0) anyPart = true;
+            if (!hasWorkshop && !anyPart) return;
+            var r = Panel(new Rect(w - 392, top, 380, hasWorkshop ? 150 : 104));
+            GUI.Label(new Rect(r.x + 16, r.y + 8, 300, 28), "Pieces detachees", _title);
             var sb = new System.Text.StringBuilder();
-            foreach (var (type, name) in Parts) sb.Append($"{name} <b>{colony.Stock.Get(type)}</b>   ");
-            GUI.Label(new Rect(r.x + 16, r.y + r.height - 30, 360, 24), sb.ToString(), new GUIStyle(_small) { fontSize = 12 });
+            int k = 0;
+            foreach (var (type, name) in Parts)
+            {
+                sb.Append($"{name} <b>{colony.Stock.Get(type)}</b>   ");
+                if (++k == 4) sb.Append("\n");
+            }
+            GUI.Label(new Rect(r.x + 16, r.y + 40, 350, 50), sb.ToString(), new GUIStyle(_small) { alignment = TextAnchor.UpperLeft });
+            if (!hasWorkshop) return;
+            GUI.enabled = colony.Stock.Get(ResourceType.Scrap) >= Salvage.ScrapPerBatch;
+            if (GUI.Button(new Rect(r.x + 16, r.y + 100, 348, 36), $"Demonter {Salvage.ScrapPerBatch} ferraille en {Salvage.PartsPerBatch} pieces", _button))
+            {
+                var parts = colony.RefineScrap();
+                if (parts != null) _game.Say("Atelier :" + GameRoot.Describe(parts));
+            }
+            GUI.enabled = true;
         }
 
         static string Verb(JobType t)
