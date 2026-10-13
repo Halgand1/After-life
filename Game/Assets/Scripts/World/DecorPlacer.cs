@@ -299,15 +299,15 @@ namespace AfterCity.Game.World
                 case Biome.DenseForest:
                     if (r < 0.40f) kd.Add(Pick(Hash(x, y, 705), "Tapis_Feuilles_A", "Tapis_Feuilles_B", "Tapis_Feuilles_Automne"), c + o, yaw, s);
                     else if (r < 0.58f) kd.Add(Pick(Hash(x, y, 706), "Branches_Mortes_A", "Branches_Mortes_B"), c + o, yaw, s);
-                    else if (r < 0.63f) kd.Add("Boue_A", c + o, yaw, s);
+                    else if (r < 0.61f) kd.Add("Boue_A", c + o, yaw, s * 0.6f);
                     break;
                 case Biome.Marsh:
-                    if (r < 0.30f) kd.Add(Pick(Hash(x, y, 707), "Flaque_A", "Flaque_B", "Boue_A", "Boue_B"), c + o, yaw, s);
+                    if (r < 0.18f) kd.Add(Pick(Hash(x, y, 707), "Flaque_A", "Flaque_B", "Boue_A", "Boue_B"), c + o, yaw, s * 0.7f);
                     break;
                 case Biome.Plains:
                 case Biome.Meadow:
                     if (ruin && r < 0.06f) kd.Add("Ossements", c + o, yaw, s);
-                    else if (r < (ruin ? 0.16f : 0.05f)) kd.Add(Pick(Hash(x, y, 708), "Flaque_A", "Boue_A", "Boue_B", "Flaque_B"), c + o, yaw, s);
+                    else if (r < (ruin ? 0.09f : 0.075f) && Hash(x, y, 711) < 0.3f) kd.Add(Pick(Hash(x, y, 708), "Flaque_A", "Boue_A", "Boue_B", "Flaque_B"), c + o, yaw, s * 0.55f);
                     else if (r < (ruin ? 0.22f : 0.08f)) kd.Add(Pick(Hash(x, y, 709), "Branches_Mortes_A", "Branches_Mortes_B"), c + o, yaw, s);
                     else if (r < 0.11f && Hash(x, y, 710) < 0.5f) kd.Add("Tapis_Feuilles_Automne", c + o, yaw, s);
                     break;

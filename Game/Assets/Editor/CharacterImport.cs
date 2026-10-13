@@ -17,13 +17,13 @@ namespace AfterCity.EditorTools
     {
         public const string Folder = "Assets/Art/Personnages/";
         public const string PaletteMaterialPath = Folder + "MAT_Personnages_Palette.mat";
-        static readonly string[] Animals = { "SK_Cerf", "SK_Sanglier", "SK_Cheval", "SK_Vache" };
+        static readonly string[] Animals = { "SK_Cerf", "SK_Sanglier", "SK_Cheval", "SK_Vache", "SK_Poule" };
 
         /// <summary>Dossiers couverts : personnages, equipement, animaux (et leurs sous-dossiers).</summary>
         static readonly string[] Roots = { Folder, "Assets/Art/Equipement/", "Assets/Art/Animaux/", "Assets/Art/Decor/", "Assets/Art/Batiments/" };
 
         /// <summary>Change a chaque modification des reglages : force Unity a reimporter les modeles.</summary>
-        public override uint GetVersion() => 3;
+        public override uint GetVersion() => 4;
 
         static bool InFolder(string path)
         {
