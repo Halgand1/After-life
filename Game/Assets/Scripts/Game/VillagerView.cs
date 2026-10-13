@@ -51,6 +51,26 @@ namespace AfterCity.Game
         }
 
         float _dying = -1f;
+        float _shot;
+        Light _flash;
+
+        /// <summary>Le survivant tire sur un animal : geste et petit eclair de bouche.</summary>
+        public void Shoot()
+        {
+            _shot = 0.55f;
+            if (_flash == null)
+            {
+                var go = new GameObject("Eclair");
+                go.transform.SetParent(transform, false);
+                go.transform.localPosition = new Vector3(0.3f, 1.3f, 0.8f);
+                _flash = go.AddComponent<Light>();
+                _flash.type = LightType.Point;
+                _flash.color = new Color(1f, 0.8f, 0.45f);
+                _flash.range = 5f;
+                _flash.shadows = LightShadows.None;
+            }
+            _flash.intensity = 6f;
+        }
 
         /// <summary>Le survivant tombe puis disparait.</summary>
         public void Die() { if (_dying < 0) _dying = 0; }
@@ -69,7 +89,7 @@ namespace AfterCity.Game
         /// Anneau lumineux a la couleur du survivant, au sol : on repere chaque survivant d'un coup d'oeil
         /// comme dans K&amp;C, meme de nuit ou au milieu des arbres (alpha 0 = emissif dans VertexColorLit).
         /// </summary>
-        static void CreateRing(Transform parent, Color color, Material material)
+        internal static GameObject CreateRing(Transform parent, Color color, Material material)
         {
             const int seg = 28;
             const float inner = 0.55f, outer = 0.72f, y = 0.06f;
@@ -99,6 +119,7 @@ namespace AfterCity.Game
             r.sharedMaterial = material;
             r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             r.receiveShadows = false;
+            return go;
         }
 
         static void Tint(GameObject model, Color jacket)
@@ -156,7 +177,15 @@ namespace AfterCity.Game
                     case JobType.Construct:
                     case JobType.Barricade:
                     case JobType.Salvage: wanted = AnimStates.Hit; break;
+                    case JobType.Hunt: wanted = AnimStates.Idle; break; // vise
                 }
+            }
+            bool aiming = v.State == VillagerState.Working && v.Job != null && v.Job.Type == JobType.Hunt;
+            if (_shot > 0f)
+            {
+                _shot -= dt;
+                wanted = AnimStates.Hit; // geste de tir (provisoire : Frapper)
+                if (_flash != null) _flash.intensity = _shot > 0.45f ? 6f : 0f;
             }
             // Etat dedie s'il existe dans ce modele, sinon repos + gestes procedures
             string state = AnimStates.Resolve(_animator, wanted);
@@ -169,7 +198,7 @@ namespace AfterCity.Game
             // Travail : petit mouvement de coups d'outil (la pioche et la cueillette ont leur propre animation)
             if (_model != null)
             {
-                float swing = v.State == VillagerState.Working && !ownAnim ? Mathf.Sin(Time.time * 9f) * 12f : 0f;
+                float swing = v.State == VillagerState.Working && !ownAnim && !aiming ? Mathf.Sin(Time.time * 9f) * 12f : 0f;
                 _model.localRotation = Quaternion.Euler(Mathf.Max(0, swing), 0, 0);
             }
         }

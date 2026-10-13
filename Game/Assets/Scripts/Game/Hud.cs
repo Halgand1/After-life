@@ -357,6 +357,7 @@ namespace AfterCity.Game
                 case JobType.Gather: return "ramasser des cailloux";
                 case JobType.Pick: return "cueillir";
                 case JobType.Search: return "fouiller";
+                case JobType.Hunt: return "chasser";
                 case JobType.Asphalt: return "goudronner";
                 default: return t.ToString();
             }

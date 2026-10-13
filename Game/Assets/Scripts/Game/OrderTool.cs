@@ -26,7 +26,7 @@ namespace AfterCity.Game
         public static readonly (string name, ToolItem[] items)[] Categories =
         {
             ("Recolte", new[] { new ToolItem(JobType.Chop), new ToolItem(JobType.Mine), new ToolItem(JobType.Gather),
-                                new ToolItem(JobType.Pick), new ToolItem(JobType.Search), new ToolItem(JobType.Salvage) }),
+                                new ToolItem(JobType.Pick), new ToolItem(JobType.Search), new ToolItem(JobType.Salvage), new ToolItem(JobType.Hunt) }),
             ("Terrain", new[] { new ToolItem(JobType.Dig), new ToolItem(JobType.Raise), new ToolItem(JobType.Road), new ToolItem(JobType.Asphalt) }),
             ("Defense", new[] { new ToolItem(JobType.Barricade), new ToolItem(BuildingType.Watchtower) }),
             ("Batiments", new[] { new ToolItem(BuildingType.Shelter), new ToolItem(BuildingType.Field),
@@ -119,6 +119,7 @@ namespace AfterCity.Game
                 case JobType.Pick: return new Color(0.90f, 0.30f, 0.35f);
                 case JobType.Search: return new Color(0.95f, 0.85f, 0.35f);
                 case JobType.Asphalt: return new Color(0.55f, 0.55f, 0.60f);
+                case JobType.Hunt: return new Color(0.85f, 0.20f, 0.15f);
                 default: return Color.white;
             }
         }
@@ -139,6 +140,7 @@ namespace AfterCity.Game
                 case JobType.Pick: return "Cueillir des baies";
                 case JobType.Search: return "Fouiller une epave";
                 case JobType.Asphalt: return "Asphalte (1 pierre)";
+                case JobType.Hunt: return "Chasser";
                 default: return t.ToString();
             }
         }
@@ -169,6 +171,10 @@ namespace AfterCity.Game
             {
                 var b = _game.Colony.PlaceBuilding(CurrentBuilding.Value, Hover.Value);
                 Say(b != null ? $"Chantier : {BuildingSpec.Of(b.Type).Name}" : PlaceError(CurrentBuilding.Value));
+            }
+            else if (!overUi && cam != null && HuntClick(cam))
+            {
+                // clic gere par la chasse (cible un animal, ou annule sa chasse)
             }
             else if (Hover.HasValue && !overUi)
             {
@@ -206,6 +212,43 @@ namespace AfterCity.Game
                 Say(Current == JobType.Barricade && colony.Stock.Get(ResourceType.Wood) < Colony.BarricadeWoodCost
                     ? "Pas assez de bois" : Current == JobType.Raise ? "Il faut de la terre (creusez d'abord)" : "Rien a faire ici");
             else if (ok > 0) Say($"{ok} ordre(s) : {ToolName(Current.Value)}");
+        }
+
+        /// <summary>
+        /// Chasse : clic gauche sur (ou pres d') un animal avec l'outil Chasser = ordre de chasse ;
+        /// clic droit pres d'un animal chasse = annule. Vrai si le clic a ete utilise.
+        /// </summary>
+        bool HuntClick(Camera cam)
+        {
+            var wildlife = _game.Colony.Wildlife;
+            if (wildlife == null) return false;
+            bool left = Input.GetMouseButtonDown(0) && Current == JobType.Hunt;
+            bool right = Input.GetMouseButtonDown(1);
+            if (!left && !right) return false;
+            if (!PointerCell(cam, out double px, out double py)) return left;
+            var a = wildlife.NearestAlive(px, py, 1.5);
+            if (left)
+            {
+                if (a == null) { Say("Cliquez sur un cerf ou un sanglier"); return true; }
+                Say(_game.Colony.OrderHunt(a) ? $"Chasse : {GameRoot.AnimalName(a, false)}" : "Deja chasse");
+                return true;
+            }
+            if (a != null && _game.Colony.CancelHunt(a)) { Say("Chasse annulee"); return true; }
+            return false;
+        }
+
+        /// <summary>Point vise en coordonnees de cases (fractionnaires), sur le dessus de la case touchee.</summary>
+        bool PointerCell(Camera cam, out double x, out double y)
+        {
+            x = y = 0;
+            var ray = cam.ScreenPointToRay(Input.mousePosition);
+            if (!_game.Terrain.Raycast(ray, out var cell)) return false;
+            var plane = new Plane(Vector3.up, new Vector3(0, TerrainMeshBuilder.TopY(_game.Map.Grid.GetLevel(cell)), 0));
+            if (!plane.Raycast(ray, out float t)) return false;
+            var p = ray.GetPoint(t);
+            x = p.x / TerrainMeshBuilder.CellSize;
+            y = p.z / TerrainMeshBuilder.CellSize;
+            return true;
         }
 
         string PlaceError(BuildingType t)

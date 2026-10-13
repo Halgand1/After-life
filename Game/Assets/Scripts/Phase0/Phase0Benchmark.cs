@@ -30,6 +30,12 @@ namespace AfterCity.Game.Phase0
                 StartCoroutine(Soak(soakSeconds));
                 return;
             }
+            int huntArg = Array.IndexOf(args, "-aftercity-hunt");
+            if (huntArg >= 0 && huntArg + 1 < args.Length)
+            {
+                StartCoroutine(HuntTest(args[huntArg + 1]));
+                return;
+            }
             int shotArg = Array.IndexOf(args, "-aftercity-shot");
             if (shotArg >= 0 && shotArg + 1 < args.Length)
             {
@@ -121,6 +127,105 @@ namespace AfterCity.Game.Phase0
             yield return null;
             yield return null;
             Application.Quit(0);
+        }
+
+        /// <summary>
+        /// Essai de chasse : un cerf puis un sanglier (les plus proches de la ferme), camera sur le chasseur,
+        /// captures chasse_cerf.png et sanglier_charge.png, verifie qu'aucun animal n'entre dans l'eau ou un mur.
+        /// </summary>
+        IEnumerator HuntTest(string dir)
+        {
+            Directory.CreateDirectory(dir);
+            QualitySettings.vSyncCount = 0;
+            if (freeCamera != null) freeCamera.edgePan = false;
+            var game = FindAnyObjectByType<GameRoot>();
+            var hud = game.GetComponent<Hud>();
+            if (hud != null) hud.CloseWelcome();
+            var tuto = game.GetComponent<Tutorial>();
+            if (tuto != null) tuto.Disable();
+            var colony = game.Colony;
+            var w = colony.Wildlife;
+            var grid = game.Map.Grid;
+            var farm = game.Map.FarmCenter;
+            int bad = 0, frames = 0;
+            float fpsTime = 0;
+            Animal boarAlarm = null;
+            w.Alarmed += a => { if (a.Kind == AnimalKind.Boar) boarAlarm = a; };
+            Debug.Log($"[AfterCity] Chasse : {w.Animals.Count} animaux");
+            foreach (var kind in new[] { AnimalKind.Deer, AnimalKind.Boar })
+            {
+                Animal target = null;
+                double best = double.MaxValue;
+                foreach (var a in w.Animals)
+                {
+                    if (a.Kind != kind || a.IsDead) continue;
+                    double d = (a.X - farm.X) * (a.X - farm.X) + (a.Y - farm.Y) * (a.Y - farm.Y);
+                    if (d < best) { best = d; target = a; }
+                }
+                if (target == null) { Debug.Log($"[AfterCity] Chasse : pas de {kind}"); continue; }
+                bool ordered = colony.OrderHunt(target);
+                Debug.Log($"[AfterCity] Chasse {kind} {target.Id} en {target.Cell} ordre={ordered}");
+                game.Speed = 3;
+                bool shot = false;
+                float t0 = Time.realtimeSinceStartup;
+                boarAlarm = null;
+                while (Time.realtimeSinceStartup - t0 < 120f && !target.IsDead)
+                {
+                    // Camera sur le chasseur (ou l'animal)
+                    Vector3 focus = W(grid, target.X, target.Y);
+                    foreach (var h in colony.Hunts)
+                        if (h.Target == target && h.AssignedTo != null)
+                        {
+                            var v = h.AssignedTo;
+                            focus = Vector3.Lerp(W(grid, v.X, v.Y), focus, 0.5f);
+                            if (kind == AnimalKind.Boar && v.State == VillagerState.Working) game.Speed = 1;
+                            if (!shot && kind == AnimalKind.Deer && v.State == VillagerState.Working)
+                            {
+                                game.Speed = 1;
+                                freeCamera.Distance = 15f;
+                                freeCamera.Focus(focus);
+                                yield return Wait(0.2f);
+                                freeCamera.Focus(Vector3.Lerp(W(grid, v.X, v.Y), W(grid, target.X, target.Y), 0.5f));
+                                yield return null;
+                                ScreenCapture.CaptureScreenshot(Path.Combine(dir, "chasse_cerf.png"));
+                                shot = true;
+                                game.Speed = 3;
+                                break; // la liste des chasses a pu changer pendant l attente
+                            }
+                        }
+                    if (!shot && kind == AnimalKind.Boar && boarAlarm == target && target.State == AnimalState.Charging)
+                    {
+                        game.Speed = 1;
+                        freeCamera.Distance = 15f;
+                        freeCamera.Focus(W(grid, target.X, target.Y));
+                        yield return Wait(0.25f);
+                        freeCamera.Focus(W(grid, target.X, target.Y));
+                        yield return null;
+                        ScreenCapture.CaptureScreenshot(Path.Combine(dir, "sanglier_charge.png"));
+                        shot = true;
+                        game.Speed = 3;
+                    }
+                    if (freeCamera != null) { freeCamera.Distance = shot ? 30f : 22f; freeCamera.Focus(focus); }
+                    foreach (var a in w.Animals)
+                        if (!a.IsDead && !w.CanStand(a.Cell)) { bad++; if (bad < 5) Debug.Log($"[AfterCity] ANOMALIE {a.Kind} {a.Id} en {a.Cell} ({grid.GetBiome(a.Cell)})"); }
+                    frames++;
+                    fpsTime += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+                Debug.Log($"[AfterCity] Chasse {kind} : mort={target.IsDead} en {Time.realtimeSinceStartup - t0:F0} s, vivres {colony.Stock.Get(ResourceType.Food)}");
+            }
+            string report = $"anomalies={bad} fps={frames / Mathf.Max(0.01f, fpsTime):F0}";
+            File.WriteAllText(Path.Combine(dir, "chasse.txt"), report);
+            Debug.Log("[AfterCity] Chasse fin : " + report);
+            yield return Wait(0.5f);
+            Application.Quit(0);
+        }
+
+        static Vector3 W(WorldGrid grid, double x, double y)
+        {
+            var c = new GridPos((int)Math.Floor(x), (int)Math.Floor(y));
+            float h = grid.InBounds(c) ? AfterCity.Game.World.TerrainMeshBuilder.TopY(grid.GetLevel(c)) : 0f;
+            return new Vector3((float)x * 2f, h, (float)y * 2f);
         }
 
         static IEnumerator Wait(float seconds)

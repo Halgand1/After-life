@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using AfterCity.Core.Sim;
+using AfterCity.Core.Util;
 using AfterCity.Core.World;
 using AfterCity.Game.Phase0;
 using AfterCity.Game.World;
@@ -79,7 +80,9 @@ namespace AfterCity.Game
             Horde = new Horde(Colony, Map.FarmCenter, seed);
             DecorKit.Current = decorKit;
             Terrain = TerrainView.Create(Map, terrainMaterial, transform);
-            if (animalPrefabs != null && animalPrefabs.Length > 0) AnimalView.Populate(Map, animalPrefabs, transform, seed);
+            // Faune du moteur (cerfs, sangliers) : neutre tant qu'on ne la chasse pas
+            Colony.Wildlife = Wildlife.Populate(Map, new Rng(seed ^ 0x5EEDF00Dul));
+            CreateWildlife();
             AnimalView.Chickens(Map, chickenPrefabs, transform, new GridPos(Map.FarmCenter.X + 4, Map.FarmCenter.Y + 4), 5, seed);
             Colony.CellChanged += Terrain.MarkDirty;
             var audio = gameObject.AddComponent<GameAudio>();
@@ -97,6 +100,14 @@ namespace AfterCity.Game
                 FallingTree.Spawn(Map, p, terrainMaterial, transform);
                 audio.PlayAt(audio.Fall, TerrainMeshBuilder.CellCenter(Map.Grid, p), 0.9f);
             };
+            Colony.Hunted += (a, v, food) => Say($"{v.Name} a abattu {AnimalName(a, true)} : +{food} vivres");
+            Colony.Shot += (v, a, hit) => { if (_villagerViews.TryGetValue(v, out var view)) view.Shoot(); };
+            Colony.Wildlife.Alarmed += a =>
+            {
+                if (a.Kind == AnimalKind.Boar) Say(a.Attacker != null ? $"Un sanglier charge {a.Attacker.Name} !" : "Un sanglier charge !");
+                else Say("Le cerf s'enfuit");
+            };
+            Colony.Wildlife.Charged += (a, v, damage) => { if (damage > 0) Say($"{v.Name} est blesse par un sanglier"); };
             Colony.Harvested += n => { if (n > 0) Say($"Recolte du soir : +{n} vivres"); };
             Colony.Ate += (eaten, hungry) =>
             {
@@ -136,6 +147,28 @@ namespace AfterCity.Game
             gameObject.AddComponent<Tutorial>().Init(this);
             gameObject.AddComponent<Hud>().Init(this);
             Debug.Log($"[AfterCity] Carte {width}x{height} graine {seed}, ferme en {Map.FarmCenter}, {Colony.Villagers.Count} survivants");
+        }
+
+        public static string AnimalName(Animal a, bool article) =>
+            a.Kind == AnimalKind.Deer ? (article ? "un cerf" : "cerf") : (article ? "un sanglier" : "sanglier");
+
+        void CreateWildlife()
+        {
+            if (animalPrefabs == null || animalPrefabs.Length == 0) return;
+            GameObject deer = null, boar = null;
+            foreach (var p in animalPrefabs)
+            {
+                if (p == null) continue;
+                if (p.name.Contains("Cerf")) deer = p;
+                else if (p.name.Contains("Sanglier")) boar = p;
+            }
+            var root = new GameObject("Faune").transform;
+            root.SetParent(transform, false);
+            foreach (var a in Colony.Wildlife.Animals)
+            {
+                var prefab = a.Kind == AnimalKind.Deer ? deer : boar;
+                if (prefab != null) WildlifeView.Create(a, prefab, Colony, Map.Grid, root, terrainMaterial);
+            }
         }
 
         public static string ResourceName(ResourceType t)
