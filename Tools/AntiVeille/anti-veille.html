@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Anti-veille</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b0d10; overflow: hidden; color: #9aa3ad; font: 16px system-ui, sans-serif; }
+  canvas { position: fixed; inset: 0; }
+  #info { position: fixed; left: 16px; bottom: 12px; opacity: .6; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="info">Anti-veille actif : l'image bouge en permanence et Windows garde l'écran allumé tant que cette page est ouverte (F11 pour le plein écran).</div>
+<script>
+// Garde l'écran allumé (API Wake Lock du navigateur) et anime l'image pour que la télé reçoive toujours un signal qui change.
+let lock = null;
+async function keepAwake() {
+  try { lock = await navigator.wakeLock.request('screen'); } catch (e) { /* navigateur sans Wake Lock : l'animation suffit */ }
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') keepAwake(); });
+keepAwake();
+
+const c = document.getElementById('c'), g = c.getContext('2d');
+function resize() { c.width = innerWidth; c.height = innerHeight; }
+addEventListener('resize', resize); resize();
+const dots = Array.from({ length: 60 }, () => ({ x: Math.random(), y: Math.random(), vx: (Math.random() - .5) * .002, vy: (Math.random() - .5) * .002 }));
+function frame(t) {
+  g.fillStyle = 'rgba(11,13,16,0.25)'; g.fillRect(0, 0, c.width, c.height);
+  for (const d of dots) {
+    d.x = (d.x + d.vx + 1) % 1; d.y = (d.y + d.vy + 1) % 1;
+    const hue = (t / 60 + d.x * 120) % 360;
+    g.fillStyle = `hsl(${hue},45%,45%)`;
+    g.beginPath(); g.arc(d.x * c.width, d.y * c.height, 3, 0, Math.PI * 2); g.fill();
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
