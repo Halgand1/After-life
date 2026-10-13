@@ -13,7 +13,8 @@ namespace AfterCity.Core.Sim
         Salvage,    // demonter une epave : ferraille
         Dig,        // abaisser le terrain d'un niveau : terre (douves, pieges)
         Raise,      // remblayer d'un niveau : consomme de la terre
-        Barricade   // barricade de bois sur la case
+        Barricade,  // barricade de bois sur la case
+        Construct   // chantier d'un batiment (donne par PlaceBuilding)
     }
 
     public sealed class Job
@@ -21,6 +22,8 @@ namespace AfterCity.Core.Sim
         public JobType Type { get; }
         public GridPos Cell { get; }
         public Villager AssignedTo { get; internal set; }
+        /// <summary>Batiment a construire (ordre Construct uniquement).</summary>
+        public Building Building { get; internal set; }
         /// <summary>Temps (s) pendant lequel l'ordre est ignore apres un echec de chemin.</summary>
         internal double BlockedFor;
 
@@ -105,6 +108,31 @@ namespace AfterCity.Core.Sim
         /// <summary>Une case a change (relief, decor ou mur) : l'affichage doit la redessiner.</summary>
         public event Action<GridPos> CellChanged;
 
+        /// <summary>Places de depart (la ferme et le camion).</summary>
+        public const int BaseCapacity = 5;
+
+        /// <summary>Un nouveau survivant a rejoint la colonie (a l'aube, s'il y avait de la place).</summary>
+        public event Action<Villager> SurvivorArrived;
+
+        public IReadOnlyList<Building> Buildings => _buildings;
+
+        /// <summary>Nombre de survivants que la colonie peut loger.</summary>
+        public int Capacity
+        {
+            get
+            {
+                int c = BaseCapacity;
+                foreach (var b in _buildings) if (b.Built && b.Type == BuildingType.Shelter) c += 2;
+                return c;
+            }
+        }
+
+        /// <summary>Case ou arrivent les nouveaux survivants (la ferme).</summary>
+        public GridPos Home { get; set; }
+
+        readonly List<Building> _buildings = new List<Building>();
+        bool _wasNight;
+        int _nextVillagerId;
         readonly List<Villager> _villagers = new List<Villager>();
         readonly Dictionary<GridPos, Job> _jobs = new Dictionary<GridPos, Job>();
         readonly Pathfinder _pathfinder;
@@ -119,7 +147,7 @@ namespace AfterCity.Core.Sim
         /// <summary>Colonie de depart sur la ferme : survivants et vivres du camion (GDD 4.2).</summary>
         public static Colony StartAtFarm(GeneratedMap map, int survivors = 5)
         {
-            var c = new Colony(map.Grid);
+            var c = new Colony(map.Grid) { Home = map.FarmCenter };
             for (int i = 0; i < survivors; i++)
             {
                 var p = new GridPos(map.FarmCenter.X - 1 + i % 3, map.FarmCenter.Y - 1 + i / 3);
@@ -132,7 +160,8 @@ namespace AfterCity.Core.Sim
 
         public Villager AddVillager(GridPos cell)
         {
-            var v = new Villager(_villagers.Count, Names[_villagers.Count % Names.Length], cell);
+            int id = _nextVillagerId++;
+            var v = new Villager(id, Names[id % Names.Length], cell);
             _villagers.Add(v);
             return v;
         }
@@ -156,7 +185,7 @@ namespace AfterCity.Core.Sim
         /// <summary>Peut-on donner cet ordre sur cette case maintenant ?</summary>
         public bool CanOrder(JobType type, GridPos p)
         {
-            if (!Grid.InBounds(p) || _jobs.ContainsKey(p)) return false;
+            if (!Grid.InBounds(p) || _jobs.ContainsKey(p) || Grid.HasStructure(p) || PlannedAt(p) != null) return false;
             var feature = Grid.GetFeature(p);
             switch (type)
             {
@@ -183,10 +212,63 @@ namespace AfterCity.Core.Sim
             return true;
         }
 
+        /// <summary>Batiment (prevu ou construit) qui couvre cette case.</summary>
+        public Building BuildingAt(GridPos p)
+        {
+            foreach (var b in _buildings) if (b.Covers(p)) return b;
+            return null;
+        }
+
+        Building PlannedAt(GridPos p)
+        {
+            var b = BuildingAt(p);
+            return b != null && !b.Built ? b : null;
+        }
+
+        /// <summary>Peut-on poser ce batiment avec ce coin bas-gauche ? Terrain plat, sec, degage, et assez de ressources.</summary>
+        public bool CanPlace(BuildingType type, GridPos origin)
+        {
+            var spec = BuildingSpec.Of(type);
+            if (Stock.Get(ResourceType.Wood) < spec.Wood || Stock.Get(ResourceType.Stone) < spec.Stone) return false;
+            if (!Grid.InBounds(origin)) return false;
+            int level = Grid.GetLevel(origin);
+            for (int y = 0; y < spec.Size; y++)
+            for (int x = 0; x < spec.Size; x++)
+            {
+                var p = new GridPos(origin.X + x, origin.Y + y);
+                if (!Grid.InBounds(p) || Grid.GetLevel(p) != level || Grid.GetBiome(p) == Biome.Water) return false;
+                if (Grid.GetFeature(p) != CellFeature.None || Grid.HasWall(p) || Grid.HasStructure(p)) return false;
+                if (_jobs.ContainsKey(p) || BuildingAt(p) != null || IsOccupied(p)) return false;
+            }
+            return true;
+        }
+
+        /// <summary>Pose un chantier : les ressources sont payees tout de suite (rendues si on annule).</summary>
+        public Building PlaceBuilding(BuildingType type, GridPos origin)
+        {
+            if (!CanPlace(type, origin)) return null;
+            var spec = BuildingSpec.Of(type);
+            Stock.TrySpend(ResourceType.Wood, spec.Wood);
+            Stock.TrySpend(ResourceType.Stone, spec.Stone);
+            var b = new Building(type, origin);
+            _buildings.Add(b);
+            _jobs[origin] = new Job(JobType.Construct, origin) { Building = b };
+            return b;
+        }
+
         public bool Cancel(GridPos p)
         {
+            var planned = PlannedAt(p);
+            if (planned != null) p = planned.Origin;
             if (!_jobs.TryGetValue(p, out var job)) return false;
             if (job.Type == JobType.Barricade) Stock.Add(ResourceType.Wood, BarricadeWoodCost);
+            if (job.Type == JobType.Construct && job.Building != null)
+            {
+                var spec = BuildingSpec.Of(job.Building.Type);
+                Stock.Add(ResourceType.Wood, spec.Wood);
+                Stock.Add(ResourceType.Stone, spec.Stone);
+                _buildings.Remove(job.Building);
+            }
             Release(job);
             _jobs.Remove(p);
             return true;
@@ -219,9 +301,19 @@ namespace AfterCity.Core.Sim
             }
         }
 
+        double JobDuration(Job job) =>
+            job.Type == JobType.Construct && job.Building != null ? BuildingSpec.Of(job.Building.Type).BuildTime : WorkDuration(job.Type);
+
         public void Tick(double dt)
         {
             Time += dt;
+            bool night = IsNight;
+            if (_wasNight && !night && _villagers.Count < Capacity && Grid.InBounds(Home))
+            {
+                var v = AddVillager(Home);
+                SurvivorArrived?.Invoke(v);
+            }
+            _wasNight = night;
             foreach (var j in _jobs.Values)
                 if (j.BlockedFor > 0) j.BlockedFor -= dt;
 
@@ -271,7 +363,21 @@ namespace AfterCity.Core.Sim
         /// </summary>
         List<GridPos> WorkSpots(Job job)
         {
-            var spots = new List<GridPos>(5);
+            var spots = new List<GridPos>(8);
+            if (job.Type == JobType.Construct && job.Building != null)
+            {
+                // Autour de l'emprise du batiment
+                var b = job.Building;
+                for (int y = -1; y <= b.Size; y++)
+                for (int x = -1; x <= b.Size; x++)
+                {
+                    if (x >= 0 && y >= 0 && x < b.Size && y < b.Size) continue;
+                    if (Math.Abs(x - (b.Size - 1) / 2.0) + Math.Abs(y - (b.Size - 1) / 2.0) > b.Size) continue; // pas les coins
+                    var n = new GridPos(b.Origin.X + x, b.Origin.Y + y);
+                    if (Grid.InBounds(n) && Grid.GetBiome(n) != Biome.Water && !Grid.HasWall(n) && !Grid.HasStructure(n)) spots.Add(n);
+                }
+                return spots;
+            }
             bool onCell = job.Type == JobType.Chop || job.Type == JobType.Mine || job.Type == JobType.Salvage;
             if (onCell && Grid.GetBiome(job.Cell) != Biome.Water) spots.Add(job.Cell);
             foreach (var d in GridPos.Neighbours4)
@@ -328,7 +434,7 @@ namespace AfterCity.Core.Sim
         {
             var job = v.Job;
             if (job == null || !_jobs.ContainsKey(job.Cell)) { Abort(v); return; }
-            v.WorkProgress += dt / WorkDuration(job.Type);
+            v.WorkProgress += dt / JobDuration(job);
             if (v.WorkProgress < 1) return;
 
             bool done = Complete(job);
@@ -363,6 +469,20 @@ namespace AfterCity.Core.Sim
                     return Terraformer.Dig(p);
                 case JobType.Raise:
                     return Terraformer.Raise(p);
+                case JobType.Construct:
+                {
+                    var b = job.Building;
+                    if (b == null) return false;
+                    for (int y = 0; y < b.Size; y++)
+                    for (int x = 0; x < b.Size; x++)
+                    {
+                        var c = new GridPos(b.Origin.X + x, b.Origin.Y + y);
+                        Grid.SetStructure(c, Building.StructureCode(b.Type, x == 0 && y == 0));
+                        if (x != 0 || y != 0) CellChanged?.Invoke(c);
+                    }
+                    b.Built = true;
+                    return true;
+                }
                 case JobType.Barricade:
                     if (Grid.HasWall(p) || IsOccupied(p)) { Stock.Add(ResourceType.Wood, BarricadeWoodCost); return false; }
                     Grid.SetWall(p, true);

@@ -16,7 +16,30 @@ namespace AfterCity.Game
         public static readonly JobType[] Tools =
             { JobType.Chop, JobType.Mine, JobType.Salvage, JobType.Dig, JobType.Raise, JobType.Barricade };
 
-        public JobType? Current { get; set; }
+        public static readonly BuildingType[] Buildings = { BuildingType.Shelter, BuildingType.Watchtower };
+
+        JobType? _current;
+        BuildingType? _building;
+
+        /// <summary>Ordre choisi (exclusif avec le batiment choisi).</summary>
+        public JobType? Current
+        {
+            get => _current;
+            set { _current = value; if (value.HasValue) _building = null; }
+        }
+
+        /// <summary>Batiment a poser (exclusif avec l'ordre choisi).</summary>
+        public BuildingType? CurrentBuilding
+        {
+            get => _building;
+            set { _building = value; if (value.HasValue) _current = null; }
+        }
+
+        public static string BuildingLabel(BuildingType t)
+        {
+            var s = BuildingSpec.Of(t);
+            return s.Stone > 0 ? $"{s.Name} ({s.Wood} bois, {s.Stone} pierre)" : $"{s.Name} ({s.Wood} bois)";
+        }
         public GridPos? Hover { get; private set; }
         public string LastMessage { get; private set; }
         public float LastMessageTime { get; private set; } = -10f;
@@ -54,6 +77,7 @@ namespace AfterCity.Game
                 case JobType.Dig: return new Color(0.80f, 0.55f, 0.30f);
                 case JobType.Raise: return new Color(0.95f, 0.85f, 0.45f);
                 case JobType.Barricade: return new Color(0.90f, 0.35f, 0.25f);
+                case JobType.Construct: return new Color(0.55f, 0.75f, 0.95f);
                 default: return Color.white;
             }
         }
@@ -68,6 +92,7 @@ namespace AfterCity.Game
                 case JobType.Dig: return "Creuser (douve, piege)";
                 case JobType.Raise: return "Remblayer";
                 case JobType.Barricade: return "Barricade (2 bois)";
+                case JobType.Construct: return "Construire";
                 default: return t.ToString();
             }
         }
@@ -84,7 +109,10 @@ namespace AfterCity.Game
             for (int i = 0; i < Tools.Length; i++)
                 if (Input.GetKeyDown(KeyCode.Alpha1 + i) || Input.GetKeyDown(KeyCode.Keypad1 + i))
                     Current = Current == Tools[i] ? (JobType?)null : Tools[i];
-            if (Input.GetKeyDown(KeyCode.Escape)) { Current = null; _dragStart = null; }
+            for (int i = 0; i < Buildings.Length; i++)
+                if (Input.GetKeyDown(KeyCode.Alpha7 + i) || Input.GetKeyDown(KeyCode.Keypad7 + i))
+                    CurrentBuilding = CurrentBuilding == Buildings[i] ? (BuildingType?)null : Buildings[i];
+            if (Input.GetKeyDown(KeyCode.Escape)) { Current = null; CurrentBuilding = null; _dragStart = null; }
 
             var cam = Camera.main;
             bool overUi = _hud != null && _hud.IsPointerOverUi(Input.mousePosition);
@@ -92,7 +120,12 @@ namespace AfterCity.Game
             if (cam != null && !overUi && _game.Terrain.Raycast(cam.ScreenPointToRay(Input.mousePosition), out var cell))
                 Hover = cell;
 
-            if (Hover.HasValue && !overUi)
+            if (Hover.HasValue && !overUi && CurrentBuilding.HasValue && Input.GetMouseButtonDown(0))
+            {
+                var b = _game.Colony.PlaceBuilding(CurrentBuilding.Value, Hover.Value);
+                Say(b != null ? $"Chantier : {BuildingSpec.Of(b.Type).Name}" : PlaceError(CurrentBuilding.Value));
+            }
+            else if (Hover.HasValue && !overUi)
             {
                 if (Input.GetMouseButtonDown(0) && Current.HasValue) { _dragStart = Hover; _dragCancel = false; }
                 if (Input.GetMouseButtonDown(1)) { _dragStart = Hover; _dragCancel = true; }
@@ -130,6 +163,15 @@ namespace AfterCity.Game
             else if (ok > 0) Say($"{ok} ordre(s) : {ToolName(Current.Value)}");
         }
 
+        string PlaceError(BuildingType t)
+        {
+            var s = BuildingSpec.Of(t);
+            var stock = _game.Colony.Stock;
+            if (stock.Get(ResourceType.Wood) < s.Wood) return $"Il faut {s.Wood} bois";
+            if (stock.Get(ResourceType.Stone) < s.Stone) return $"Il faut {s.Stone} pierre";
+            return "Terrain plat et degage requis";
+        }
+
         static void Rect(GridPos a, GridPos b, out GridPos min, out GridPos max)
         {
             min = new GridPos(Mathf.Min(a.X, b.X), Mathf.Min(a.Y, b.Y));
@@ -145,7 +187,24 @@ namespace AfterCity.Game
             foreach (var job in _game.Colony.Jobs)
             {
                 var col = ToolColor(job.Type) * (job.AssignedTo != null ? 1f : 0.7f);
-                Frame(grid, job.Cell, col.linear, 0.12f);
+                if (job.Building != null)
+                {
+                    int s = job.Building.Size;
+                    for (int y = 0; y < s; y++)
+                    for (int x = 0; x < s; x++)
+                        Frame(grid, new GridPos(job.Cell.X + x, job.Cell.Y + y), col.linear, 0.25f);
+                }
+                else Frame(grid, job.Cell, col.linear, 0.12f);
+            }
+
+            // Tirs des tours de guet
+            foreach (var kv in _game.Horde.TowerTargets)
+            {
+                var o = kv.Key.Origin;
+                var from = new Vector3(o.X * 2f + 1f, TerrainMeshBuilder.TopY(grid.GetLevel(o)) + 3.6f, o.Y * 2f + 1f);
+                var z = kv.Value;
+                var to = new Vector3((float)z.X * 2f, TerrainMeshBuilder.TopY(grid.GetLevel(z.Cell)) + 1.0f, (float)z.Y * 2f);
+                if (Mathf.Sin(Time.time * 40f) > 0) Beam(from, to, new Color(1f, 0.85f, 0.4f).linear * 2f);
             }
 
             if (_dragStart.HasValue && Hover.HasValue)
@@ -161,6 +220,18 @@ namespace AfterCity.Game
                     }
                     else if (_game.Colony.CanOrder(Current.Value, p))
                         Frame(grid, p, (ToolColor(Current.Value) * pulse).linear, 0.2f);
+                }
+            }
+            else if (Hover.HasValue && CurrentBuilding.HasValue)
+            {
+                var spec = BuildingSpec.Of(CurrentBuilding.Value);
+                bool ok = _game.Colony.CanPlace(CurrentBuilding.Value, Hover.Value);
+                var col = (ok ? new Color(0.4f, 0.9f, 0.5f) : new Color(0.9f, 0.3f, 0.25f)) * pulse;
+                for (int y = 0; y < spec.Size; y++)
+                for (int x = 0; x < spec.Size; x++)
+                {
+                    var p = new GridPos(Hover.Value.X + x, Hover.Value.Y + y);
+                    if (grid.InBounds(p)) Frame(grid, p, col.linear, 0.3f);
                 }
             }
             else if (Hover.HasValue)
@@ -190,6 +261,20 @@ namespace AfterCity.Game
             Quad(x0, z1 - t, x1, z1, y, col);
             Quad(x0, z0 + t, x0 + t, z1 - t, y, col);
             Quad(x1 - t, z0 + t, x1, z1 - t, y, col);
+        }
+
+        /// <summary>Trait lumineux (tir) entre deux points, a plat face au ciel.</summary>
+        void Beam(Vector3 a, Vector3 b, Color col)
+        {
+            var dir = b - a;
+            var side = Vector3.Cross(dir, Vector3.up).normalized * 0.06f;
+            int i = _v.Count;
+            _v.Add(a - side); _v.Add(a + side); _v.Add(b + side); _v.Add(b - side);
+            for (int k = 0; k < 4; k++) { _n.Add(Vector3.up); _c.Add(col); }
+            _t.Add(i); _t.Add(i + 1); _t.Add(i + 2);
+            _t.Add(i); _t.Add(i + 2); _t.Add(i + 3);
+            _t.Add(i); _t.Add(i + 2); _t.Add(i + 1);
+            _t.Add(i); _t.Add(i + 3); _t.Add(i + 2);
         }
 
         void Quad(float x0, float z0, float x1, float z1, float y, Color col)

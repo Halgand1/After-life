@@ -17,6 +17,7 @@ namespace AfterCity.Core.World
         readonly Biome[] _biomes;
         readonly bool[] _walls;
         readonly CellFeature[] _features;
+        readonly byte[] _structures;
 
         public WorldGrid(int width, int height)
         {
@@ -27,6 +28,7 @@ namespace AfterCity.Core.World
             _biomes = new Biome[width * height];
             _walls = new bool[width * height];
             _features = new CellFeature[width * height];
+            _structures = new byte[width * height];
         }
 
         public bool InBounds(GridPos p) => p.X >= 0 && p.Y >= 0 && p.X < Width && p.Y < Height;
@@ -49,6 +51,11 @@ namespace AfterCity.Core.World
         public CellFeature GetFeature(GridPos p) => _features[Index(p)];
         public void SetFeature(GridPos p, CellFeature feature) => _features[Index(p)] = feature;
 
+        /// <summary>Batiment sur la case : 0 = aucun. Bit 0x80 = case d'origine (coin) du batiment, le reste = type + 1.</summary>
+        public byte GetStructure(GridPos p) => _structures[Index(p)];
+        public void SetStructure(GridPos p, byte value) => _structures[Index(p)] = value;
+        public bool HasStructure(GridPos p) => _structures[Index(p)] != 0;
+
         /// <summary>
         /// Un marcheur peut-il passer de <paramref name="from"/> à <paramref name="to"/> ?
         /// Il descend de n'importe quelle hauteur, mais ne monte que de <paramref name="maxClimb"/> niveaux au plus.
@@ -57,7 +64,7 @@ namespace AfterCity.Core.World
         public bool CanStep(GridPos from, GridPos to, int maxClimb)
         {
             if (!InBounds(from) || !InBounds(to)) return false;
-            if (GetBiome(to) == Biome.Water) return false;
+            if (GetBiome(to) == Biome.Water || HasStructure(to)) return false;
             return GetLevel(to) - GetLevel(from) <= maxClimb;
         }
     }

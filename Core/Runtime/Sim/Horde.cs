@@ -43,9 +43,14 @@ namespace AfterCity.Core.Sim
         public const double BiteDamage = 18;       // par seconde, sur un survivant
         public const double DefenseDamage = 14;    // par seconde, d'un survivant au contact
         public const double ContactRange = 0.7;    // en cases
+        public const double TowerRange = 7;        // en cases
+        public const double TowerDamage = 15;      // par seconde
         const int Climb = 1;
 
         public IReadOnlyList<Zombie> Zombies => _zombies;
+        /// <summary>Cible actuelle de chaque tour de guet (pour l'affichage des tirs).</summary>
+        public IReadOnlyDictionary<Building, Zombie> TowerTargets => _towerTargets;
+        readonly Dictionary<Building, Zombie> _towerTargets = new Dictionary<Building, Zombie>();
         public int WavesSpawned { get; private set; }
         /// <summary>Une vague arrive (nombre de rodeurs).</summary>
         public event Action<int> WaveStarted;
@@ -98,6 +103,24 @@ namespace AfterCity.Core.Sim
                 var z = _zombies[i];
                 Step(z, dt);
                 if (z.IsDead) _zombies.RemoveAt(i);
+            }
+
+            // Les tours de guet tirent sur le rodeur le plus proche
+            _towerTargets.Clear();
+            foreach (var b in _colony.Buildings)
+            {
+                if (!b.Built || b.Type != BuildingType.Watchtower) continue;
+                double tx = b.Origin.X + 0.5, ty = b.Origin.Y + 0.5;
+                Zombie target = null;
+                double best = TowerRange;
+                foreach (var z in _zombies)
+                {
+                    double d = Distance(tx, ty, z.X, z.Y);
+                    if (d <= best) { best = d; target = z; }
+                }
+                if (target == null) continue;
+                target.Health -= TowerDamage * dt;
+                _towerTargets[b] = target;
             }
 
             // Les survivants au contact rendent les coups

@@ -55,6 +55,11 @@ namespace AfterCity.Game
             Terrain = TerrainView.Create(Map, terrainMaterial, transform);
             Colony.CellChanged += Terrain.MarkDirty;
             Colony.VillagerDied += OnVillagerDied;
+            Colony.SurvivorArrived += v =>
+            {
+                _villagerViews[v] = VillagerView.Create(v, villagerPrefab, Map.Grid, transform);
+                Say($"{v.Name} a trouve la colonie et rejoint les survivants !");
+            };
             Horde.WaveStarted += n => Say($"Une horde approche : {n} rodeurs ! Barricadez-vous.");
 
             foreach (var v in Colony.Villagers)

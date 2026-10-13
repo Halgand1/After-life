@@ -141,7 +141,7 @@ namespace AfterCity.Game
                 GUI.Label(new Rect(x + 20, r.y, 110, r.height), $"{name} <b>{colony.Stock.Get(type)}</b>", _label);
                 x += 118;
             }
-            GUI.Label(new Rect(x, r.y, 140, r.height), $"Survivants <b>{colony.Villagers.Count}</b>", _label);
+            GUI.Label(new Rect(x, r.y, 140, r.height), $"Survivants <b>{colony.Villagers.Count}/{colony.Capacity}</b>", _label);
             x += 140;
             int z = _game.Horde.Zombies.Count;
             if (z > 0) GUI.Label(new Rect(x, r.y, 140, r.height), $"<color=#ff7a66>Rodeurs <b>{z}</b></color>", _label);
@@ -152,7 +152,9 @@ namespace AfterCity.Game
         {
             var tools = OrderTool.Tools;
             float bw = 112, bh = 78, gap = 8;
-            float total = tools.Length * (bw + gap) - gap + 28;
+            var builds = OrderTool.Buildings;
+            int count = tools.Length + builds.Length;
+            float total = count * (bw + gap) - gap + 28 + 16;
             var r = Panel(new Rect(w / 2 - total / 2, h - bh - 40, total, bh + 26));
             for (int i = 0; i < tools.Length; i++)
             {
@@ -165,10 +167,23 @@ namespace AfterCity.Game
                 GUI.DrawTexture(new Rect(br.x + 10, br.y + 8, bw - 20, 5), _white);
                 GUI.color = Color.white;
             }
+            for (int i = 0; i < builds.Length; i++)
+            {
+                var b = builds[i];
+                var br = new Rect(r.x + 14 + 16 + (tools.Length + i) * (bw + gap), r.y + 12, bw, bh);
+                bool on = _tool.CurrentBuilding == b;
+                if (GUI.Button(br, $"<size=12><color=#9a9a96>{tools.Length + i + 1}</color></size>\n{OrderTool.BuildingLabel(b)}", on ? _buttonOn : _button))
+                    _tool.CurrentBuilding = on ? (BuildingType?)null : b;
+                GUI.color = new Color(0.55f, 0.75f, 0.95f);
+                GUI.DrawTexture(new Rect(br.x + 10, br.y + 8, bw - 20, 5), _white);
+                GUI.color = Color.white;
+            }
             var hintStyle = new GUIStyle(_small) { alignment = TextAnchor.MiddleCenter, normal = { textColor = new Color(0.95f, 0.95f, 0.92f) } };
-            string hint = _tool.Current.HasValue
+            string hint = _tool.CurrentBuilding.HasValue
+                ? "Clic : poser le chantier (terrain plat et degage)    Clic droit : annuler    Echap : deselectionner"
+                : _tool.Current.HasValue
                 ? "Clic ou glisser : donner l'ordre    Clic droit : annuler    Echap : deselectionner"
-                : "Choisis un ordre (1 a 6). Clic droit / glisser droit pour annuler des ordres.";
+                : "Choisis un ordre (1 a 6) ou un batiment (7, 8). Clic droit / glisser droit pour annuler.";
             var hr = new Rect(r.x + 40, r.y - 34, r.width - 80, 28);
             GUI.Box(hr, GUIContent.none, _panel);
             GUI.Label(hr, hint, hintStyle);
@@ -209,6 +224,7 @@ namespace AfterCity.Game
                 case JobType.Dig: return "creuser";
                 case JobType.Raise: return "remblayer";
                 case JobType.Barricade: return "barricader";
+                case JobType.Construct: return "construire";
                 default: return t.ToString();
             }
         }
@@ -267,12 +283,13 @@ namespace AfterCity.Game
         {
             if (_welcomeClosed) return;
             if (_game.Colony.Time > 45 || Input.GetKeyDown(KeyCode.Return)) { _welcomeClosed = true; return; }
-            var r = Panel(new Rect(w / 2 - 300, h / 2 - 150, 600, 250));
+            var r = Panel(new Rect(w / 2 - 320, h / 2 - 160, 640, 290));
             GUI.Label(new Rect(r.x + 24, r.y + 16, 552, 34), "After City : premiers pas", _title);
-            GUI.Label(new Rect(r.x + 24, r.y + 54, 552, 140),
+            GUI.Label(new Rect(r.x + 24, r.y + 54, 592, 180),
                 "Tes 5 survivants viennent d'arriver a la ferme.\n" +
                 "1. Coupe du bois (touche 1, glisse sur la foret).\n" +
-                "2. Avant <b>20h30</b>, protege la ferme : barricades (6) ou une douve de 2 niveaux (4, deux fois).\n" +
+                "2. Avant <b>20h30</b>, protege la ferme : barricades (6), douve de 2 niveaux (4, deux fois) ou tour de guet (8).\n" +
+                "Un abri (7) fait venir un nouveau survivant a chaque aube.\n" +
                 "3. La nuit, les rodeurs sortent de la foret. Ils cassent les barricades mais restent coinces dans les fosses.\n" +
                 "Astuce : <b>N</b> fait tomber la nuit tout de suite, <b>F2</b> compare les effets visuels.",
                 new GUIStyle(_small) { fontSize = 16, wordWrap = true, alignment = TextAnchor.UpperLeft, normal = { textColor = new Color(0.92f, 0.92f, 0.9f) } });

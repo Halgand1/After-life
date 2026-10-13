@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using AfterCity.Core.Sim;
 using AfterCity.Core.World;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -169,6 +170,17 @@ namespace AfterCity.Game.World
                 var jitter = new Vector3(Hash(x, y, 3) - 0.5f, 0, Hash(x, y, 4) - 0.5f) * 0.8f;
                 float r = Hash(x, y, 5);
                 if (grid.HasWall(p)) { AddBarricade(md, c, Hash(x, y, 8)); continue; }
+                byte structure = grid.GetStructure(p);
+                if (structure != 0)
+                {
+                    if (Building.IsOrigin(structure))
+                    {
+                        var corner = new Vector3(x * CellSize, top, y * CellSize);
+                        if (Building.TypeOf(structure) == BuildingType.Shelter) AddShelter(md, corner, Hash(x, y, 10));
+                        else AddWatchtower(md, corner);
+                    }
+                    continue;
+                }
                 switch (grid.GetFeature(p))
                 {
                     case CellFeature.Tree: AddTree(md, c + jitter, Hash(x, y, 6)); break;
@@ -198,6 +210,48 @@ namespace AfterCity.Game.World
             var leaf = Lin(Color.Lerp(new Color(0.20f, 0.36f, 0.20f), new Color(0.34f, 0.42f, 0.18f), r));
             md.Cone(at + Vector3.up * 0.5f * s, 0.85f * s, 1.5f * s, 6, leaf, r * 6f);
             md.Cone(at + Vector3.up * 1.2f * s, 0.6f * s, 1.2f * s, 6, leaf * 1.1f, r * 6f + 0.5f);
+        }
+
+        /// <summary>Abri de survivants 2 x 2 cases : cabane en planches, toit de tole a deux pans.</summary>
+        static void AddShelter(MeshData md, Vector3 corner, float r)
+        {
+            var center = corner + new Vector3(CellSize, 0, CellSize);
+            var wall = Lin(Color.Lerp(new Color(0.50f, 0.38f, 0.25f), new Color(0.56f, 0.46f, 0.32f), r));
+            var roof = Lin(new Color(0.42f, 0.44f, 0.46f));
+            var rust = Lin(new Color(0.52f, 0.30f, 0.18f));
+            md.Box(center, new Vector3(3.2f, 1.8f, 3.0f), wall);
+            // Toit a deux pans
+            float y0 = center.y + 1.8f, y1 = y0 + 1.1f, hx = 1.85f, hz = 1.75f;
+            var a = new Vector3(center.x - hx, y0, center.z - hz);
+            var b = new Vector3(center.x - hx, y0, center.z + hz);
+            var c1 = new Vector3(center.x, y1, center.z + hz);
+            var d = new Vector3(center.x, y1, center.z - hz);
+            md.Quad(a, b, c1, d, new Vector3(-0.7f, 0.7f, 0), roof);
+            var e = new Vector3(center.x + hx, y0, center.z + hz);
+            var f = new Vector3(center.x + hx, y0, center.z - hz);
+            md.Quad(f, d, c1, e, new Vector3(0.7f, 0.7f, 0), r > 0.5f ? rust : roof);
+            // Pignons
+            md.Tri(new Vector3(center.x - 1.6f, y0, center.z - 1.5f), new Vector3(center.x, y1 - 0.05f, center.z - 1.5f), new Vector3(center.x + 1.6f, y0, center.z - 1.5f), wall);
+            md.Tri(new Vector3(center.x + 1.6f, y0, center.z + 1.5f), new Vector3(center.x, y1 - 0.05f, center.z + 1.5f), new Vector3(center.x - 1.6f, y0, center.z + 1.5f), wall);
+            // Porte et fenetre
+            md.Box(center + new Vector3(0, 0, -1.51f), new Vector3(0.7f, 1.2f, 0.04f), Lin(new Color(0.25f, 0.18f, 0.12f)));
+            md.Box(center + new Vector3(1.0f, 0.9f, -1.51f), new Vector3(0.5f, 0.45f, 0.04f), Lin(new Color(0.85f, 0.70f, 0.40f)));
+        }
+
+        /// <summary>Tour de guet 1 case : quatre poteaux, plateforme, garde-corps, petit toit.</summary>
+        static void AddWatchtower(MeshData md, Vector3 corner)
+        {
+            var c = corner + new Vector3(CellSize / 2, 0, CellSize / 2);
+            var wood = Lin(new Color(0.45f, 0.33f, 0.21f));
+            var dark = Lin(new Color(0.30f, 0.22f, 0.14f));
+            for (int i = 0; i < 4; i++)
+                md.Box(c + new Vector3((i & 1) == 0 ? -0.7f : 0.7f, 0, i < 2 ? -0.7f : 0.7f), new Vector3(0.18f, 4.2f, 0.18f), wood);
+            md.Box(c + Vector3.up * 3.0f, new Vector3(1.9f, 0.15f, 1.9f), dark);
+            md.Box(c + new Vector3(0, 3.15f, -0.9f), new Vector3(1.9f, 0.5f, 0.1f), wood);
+            md.Box(c + new Vector3(0, 3.15f, 0.9f), new Vector3(1.9f, 0.5f, 0.1f), wood);
+            md.Box(c + new Vector3(-0.9f, 3.15f, 0), new Vector3(0.1f, 0.5f, 1.9f), wood);
+            md.Box(c + new Vector3(0.9f, 3.15f, 0), new Vector3(0.1f, 0.5f, 1.9f), wood);
+            md.Cone(c + Vector3.up * 4.2f, 1.45f, 0.9f, 4, Lin(new Color(0.40f, 0.42f, 0.44f)), Mathf.PI / 4);
         }
 
         static void AddBarricade(MeshData md, Vector3 at, float r)

@@ -49,6 +49,10 @@ namespace AfterCity.Game.Phase0
                 colony.Order(JobType.Dig, new GridPos(farm.X + x, farm.Y - 7));
             for (int x = -2; x <= 2; x++)
                 colony.Order(JobType.Barricade, new GridPos(farm.X + x, farm.Y + 7));
+            colony.Stock.Add(ResourceType.Wood, 20);
+            colony.Stock.Add(ResourceType.Stone, 4);
+            colony.PlaceBuilding(BuildingType.Shelter, new GridPos(farm.X - 3, farm.Y + 2));
+            colony.PlaceBuilding(BuildingType.Watchtower, new GridPos(farm.X + 3, farm.Y - 3));
             for (int k = 0; k < 4; k++)
                 game.Horde.Spawn(new GridPos(farm.X + 12 + k % 2, farm.Y - 3 + k * 2));
             game.Speed = 2;
