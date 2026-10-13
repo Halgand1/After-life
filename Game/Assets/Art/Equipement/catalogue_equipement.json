@@ -1,0 +1,601 @@
+{
+  "version": "0.1",
+  "squelette": "RIG_Humain (corps A ; corps B : mêmes accroches à 2 cm près)",
+  "objets": {
+    "Casque_Militaire": {
+      "fichier": "SM_Equip_Tete_CasqueMilitaire.fbx",
+      "emplacement": "Tete",
+      "accroche": "SOCKET_Tete",
+      "triangles": [
+        140,
+        68,
+        29
+      ],
+      "roles": [
+        "Militaire"
+      ],
+      "description": "Casque olive, jugulaire, lampe frontale"
+    },
+    "Casque_Police": {
+      "fichier": "SM_Equip_Tete_CasquePolice.fbx",
+      "emplacement": "Tete",
+      "accroche": "SOCKET_Tete",
+      "triangles": [
+        152,
+        72,
+        31
+      ],
+      "roles": [
+        "Militaire",
+        "Milicien"
+      ],
+      "description": "Casque anti‑émeute récupéré, visière (ère 2)"
+    },
+    "Casque_Chantier": {
+      "fichier": "SM_Equip_Tete_CasqueChantier.fbx",
+      "emplacement": "Tete",
+      "accroche": "SOCKET_Tete",
+      "triangles": [
+        98,
+        34,
+        21
+      ],
+      "roles": [
+        "Ouvrier",
+        "Carrier"
+      ],
+      "description": "Casque jaune de chantier"
+    },
+    "Casque_Moto": {
+      "fichier": "SM_Equip_Tete_CasqueMoto.fbx",
+      "emplacement": "Tete",
+      "accroche": "SOCKET_Tete",
+      "triangles": [
+        200,
+        98,
+        48
+      ],
+      "roles": [
+        "Milicien"
+      ],
+      "description": "Casque de moto réparé au scotch"
+    },
+    "Casquette": {
+      "fichier": "SM_Equip_Tete_Casquette.fbx",
+      "emplacement": "Tete",
+      "accroche": "SOCKET_Tete",
+      "triangles": [
+        54,
+        22,
+        13
+      ],
+      "roles": [
+        "Ouvrier",
+        "Nettoyeur"
+      ],
+      "description": "Casquette en denim délavé"
+    },
+    "Bonnet": {
+      "fichier": "SM_Equip_Tete_Bonnet.fbx",
+      "emplacement": "Tete",
+      "accroche": "SOCKET_Tete",
+      "triangles": [
+        102,
+        50,
+        24
+      ],
+      "roles": [
+        "Pisteur",
+        "Nettoyeur"
+      ],
+      "description": "Bonnet orange de chasse à pompon"
+    },
+    "Chapeau_Pisteur": {
+      "fichier": "SM_Equip_Tete_ChapeauPisteur.fbx",
+      "emplacement": "Tete",
+      "accroche": "SOCKET_Tete",
+      "triangles": [
+        128,
+        54,
+        23
+      ],
+      "roles": [
+        "Pisteur"
+      ],
+      "description": "Chapeau de brousse, plume"
+    },
+    "Bandana": {
+      "fichier": "SM_Equip_Tete_Bandana.fbx",
+      "emplacement": "Tete",
+      "accroche": "SOCKET_Tete",
+      "triangles": [
+        100,
+        50,
+        22
+      ],
+      "roles": [
+        "Milicien"
+      ],
+      "description": "Bandana rouge noué"
+    },
+    "Masque_Gaz": {
+      "fichier": "SM_Equip_Tete_MasqueGaz.fbx",
+      "emplacement": "Tete",
+      "accroche": "SOCKET_Tete",
+      "triangles": [
+        140,
+        68,
+        32
+      ],
+      "roles": [
+        "Nettoyeur",
+        "Militaire"
+      ],
+      "description": "Masque à gaz (nettoyage des cadavres)"
+    },
+    "Gilet_Tactique": {
+      "fichier": "SM_Equip_Torse_GiletTactique.fbx",
+      "emplacement": "Torse",
+      "accroche": "SOCKET_Torse",
+      "triangles": [
+        140,
+        58,
+        28
+      ],
+      "roles": [
+        "Militaire"
+      ],
+      "description": "Gilet porte‑plaques olive à poches"
+    },
+    "Gilet_Police": {
+      "fichier": "SM_Equip_Torse_GiletPolice.fbx",
+      "emplacement": "Torse",
+      "accroche": "SOCKET_Torse",
+      "triangles": [
+        92,
+        40,
+        20
+      ],
+      "roles": [
+        "Militaire",
+        "Milicien"
+      ],
+      "description": "Gilet pare‑balles de police (ère 2)"
+    },
+    "Plastron_Bricole": {
+      "fichier": "SM_Equip_Torse_PlastronBricole.fbx",
+      "emplacement": "Torse",
+      "accroche": "SOCKET_Torse",
+      "triangles": [
+        96,
+        38,
+        16
+      ],
+      "roles": [
+        "Milicien"
+      ],
+      "description": "Tôles et scotch : armure de fortune"
+    },
+    "Gilet_HauteVisibilite": {
+      "fichier": "SM_Equip_Torse_GiletHauteVisibilite.fbx",
+      "emplacement": "Torse",
+      "accroche": "SOCKET_Torse",
+      "triangles": [
+        92,
+        40,
+        18
+      ],
+      "roles": [
+        "Ouvrier",
+        "Nettoyeur"
+      ],
+      "description": "Gilet orange à bandes"
+    },
+    "Brassard_Medecin": {
+      "fichier": "SM_Equip_Torse_BrassardMedecin.fbx",
+      "emplacement": "Torse",
+      "accroche": "SOCKET_Torse",
+      "triangles": [
+        56,
+        28,
+        14
+      ],
+      "roles": [
+        "Medecin"
+      ],
+      "description": "Brassard sarcelle, cercle blanc (pas de croix rouge)"
+    },
+    "Sac_Randonnee": {
+      "fichier": "SM_Equip_Dos_SacRandonnee.fbx",
+      "emplacement": "Dos",
+      "accroche": "SOCKET_Dos",
+      "triangles": [
+        228,
+        106,
+        50
+      ],
+      "roles": [
+        "Pisteur",
+        "Ouvrier"
+      ],
+      "description": "Gros sac de randonnée, tapis de sol bleu"
+    },
+    "Sac_Petit": {
+      "fichier": "SM_Equip_Dos_SacPetit.fbx",
+      "emplacement": "Dos",
+      "accroche": "SOCKET_Dos",
+      "triangles": [
+        80,
+        34,
+        18
+      ],
+      "roles": [
+        "Medecin",
+        "Milicien"
+      ],
+      "description": "Petit sac à dos d'écolier"
+    },
+    "Fusil_Dos": {
+      "fichier": "SM_Equip_Dos_FusilDos.fbx",
+      "emplacement": "Dos",
+      "accroche": "SOCKET_Dos",
+      "triangles": [
+        80,
+        38,
+        18
+      ],
+      "roles": [
+        "Militaire"
+      ],
+      "description": "Fusil en bandoulière"
+    },
+    "Arbalete_Dos": {
+      "fichier": "SM_Equip_Dos_ArbaleteDos.fbx",
+      "emplacement": "Dos",
+      "accroche": "SOCKET_Dos",
+      "triangles": [
+        136,
+        62,
+        34
+      ],
+      "roles": [
+        "Pisteur"
+      ],
+      "description": "Arbalète et carquois"
+    },
+    "Hotte_Bois": {
+      "fichier": "SM_Equip_Dos_HotteBois.fbx",
+      "emplacement": "Dos",
+      "accroche": "SOCKET_Dos",
+      "triangles": [
+        140,
+        64,
+        32
+      ],
+      "roles": [
+        "Ouvrier"
+      ],
+      "description": "Hotte à bûches (porte 4 bûches)"
+    },
+    "Jerrican_Dos": {
+      "fichier": "SM_Equip_Dos_JerricanDos.fbx",
+      "emplacement": "Dos",
+      "accroche": "SOCKET_Dos",
+      "triangles": [
+        100,
+        46,
+        20
+      ],
+      "roles": [
+        "Ouvrier",
+        "Militaire"
+      ],
+      "description": "Jerrican de carburant"
+    },
+    "Ceinture_Outils": {
+      "fichier": "SM_Equip_Ceinture_CeintureOutils.fbx",
+      "emplacement": "Ceinture",
+      "accroche": "SOCKET_Ceinture",
+      "triangles": [
+        156,
+        72,
+        28
+      ],
+      "roles": [
+        "Ouvrier",
+        "Carrier"
+      ],
+      "description": "Ceinture porte‑outils, marteau, mètre"
+    },
+    "Ceinture_Tactique": {
+      "fichier": "SM_Equip_Ceinture_CeintureTactique.fbx",
+      "emplacement": "Ceinture",
+      "accroche": "SOCKET_Ceinture",
+      "triangles": [
+        156,
+        76,
+        30
+      ],
+      "roles": [
+        "Militaire"
+      ],
+      "description": "Porte‑chargeurs, étui, gourde"
+    },
+    "Ceinture_Survie": {
+      "fichier": "SM_Equip_Ceinture_CeintureSurvie.fbx",
+      "emplacement": "Ceinture",
+      "accroche": "SOCKET_Ceinture",
+      "triangles": [
+        164,
+        80,
+        36
+      ],
+      "roles": [
+        "Pisteur",
+        "Milicien",
+        "Nettoyeur"
+      ],
+      "description": "Gourde, couteau, pochette"
+    },
+    "Ceinture_Medicale": {
+      "fichier": "SM_Equip_Ceinture_CeintureMedicale.fbx",
+      "emplacement": "Ceinture",
+      "accroche": "SOCKET_Ceinture",
+      "triangles": [
+        188,
+        88,
+        40
+      ],
+      "roles": [
+        "Medecin"
+      ],
+      "description": "Trousse et bandages"
+    },
+    "Hache": {
+      "fichier": "SM_Equip_MainDroite_Hache.fbx",
+      "emplacement": "MainDroite",
+      "accroche": "SOCKET_MainDroite",
+      "triangles": [
+        60,
+        24,
+        10
+      ],
+      "roles": [
+        "Ouvrier"
+      ],
+      "description": "Couper du bois"
+    },
+    "Pioche": {
+      "fichier": "SM_Equip_MainDroite_Pioche.fbx",
+      "emplacement": "MainDroite",
+      "accroche": "SOCKET_MainDroite",
+      "triangles": [
+        36,
+        36,
+        36
+      ],
+      "roles": [
+        "Carrier"
+      ],
+      "description": "Tailler la pierre"
+    },
+    "Pelle": {
+      "fichier": "SM_Equip_MainDroite_Pelle.fbx",
+      "emplacement": "MainDroite",
+      "accroche": "SOCKET_MainDroite",
+      "triangles": [
+        48,
+        20,
+        8
+      ],
+      "roles": [
+        "Ouvrier",
+        "Carrier"
+      ],
+      "description": "Creuser, remblayer"
+    },
+    "Marteau": {
+      "fichier": "SM_Equip_MainDroite_Marteau.fbx",
+      "emplacement": "MainDroite",
+      "accroche": "SOCKET_MainDroite",
+      "triangles": [
+        68,
+        34,
+        14
+      ],
+      "roles": [
+        "Ouvrier"
+      ],
+      "description": "Construire, réparer"
+    },
+    "Houe": {
+      "fichier": "SM_Equip_MainDroite_Houe.fbx",
+      "emplacement": "MainDroite",
+      "accroche": "SOCKET_MainDroite",
+      "triangles": [
+        24,
+        24,
+        24
+      ],
+      "roles": [
+        "Ouvrier"
+      ],
+      "description": "Potager, champs"
+    },
+    "Batte_Cloutee": {
+      "fichier": "SM_Equip_MainDroite_BatteCloutee.fbx",
+      "emplacement": "MainDroite",
+      "accroche": "SOCKET_MainDroite",
+      "triangles": [
+        128,
+        56,
+        32
+      ],
+      "roles": [
+        "Milicien"
+      ],
+      "description": "Arme improvisée"
+    },
+    "Machette": {
+      "fichier": "SM_Equip_MainDroite_Machette.fbx",
+      "emplacement": "MainDroite",
+      "accroche": "SOCKET_MainDroite",
+      "triangles": [
+        36,
+        36,
+        36
+      ],
+      "roles": [
+        "Milicien",
+        "Pisteur"
+      ],
+      "description": "Arme et débroussaillage"
+    },
+    "Pied_De_Biche": {
+      "fichier": "SM_Equip_MainDroite_PiedDeBiche.fbx",
+      "emplacement": "MainDroite",
+      "accroche": "SOCKET_MainDroite",
+      "triangles": [
+        36,
+        36,
+        36
+      ],
+      "roles": [
+        "Nettoyeur",
+        "Milicien"
+      ],
+      "description": "Démonter, ouvrir, frapper"
+    },
+    "Fusil": {
+      "fichier": "SM_Equip_MainDroite_Fusil.fbx",
+      "emplacement": "MainDroite",
+      "accroche": "SOCKET_MainDroite",
+      "triangles": [
+        164,
+        82,
+        40
+      ],
+      "roles": [
+        "Militaire"
+      ],
+      "description": "Fusil tenu en main"
+    },
+    "Arbalete": {
+      "fichier": "SM_Equip_MainDroite_Arbalete.fbx",
+      "emplacement": "MainDroite",
+      "accroche": "SOCKET_MainDroite",
+      "triangles": [
+        80,
+        38,
+        18
+      ],
+      "roles": [
+        "Pisteur"
+      ],
+      "description": "Arbalète tenue en main"
+    },
+    "Seau": {
+      "fichier": "SM_Equip_MainDroite_Seau.fbx",
+      "emplacement": "MainDroite",
+      "accroche": "SOCKET_MainDroite",
+      "triangles": [
+        48,
+        24,
+        12
+      ],
+      "roles": [
+        "Ouvrier"
+      ],
+      "description": "Puits, eau"
+    },
+    "Sac_Medical": {
+      "fichier": "SM_Equip_MainGauche_SacMedical.fbx",
+      "emplacement": "MainGauche",
+      "accroche": "SOCKET_MainGauche",
+      "triangles": [
+        128,
+        58,
+        24
+      ],
+      "roles": [
+        "Medecin"
+      ],
+      "description": "Sac médical"
+    },
+    "Lampe_Torche": {
+      "fichier": "SM_Equip_MainGauche_LampeTorche.fbx",
+      "emplacement": "MainGauche",
+      "accroche": "SOCKET_MainGauche",
+      "triangles": [
+        84,
+        36,
+        18
+      ],
+      "roles": [
+        "Pisteur",
+        "Militaire"
+      ],
+      "description": "Lampe torche (nuit)"
+    },
+    "Bouclier_Panneau": {
+      "fichier": "SM_Equip_MainGauche_BouclierPanneau.fbx",
+      "emplacement": "MainGauche",
+      "accroche": "SOCKET_MainGauche",
+      "triangles": [
+        80,
+        26,
+        12
+      ],
+      "roles": [
+        "Milicien"
+      ],
+      "description": "Bouclier fait d'un panneau STOP"
+    }
+  },
+  "dotations": {
+    "Ouvrier": {
+      "Tete": "Casquette",
+      "Torse": "Gilet_HauteVisibilite",
+      "Dos": "Hotte_Bois",
+      "Ceinture": "Ceinture_Outils",
+      "MainDroite": "Hache"
+    },
+    "Carrier": {
+      "Tete": "Casque_Chantier",
+      "Ceinture": "Ceinture_Outils",
+      "MainDroite": "Pioche"
+    },
+    "Milicien": {
+      "Tete": "Bandana",
+      "Torse": "Plastron_Bricole",
+      "Ceinture": "Ceinture_Survie",
+      "MainDroite": "Batte_Cloutee",
+      "MainGauche": "Bouclier_Panneau"
+    },
+    "Militaire": {
+      "Tete": "Casque_Militaire",
+      "Torse": "Gilet_Tactique",
+      "Ceinture": "Ceinture_Tactique",
+      "MainDroite": "Fusil"
+    },
+    "Pisteur": {
+      "Tete": "Chapeau_Pisteur",
+      "Dos": "Arbalete_Dos",
+      "Ceinture": "Ceinture_Survie",
+      "MainDroite": "Machette",
+      "MainGauche": "Lampe_Torche"
+    },
+    "Medecin": {
+      "Torse": "Brassard_Medecin",
+      "Dos": "Sac_Petit",
+      "Ceinture": "Ceinture_Medicale",
+      "MainGauche": "Sac_Medical"
+    },
+    "Nettoyeur": {
+      "Tete": "Masque_Gaz",
+      "Torse": "Gilet_HauteVisibilite",
+      "Ceinture": "Ceinture_Survie",
+      "MainDroite": "Pied_De_Biche"
+    }
+  }
+}

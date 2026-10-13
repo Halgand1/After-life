@@ -1,0 +1,4 @@
+Cerf       triangles LOD0/1/2 = 660/316/136  animations = Animal_Repos, Animal_Marche, Animal_Fuite, Animal_Brouter
+Sanglier   triangles LOD0/1/2 = 792/384/150  animations = Animal_Repos, Animal_Marche, Animal_Charge, Animal_Fouir
+Cheval     triangles LOD0/1/2 = 716/354/136  animations = Animal_Repos, Animal_Marche, Animal_Galop, Animal_Brouter
+Vache      triangles LOD0/1/2 = 840/410/160  animations = Animal_Repos, Animal_Marche, Animal_Course, Animal_Brouter
