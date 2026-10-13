@@ -488,8 +488,14 @@ namespace AfterCity.Game.World
         // ---------------------------------------------------------------- constructions
 
         /// <summary>Modele d'un batiment du moteur. Faux si absent du kit (le terrain garde le modele de test).</summary>
+        /// <summary>Vrai quand les logements sont affiches par HomeView (le terrain les laisse vides).</summary>
+        public static bool HomesAsObjects { get; set; }
+
         public static bool Building(DecorKit.Builder kd, GeneratedMap map, BuildingType bt, Vector3 corner, int size, float r)
         {
+            if (HomesAsObjects && HomeSpec.IsHome(bt)) return true;
+            if (bt == BuildingType.Well)
+                return kd.Add("Puits_Fini", corner + new Vector3(size * Cell * 0.5f, 0, size * Cell * 0.5f), 0f, 1f);
             string name;
             float scale = 1f;
             switch (bt)

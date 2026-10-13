@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using AfterCity.Core.Sim;
 using AfterCity.Core.World;
 using UnityEngine;
@@ -101,6 +102,7 @@ namespace AfterCity.Game
             Toolbar(w, h);
             TutorialPanel(w, h);
             Survivors();
+            HomePanel();
             MinimapPanel(h);
             float bottom = ExpeditionPanel(w);
             WorkshopPanel(w, bottom);
@@ -220,6 +222,73 @@ namespace AfterCity.Game
             GUI.Box(hr, GUIContent.none, _panel);
             GUI.Label(hr, hint, hintStyle);
         }
+        /// <summary>Panneau du logement selectionne : habitants, etagere, confort, consommation, amelioration.</summary>
+        void HomePanel()
+        {
+            var view = HomeView.Selected;
+            var b = view != null ? view.Building : null;
+            var colony = _game.Colony;
+            if (b == null || b.Home == null || !colony.Buildings.Contains(b)) { HomeView.Selected = null; return; }
+            var spec = b.Home;
+            float y0 = 80 + 46 + colony.Villagers.Count * 26 + 10;
+            float height = 236 + spec.Wants.Count * 30;
+            var r = Panel(new Rect(12, y0, 360, height));
+            GUI.Label(new Rect(r.x + 16, r.y + 8, 280, 28), BuildingSpec.Of(b.Type).Name + (b.Built ? "" : " <color=#f0b49c>(chantier)</color>"), _title);
+            if (GUI.Button(new Rect(r.xMax - 40, r.y + 10, 28, 26), "x", _button)) { HomeView.Selected = null; return; }
+
+            var names = new System.Text.StringBuilder();
+            foreach (var v in b.Residents) { if (names.Length > 0) names.Append(", "); names.Append(v.Name); }
+            float y = r.y + 42;
+            GUI.Label(new Rect(r.x + 16, y, 330, 22), $"Habitants <b>{b.Residents.Count}/{spec.Places}</b>  <color=#b0b0aa>{names}</color>", _small);
+            y += 28;
+            foreach (var res in spec.Wants)
+            {
+                int have = b.Shelf(res), cap = Mathf.Max(1, b.ShelfCapacity(res));
+                bool missing = false;
+                foreach (var m in b.Missing) if (m == res) missing = true;
+                string label = $"{Capitalize(GameRoot.ResourceName(res))} {have}/{cap}";
+                GUI.Label(new Rect(r.x + 16, y, 130, 22), missing ? $"<color=#ff7a66>{label}</color>" : label, _small);
+                var bar = new Rect(r.x + 150, y + 6, 190, 12);
+                GUI.color = new Color(1, 1, 1, 0.15f);
+                GUI.DrawTexture(bar, _white);
+                GUI.color = missing ? new Color(0.95f, 0.40f, 0.30f) : new Color(0.55f, 0.80f, 0.45f);
+                GUI.DrawTexture(new Rect(bar.x, bar.y, bar.width * Mathf.Clamp01((float)have / cap), bar.height), _white);
+                GUI.color = Color.white;
+                y += 30;
+            }
+            if (b.Missing.Count > 0)
+                GUI.Label(new Rect(r.x + 16, y, 330, 22), $"<color=#ff7a66>Il manque : {GameRoot.MissingText(b)}</color>", _small);
+            y += 24;
+            GUI.Label(new Rect(r.x + 16, y, 330, 22), b.Comfortable
+                ? "<color=#9fe08a><b>Confortable</b> : travail +10 %</color>"
+                : $"Confort {b.ComfortDays}/{Building.DaysToComfort} jours", _small);
+            y += 24;
+            int residents = Mathf.Max(1, b.Residents.Count);
+            var per = new System.Text.StringBuilder($"Par jour : {spec.FoodPerResident * residents:0.#} vivres");
+            if (spec.WoodPerDay > 0) per.Append($", {spec.WoodPerDay:0.#} bois");
+            if (spec.WaterPerResident > 0) per.Append($", {spec.WaterPerResident * residents:0.#} eau");
+            if (spec.MedicinePerDay > 0) per.Append($", {spec.MedicinePerDay:0.##} medicaments");
+            GUI.Label(new Rect(r.x + 16, y, 330, 22), $"<color=#c8c8c0>{per}</color>", _small);
+            y += 30;
+
+            var next = spec.UpgradeTo;
+            if (next == null)
+            {
+                GUI.Label(new Rect(r.x + 16, y, 330, 22), "<color=#9a9a96>Logement le plus grand de sa lignee</color>", _small);
+                return;
+            }
+            var ns = BuildingSpec.Of(next.Value);
+            string cost = ns.Stone > 0 ? $"{ns.Wood} bois, {ns.Stone} pierre" : $"{ns.Wood} bois";
+            string why = colony.WhyNoUpgrade(b);
+            GUI.enabled = why == null;
+            if (GUI.Button(new Rect(r.x + 16, y, 328, 32), $"Ameliorer en {ns.Name} ({cost})", _button) && colony.Upgrade(b))
+                _game.Say($"{ns.Name} : la maison s'agrandit");
+            GUI.enabled = true;
+            if (why != null) GUI.Label(new Rect(r.x + 16, y + 34, 330, 22), $"<color=#b0b0aa>{why}</color>", _small);
+        }
+
+        static string Capitalize(string s) => string.IsNullOrEmpty(s) ? s : char.ToUpperInvariant(s[0]) + s.Substring(1);
+
         void Survivors()
         {
             var colony = _game.Colony;

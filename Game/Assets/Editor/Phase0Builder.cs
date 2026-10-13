@@ -238,6 +238,10 @@ namespace AfterCity.EditorTools
             boot.freeCamera = freeCam;
             boot.decorKit = DecorKitBuilder.Build();
             boot.peuplement = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Art/Decor/peuplement.json");
+            // Logements et objets d'etagere : instancies en jeu (toit amovible, etagere garnie)
+            boot.artPrefabs = AssetDatabase.FindAssets("t:Model", new[] { "Assets/Art/Batiments/Logements" })
+                .Select(AssetDatabase.GUIDToAssetPath).Select(AssetDatabase.LoadAssetAtPath<GameObject>).Where(g => g != null).ToArray();
+            Debug.Log($"[AfterCity] Logements : {boot.artPrefabs.Length} modeles ({string.Join(", ", boot.artPrefabs.Where(g => g.name.StartsWith("SM_Logement")).Select(g => g.name))})");
             Debug.Log("[AfterCity] Peuplement : " + (boot.peuplement != null ? "peuplement.json" : "ABSENT, placement code en dur"));
             boot.animalPrefabs = EnsureAnimals("SK_Cerf", "SK_Sanglier");
             boot.chickenPrefabs = EnsureAnimals("SK_Poule_Blanche", "SK_Poule_Rousse", "SK_Poule_Noire");

@@ -29,7 +29,8 @@ namespace AfterCity.Game
                                 new ToolItem(JobType.Pick), new ToolItem(JobType.Search), new ToolItem(JobType.Salvage), new ToolItem(JobType.Hunt) }),
             ("Terrain", new[] { new ToolItem(JobType.Dig), new ToolItem(JobType.Raise), new ToolItem(JobType.Road), new ToolItem(JobType.Asphalt) }),
             ("Defense", new[] { new ToolItem(JobType.Barricade), new ToolItem(BuildingType.Watchtower) }),
-            ("Batiments", new[] { new ToolItem(BuildingType.Shelter), new ToolItem(BuildingType.Field),
+            ("Batiments", new[] { new ToolItem(BuildingType.Tent), new ToolItem(BuildingType.Shelter), new ToolItem(BuildingType.Hostel),
+                                  new ToolItem(BuildingType.Well), new ToolItem(BuildingType.Field),
                                   new ToolItem(BuildingType.ExpeditionPost), new ToolItem(BuildingType.Workshop) }),
         };
 
@@ -159,7 +160,9 @@ namespace AfterCity.Game
             for (int i = 0; i < items.Length; i++)
                 if (Input.GetKeyDown(KeyCode.Alpha1 + i) || Input.GetKeyDown(KeyCode.Keypad1 + i))
                     if (IsAvailable(items[i])) Toggle(items[i]);
-            if (Input.GetKeyDown(KeyCode.Escape)) { Current = null; CurrentBuilding = null; _dragStart = null; }
+            if (Input.GetKeyDown(KeyCode.Escape)) { Current = null; CurrentBuilding = null; _dragStart = null; HomeView.Selected = null; }
+            // I : vue en coupe de tous les logements (toits masques), comme dans K&C
+            if (Input.GetKeyDown(KeyCode.I)) { HomeView.RoofsHidden = !HomeView.RoofsHidden; Say(HomeView.RoofsHidden ? "Toits masques (I)" : "Toits affiches (I)"); }
 
             var cam = Camera.main;
             bool overUi = _hud != null && _hud.IsPointerOverUi(Input.mousePosition);
@@ -171,6 +174,12 @@ namespace AfterCity.Game
             {
                 var b = _game.Colony.PlaceBuilding(CurrentBuilding.Value, Hover.Value);
                 Say(b != null ? $"Chantier : {BuildingSpec.Of(b.Type).Name}" : PlaceError(CurrentBuilding.Value));
+            }
+            else if (Hover.HasValue && !overUi && !Current.HasValue && Input.GetMouseButtonDown(0))
+            {
+                // Sans outil : clic sur un logement = panneau du logement (et vue en coupe)
+                var b = _game.Colony.BuildingAt(Hover.Value);
+                HomeView.Selected = b != null && b.Home != null ? _game.HomeViewOf(b) : null;
             }
             else if (!overUi && cam != null && HuntClick(cam))
             {

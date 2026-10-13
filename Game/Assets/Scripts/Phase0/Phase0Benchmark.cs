@@ -5,6 +5,7 @@ using System.IO;
 using AfterCity.Core.Sim;
 using AfterCity.Core.World;
 using AfterCity.Game;
+using AfterCity.Game.World;
 using UnityEngine;
 
 namespace AfterCity.Game.Phase0
@@ -28,6 +29,12 @@ namespace AfterCity.Game.Phase0
             if (s >= 0 && s + 1 < args.Length && float.TryParse(args[s + 1], NumberStyles.Float, CultureInfo.InvariantCulture, out var soakSeconds))
             {
                 StartCoroutine(Soak(soakSeconds));
+                return;
+            }
+            int homesArg = Array.IndexOf(args, "-aftercity-homes");
+            if (homesArg >= 0 && homesArg + 1 < args.Length)
+            {
+                StartCoroutine(HomesTest(args[homesArg + 1]));
                 return;
             }
             int huntArg = Array.IndexOf(args, "-aftercity-hunt");
@@ -218,6 +225,128 @@ namespace AfterCity.Game.Phase0
             File.WriteAllText(Path.Combine(dir, "chasse.txt"), report);
             Debug.Log("[AfterCity] Chasse fin : " + report);
             yield return Wait(0.5f);
+            Application.Quit(0);
+        }
+
+        /// <summary>Premier coin libre pres de la ferme pour ce batiment (avec une marge pour qu'il puisse s'agrandir).</summary>
+        static GridPos? FreeSpot(Colony colony, GridPos farm, BuildingType type, int margin)
+        {
+            int size = BuildingSpec.Of(type).Size + margin;
+            for (int r = 6; r < 30; r++)
+            for (int dy = -r; dy <= r; dy++)
+            for (int dx = -r; dx <= r; dx++)
+            {
+                if (Math.Max(Math.Abs(dx), Math.Abs(dy)) != r) continue;
+                var o = new GridPos(farm.X + dx, farm.Y + dy);
+                bool ok = true;
+                for (int y = -margin; y < size && ok; y++)
+                for (int x = -margin; x < size && ok; x++)
+                    ok = colony.CanPlace(BuildingType.Tent, new GridPos(o.X + x, o.Y + y));
+                if (ok && colony.CanPlace(type, o)) return o;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Essai des logements : tente, abri, foyer et puits pres de la ferme avec du stock, vue en coupe, panneau,
+        /// jours sautes jusqu'au confort, puis amelioration de l'abri en maison en bois (qui doit s'agrandir).
+        /// </summary>
+        IEnumerator HomesTest(string dir)
+        {
+            Directory.CreateDirectory(dir);
+            QualitySettings.vSyncCount = 0;
+            Application.targetFrameRate = -1;
+            if (freeCamera != null) freeCamera.edgePan = false;
+            var game = FindAnyObjectByType<GameRoot>();
+            var hud = game.GetComponent<Hud>();
+            if (hud != null) hud.CloseWelcome();
+            var tuto = game.GetComponent<Tutorial>();
+            if (tuto != null) tuto.Disable();
+            var colony = game.Colony;
+            var farm = game.Map.FarmCenter;
+            var grid = game.Map.Grid;
+            colony.IgnoreRequirements = true;
+            game.Speed = 1;
+            yield return Wait(1.5f);
+            float fpsBefore = 0; int fb = 0;
+            float t0 = Time.realtimeSinceStartup;
+            while (Time.realtimeSinceStartup - t0 < 3f) { fpsBefore += Time.unscaledDeltaTime; fb++; yield return null; }
+
+            colony.Stock.Add(ResourceType.Food, 200);
+            colony.Stock.Add(ResourceType.Wood, 300);
+            colony.Stock.Add(ResourceType.Stone, 100);
+            colony.Stock.Add(ResourceType.Water, 120);
+            colony.Stock.Add(ResourceType.Medicine, 30);
+            var placed = new System.Collections.Generic.List<Building>();
+            Building shelter = null;
+            foreach (var t in new[] { BuildingType.Shelter, BuildingType.Tent, BuildingType.Hostel, BuildingType.Well })
+            {
+                var o = FreeSpot(colony, farm, t, t == BuildingType.Shelter ? 1 : 0);
+                if (!o.HasValue) { Debug.Log($"[AfterCity] Logements : pas de place pour {t}"); continue; }
+                var b = colony.AddPrebuilt(t, o.Value);
+                placed.Add(b);
+                if (t == BuildingType.Shelter) shelter = b;
+                Debug.Log($"[AfterCity] Logements : {BuildingSpec.Of(t).Name} en {o.Value}");
+            }
+            colony.AssignHomes();
+            colony.RefillShelves();
+            yield return Wait(1f);
+
+            // Camera sur l'ensemble des logements
+            var center = Vector3.zero;
+            foreach (var b in placed) center += TerrainMeshBuilder.CellCenter(grid, b.Origin);
+            center /= Mathf.Max(1, placed.Count);
+            HomeView.RoofsHidden = true;
+            freeCamera.Distance = 26f;
+            freeCamera.Focus(center);
+            yield return Wait(1.2f);
+            ScreenCapture.CaptureScreenshot(Path.Combine(dir, "maisons_coupe.png"));
+            yield return Wait(0.3f);
+            HomeView.RoofsHidden = false;
+
+            if (shelter == null) { Debug.Log("[AfterCity] Logements : pas d'abri"); Application.Quit(1); yield break; }
+            HomeView.Selected = game.HomeViewOf(shelter);
+            freeCamera.Distance = 14f;
+            freeCamera.Focus(TerrainMeshBuilder.CellCenter(grid, shelter.Origin) + new Vector3(2f, 0, 2f));
+            yield return Wait(1f);
+            ScreenCapture.CaptureScreenshot(Path.Combine(dir, "panneau_maison.png"));
+            yield return Wait(0.3f);
+
+            // Jours sautes : remplissage de l'apres-midi, puis le matin (repas, consommation, confort)
+            for (int day = 0; day < 6 && !shelter.Comfortable; day++)
+            {
+                colony.Stock.Add(ResourceType.Food, 20);
+                colony.Stock.Add(ResourceType.Wood, 10);
+                foreach (var h in new[] { 13.9, 14.2, 5.8, 6.2 })
+                {
+                    colony.SkipToHour(h);
+                    yield return null;
+                    yield return null;
+                }
+                Debug.Log($"[AfterCity] Logements : jour {colony.Day}, abri confort {shelter.ComfortDays}/{Building.DaysToComfort}, manque {GameRoot.MissingText(shelter)}, habitants {shelter.Residents.Count}");
+            }
+            var before = $"{shelter.Type} {shelter.Origin} taille {shelter.Size}";
+            string why = colony.WhyNoUpgrade(shelter);
+            bool up = colony.Upgrade(shelter);
+            Debug.Log($"[AfterCity] Logements : amelioration {(up ? "OK" : "refusee : " + why)} : {before} -> {shelter.Type} {shelter.Origin} taille {shelter.Size}");
+            colony.SkipToHour(10);
+            yield return Wait(1.2f);
+            freeCamera.Distance = 16f;
+            freeCamera.Focus(TerrainMeshBuilder.CellCenter(grid, shelter.Origin) + new Vector3(3f, 0, 3f));
+            yield return Wait(1f);
+            ScreenCapture.CaptureScreenshot(Path.Combine(dir, "amelioration.png"));
+            yield return Wait(0.3f);
+
+            HomeView.Selected = null;
+            float fpsAfter = 0; int fa = 0;
+            t0 = Time.realtimeSinceStartup;
+            freeCamera.Distance = 36f;
+            freeCamera.Focus(TerrainMeshBuilder.CellCenter(grid, farm));
+            while (Time.realtimeSinceStartup - t0 < 3f) { fpsAfter += Time.unscaledDeltaTime; fa++; yield return null; }
+            string report = $"fps_sans_logements={fb / Mathf.Max(0.01f, fpsBefore):F0} fps_avec_logements={fa / Mathf.Max(0.01f, fpsAfter):F0} amelioration={up}";
+            File.WriteAllText(Path.Combine(dir, "logements.txt"), report);
+            Debug.Log("[AfterCity] Logements fin : " + report);
+            yield return Wait(0.3f);
             Application.Quit(0);
         }
 

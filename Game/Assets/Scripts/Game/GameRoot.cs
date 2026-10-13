@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using AfterCity.Core.Sim;
 using AfterCity.Core.Util;
 using AfterCity.Core.World;
@@ -49,6 +50,45 @@ namespace AfterCity.Game
         public Material smokeMaterial;
         /// <summary>Table de peuplement de l'equipe 3D (Assets/Art/Decor/peuplement.json).</summary>
         public TextAsset peuplement;
+        /// <summary>Modeles de l'equipe 3D utilises en objets (logements, objets d'etagere), retrouves par nom.</summary>
+        public GameObject[] artPrefabs;
+
+        Dictionary<string, GameObject> _prefabsByName;
+        readonly Dictionary<Building, HomeView> _homeViews = new Dictionary<Building, HomeView>();
+        readonly List<Building> _goneHomes = new List<Building>();
+        Transform _homeRoot;
+        float _homeScan;
+
+        public GameObject PrefabNamed(string name)
+        {
+            if (name == null) return null;
+            if (_prefabsByName == null)
+            {
+                _prefabsByName = new Dictionary<string, GameObject>();
+                if (artPrefabs != null) foreach (var p in artPrefabs) if (p != null) _prefabsByName[p.name] = p;
+            }
+            return _prefabsByName.TryGetValue(name, out var go) ? go : null;
+        }
+
+        public HomeView HomeViewOf(Building b) => b != null && _homeViews.TryGetValue(b, out var v) ? v : null;
+
+        /// <summary>Cree la vue des nouveaux logements (meme en chantier) et retire celles des logements disparus.</summary>
+        void SyncHomes()
+        {
+            if (PrefabNamed("SM_Logement_Abri") == null) return;
+            if (_homeRoot == null) { _homeRoot = new GameObject("Logements").transform; _homeRoot.SetParent(transform, false); }
+            foreach (var b in Colony.Buildings)
+                if (b.Home != null && !_homeViews.ContainsKey(b)) _homeViews[b] = HomeView.Create(b, this, _homeRoot);
+            _goneHomes.Clear();
+            foreach (var kv in _homeViews)
+                if (!Colony.Buildings.Contains(kv.Key) || kv.Key.Home == null) _goneHomes.Add(kv.Key);
+            foreach (var b in _goneHomes)
+            {
+                if (HomeView.Selected == _homeViews[b]) HomeView.Selected = null;
+                Destroy(_homeViews[b].gameObject);
+                _homeViews.Remove(b);
+            }
+        }
         public Material mistMaterial;
         public Light sun;
 
@@ -84,6 +124,8 @@ namespace AfterCity.Game
             Colony = Colony.StartAtFarm(Map, survivors);
             Horde = new Horde(Colony, Map.FarmCenter, seed);
             DecorKit.Current = decorKit;
+            // Les logements sont des objets a part (toit amovible, etagere) : le terrain ne les dessine plus
+            DecorPlacer.HomesAsObjects = PrefabNamed("SM_Logement_Abri") != null;
             Terrain = TerrainView.Create(Map, terrainMaterial, transform);
             // Faune du moteur (cerfs, sangliers) : neutre tant qu'on ne la chasse pas
             Colony.Wildlife = Wildlife.Populate(Map, new Rng(seed ^ 0x5EEDF00Dul));
@@ -113,6 +155,11 @@ namespace AfterCity.Game
                 else Say("Le cerf s'enfuit");
             };
             Colony.Wildlife.Charged += (a, v, damage) => { if (damage > 0) Say($"{v.Name} est blesse par un sanglier"); };
+            Colony.HomeComfortChanged += b => Say(b.Comfortable
+                ? $"{BuildingSpec.Of(b.Type).Name} : confortable, ses habitants travaillent 10 % plus vite"
+                : $"{BuildingSpec.Of(b.Type).Name} : n'est plus confortable (il manque {MissingText(b)})");
+            Colony.WaterDrawn += w => Say((Time.unscaledTime - AlertTime < 1f && Alert != null ? Alert + "  -  " : "") + $"Puits : +{w} eau");
+            Colony.HomeUpgraded += b => Say($"Logement ameliore : {BuildingSpec.Of(b.Type).Name}");
             Colony.Harvested += n => { if (n > 0) Say($"Recolte du soir : +{n} vivres"); };
             Colony.Ate += (eaten, hungry) =>
             {
@@ -176,6 +223,13 @@ namespace AfterCity.Game
             }
         }
 
+        public static string MissingText(Building b)
+        {
+            var sb = new System.Text.StringBuilder();
+            foreach (var r in b.Missing) { if (sb.Length > 0) sb.Append(", "); sb.Append(ResourceName(r)); }
+            return sb.Length > 0 ? sb.ToString() : "rien";
+        }
+
         public static string ResourceName(ResourceType t)
         {
             switch (t)
@@ -189,6 +243,7 @@ namespace AfterCity.Game
                 case ResourceType.Electronics: return "electronique";
                 case ResourceType.Steel: return "acier";
                 case ResourceType.Medicine: return "medicaments";
+                case ResourceType.Water: return "eau";
                 case ResourceType.Metal: return "metal";
                 case ResourceType.Ceramic: return "ceramique";
                 default: return t.ToString().ToLowerInvariant();
@@ -244,6 +299,8 @@ namespace AfterCity.Game
                 }
             }
             SyncZombies();
+            _homeScan -= Time.unscaledDeltaTime;
+            if (_homeScan <= 0f) { _homeScan = 0.25f; SyncHomes(); }
             UpdateSun();
         }
 
