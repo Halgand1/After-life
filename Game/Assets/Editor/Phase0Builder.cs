@@ -239,6 +239,8 @@ namespace AfterCity.EditorTools
             boot.decorKit = DecorKitBuilder.Build();
             boot.animalPrefabs = EnsureAnimals("SK_Cerf", "SK_Sanglier");
             boot.chickenPrefabs = EnsureAnimals("SK_Poule_Blanche", "SK_Poule_Rousse", "SK_Poule_Noire");
+            boot.smokeMaterial = EnsureParticleMaterial("Assets/Materials/MAT_Fumee.mat");
+            boot.mistMaterial = EnsureParticleMaterial("Assets/Materials/MAT_Brume.mat");
             boot.sun = light;
 
             var bench = new GameObject("Benchmark").AddComponent<Phase0Benchmark>();
@@ -398,6 +400,30 @@ namespace AfterCity.EditorTools
                 UnityEngine.Object.DestroyImmediate(instance);
             }
             return prefabs.ToArray();
+        }
+
+        /// <summary>Materiau de particules URP transparent (fumee, brume), texture douce par defaut d'Unity.</summary>
+        static Material EnsureParticleMaterial(string path)
+        {
+            var shader = Shader.Find("Universal Render Pipeline/Particles/Unlit");
+            if (shader == null) { Debug.LogWarning("[AfterCity] Shader de particules URP introuvable"); return null; }
+            AssetDatabase.DeleteAsset(path);
+            var mat = new Material(shader) { name = Path.GetFileNameWithoutExtension(path) };
+            var tex = AssetDatabase.GetBuiltinExtraResource<Texture2D>("Default-Particle.psd");
+            if (tex != null) mat.SetTexture("_BaseMap", tex);
+            mat.SetColor("_BaseColor", Color.white);
+            mat.SetFloat("_Surface", 1f);
+            mat.SetFloat("_Blend", 0f);
+            mat.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
+            mat.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
+            mat.SetFloat("_ZWrite", 0f);
+            mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            mat.renderQueue = (int)RenderQueue.Transparent;
+            mat.SetOverrideTag("RenderType", "Transparent");
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            AssetDatabase.CreateAsset(mat, path);
+            Debug.Log($"[AfterCity] {mat.name} : texture {(tex != null ? tex.name : "aucune")}");
+            return mat;
         }
 
         /// <summary>« ANIM_Animal_Marche » ou « Poule_Marche » -> « Marche ».</summary>

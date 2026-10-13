@@ -44,6 +44,9 @@ namespace AfterCity.Game
         public GameObject[] animalPrefabs;
         /// <summary>Poules de la ferme.</summary>
         public GameObject[] chickenPrefabs;
+        /// <summary>Particules d'ambiance (fumee du feu de camp, brume en foret).</summary>
+        public Material smokeMaterial;
+        public Material mistMaterial;
         public Light sun;
 
         public GeneratedMap Map { get; private set; }
@@ -129,6 +132,7 @@ namespace AfterCity.Game
             gameObject.AddComponent<OrderTool>().Init(this);
             gameObject.AddComponent<Minimap>().Init(this);
             gameObject.AddComponent<NightLights>().Init(this);
+            gameObject.AddComponent<AtmosphereFx>().Init(this, smokeMaterial, mistMaterial);
             gameObject.AddComponent<Tutorial>().Init(this);
             gameObject.AddComponent<Hud>().Init(this);
             Debug.Log($"[AfterCity] Carte {width}x{height} graine {seed}, ferme en {Map.FarmCenter}, {Colony.Villagers.Count} survivants");

@@ -108,6 +108,11 @@ namespace AfterCity.EditorTools
             var mat = EnsurePaletteMaterial();
             var palette = AssetDatabase.FindAssets("T_Palette_256 t:Texture2D", new[] { Folder.TrimEnd('/') })
                 .Select(g => AssetDatabase.LoadAssetAtPath<Texture2D>(AssetDatabase.GUIDToAssetPath(g))).FirstOrDefault();
+            if (mat != null && mat.HasProperty("_Rim") && mat.GetFloat("_Rim") < 0.01f)
+            {
+                mat.SetFloat("_Rim", 0.35f);
+                EditorUtility.SetDirty(mat);
+            }
             if (mat != null && palette != null && mat.GetTexture("_BaseMap") != palette)
             {
                 mat.SetTexture("_BaseMap", palette);

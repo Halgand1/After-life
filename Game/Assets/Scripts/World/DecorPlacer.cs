@@ -103,6 +103,9 @@ namespace AfterCity.Game.World
                 if (Mathf.Abs(x - farm.X) <= clear && Mathf.Abs(y - farm.Y) <= clear) continue;
                 var p = new GridPos(x, y);
                 float r = Hash(x, y, 200);
+                // Pres de la ferme, peu de debris : on y voit les survivants et les rodeurs de loin
+                int farmDist = Mathf.Max(Mathf.Abs(x - farm.X), Mathf.Abs(y - farm.Y));
+                if (farmDist < 18 && r >= 0.05f && Hash(x, y, 207) < 0.75f) continue;
                 if (r < 0.05f)
                     TryProp(map, l, Pick(Hash(x, y, 201), houses), p, 1, Mathf.Round(Hash(x, y, 202) * 4f) * 90f + (Hash(x, y, 203) - 0.5f) * 10f, 1f, false);
                 else if (r < 0.16f)

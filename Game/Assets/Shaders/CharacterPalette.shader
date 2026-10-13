@@ -9,6 +9,7 @@ Shader "AfterCity/CharacterPalette"
         _DirtColor ("Couleur de salete", Color) = (0.30, 0.24, 0.18, 1)
         _DirtStrength ("Force de la salete", Range(0, 1)) = 0.6
         _Smoothness ("Brillance", Range(0, 1)) = 0.15
+        _Rim ("Liseré (lisibilite)", Range(0, 1)) = 0
     }
     SubShader
     {
@@ -44,6 +45,7 @@ Shader "AfterCity/CharacterPalette"
                 half4 _DirtColor;
                 half _DirtStrength;
                 half _Smoothness;
+                half _Rim;
             CBUFFER_END
 
             struct Attributes
@@ -102,7 +104,10 @@ Shader "AfterCity/CharacterPalette"
                 LIGHT_LOOP_END
                 #endif
 
-                half3 col = MixFog(albedo * lit, i.fog);
+                // Liseré clair sur les bords (personnages seulement) : se detachent du decor vu de loin
+                half3 v = normalize(GetWorldSpaceViewDir(i.positionWS));
+                half rim = pow(1.0 - saturate(dot(n, v)), 3.0) * _Rim;
+                half3 col = MixFog(albedo * lit + rim * half3(1.0, 0.92, 0.80), i.fog);
                 return half4(col, 1);
             }
             ENDHLSL
