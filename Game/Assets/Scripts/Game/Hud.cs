@@ -100,6 +100,7 @@ namespace AfterCity.Game
             TopBar(w);
             Toolbar(w, h);
             Survivors();
+            MinimapPanel(h);
             float bottom = ExpeditionPanel(w);
             WorkshopPanel(w, bottom);
             Messages(w);
@@ -140,7 +141,13 @@ namespace AfterCity.Game
                 GUI.color = color;
                 GUI.DrawTexture(new Rect(x, r.y + 19, 14, 14), _white);
                 GUI.color = Color.white;
-                GUI.Label(new Rect(x + 20, r.y, 110, r.height), $"{name} <b>{colony.Stock.Get(type)}</b>", _label);
+                string extra = "";
+                if (type == ResourceType.Food)
+                {
+                    int balance = colony.DailyHarvest - colony.PresentCount;
+                    extra = balance >= 0 ? $" <size=13><color=#9fd27a>+{balance}/j</color></size>" : $" <size=13><color=#ff7a66>{balance}/j</color></size>";
+                }
+                GUI.Label(new Rect(x + 20, r.y, 150, r.height), $"{name} <b>{colony.Stock.Get(type)}</b>{extra}", _label);
                 x += 118;
             }
             GUI.Label(new Rect(x, r.y, 140, r.height), $"Survivants <b>{colony.Villagers.Count}/{colony.Capacity}</b>", _label);
@@ -153,7 +160,7 @@ namespace AfterCity.Game
         void Toolbar(float w, float h)
         {
             var tools = OrderTool.Tools;
-            float bw = 100, bh = 78, gap = 6;
+            float bw = 96, bh = 78, gap = 5;
             var builds = OrderTool.Buildings;
             int count = tools.Length + builds.Length;
             float total = count * (bw + gap) - gap + 28 + 16;
@@ -371,20 +378,34 @@ namespace AfterCity.Game
 
         void Welcome(float w, float h)
         {
+            if (Input.GetKeyDown(KeyCode.H)) _welcomeClosed = !_welcomeClosed;
             if (_welcomeClosed) return;
-            if (_game.Colony.Time > 45 || Input.GetKeyDown(KeyCode.Return)) { _welcomeClosed = true; return; }
-            var r = Panel(new Rect(w / 2 - 320, h / 2 - 160, 640, 290));
+            if (Input.GetKeyDown(KeyCode.Return)) { _welcomeClosed = true; return; }
+            var r = Panel(new Rect(w / 2 - 340, h / 2 - 180, 680, 340));
             GUI.Label(new Rect(r.x + 24, r.y + 16, 552, 34), "After City : premiers pas", _title);
-            GUI.Label(new Rect(r.x + 24, r.y + 54, 592, 180),
+            GUI.Label(new Rect(r.x + 24, r.y + 54, 632, 230),
                 "Tes 5 survivants viennent d'arriver a la ferme.\n" +
                 "1. Coupe du bois (touche 1, glisse sur la foret).\n" +
                 "2. Avant <b>20h30</b>, protege la ferme : barricades (6), douve de 2 niveaux (4, deux fois) ou tour de guet (9).\n" +
-                "Chemins de terre (7) : +50 % de vitesse. Un abri (8) fait venir un nouveau survivant a chaque aube.\n" +
+                "4. Nourris la colonie : chacun mange 1 vivre a l'aube, la ferme recolte 4 vivres a 18 h, un champ en ajoute 4.\n" +
+                "5. Grandis : un abri (8) accueille un nouveau survivant a l'aube, le poste d'expedition (0) envoie fouiller la ville.\n" +
                 "3. La nuit, les rodeurs sortent de la foret. Ils cassent les barricades mais restent coinces dans les fosses.\n" +
-                "Astuce : <b>N</b> fait tomber la nuit tout de suite, <b>F2</b> compare les effets visuels.",
+                "Astuce : <b>N</b> fait tomber la nuit tout de suite, <b>F2</b> compare les effets visuels, <b>H</b> rouvre cette aide.",
                 new GUIStyle(_small) { fontSize = 16, wordWrap = true, alignment = TextAnchor.UpperLeft, normal = { textColor = new Color(0.92f, 0.92f, 0.9f) } });
             if (GUI.Button(new Rect(r.x + r.width / 2 - 70, r.y + r.height - 48, 140, 36), "C'est parti", _buttonOn))
                 _welcomeClosed = true;
+        }
+
+        Minimap _minimap;
+
+        void MinimapPanel(float h)
+        {
+            if (_minimap == null) _minimap = GetComponent<Minimap>();
+            if (_minimap == null) return;
+            float s = Minimap.Size;
+            var r = Panel(new Rect(12, h - s - 40, s + 20, s + 30));
+            GUI.Label(new Rect(r.x + 12, r.y + 4, 200, 20), "Carte", new GUIStyle(_small) { fontSize = 13 });
+            _minimap.Draw(new Rect(r.x + 10, r.y + 22, s, s), _scale);
         }
 
         void AlertBanner(float w)
@@ -403,7 +424,7 @@ namespace AfterCity.Game
         {
             var r = Panel(new Rect(w - 262, h - 196, 250, 184));
             GUI.Label(new Rect(r.x + 14, r.y + 10, 228, 168),
-                "<b>Camera</b>\nWASD / fleches / bords : bouger\nMolette : zoom    Q / E : tourner\n<b>Temps</b>\nEspace : pause    + / - : vitesse\nN : passer a la nuit\n<b>Image</b>\nF2 : effets visuels on/off",
+                "<b>Camera</b>\nWASD / fleches / bords : bouger\nMolette : zoom    Q / E : tourner\n<b>Temps</b>\nEspace : pause    + / - : vitesse\nN : passer a la nuit\n<b>Image</b>\nF2 : effets visuels   H : aide",
                 new GUIStyle(_small) { alignment = TextAnchor.UpperLeft, wordWrap = true });
         }
     }

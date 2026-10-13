@@ -33,6 +33,7 @@ namespace AfterCity.Game
                 model.transform.localRotation = Quaternion.identity;
                 view._model = model.transform;
                 model.transform.localScale = Vector3.one * 1.3f; // lisible de loin, garde le gabarit K&C
+                Tint(model, Palette[v.Id % Palette.Length]);
                 view._animator = model.GetComponentInChildren<Animator>();
             }
             view._y = TerrainMeshBuilder.TopY(grid.GetLevel(v.Cell));
@@ -44,6 +45,32 @@ namespace AfterCity.Game
 
         /// <summary>Le survivant tombe puis disparait.</summary>
         public void Die() { if (_dying < 0) _dying = 0; }
+
+        /// <summary>Couleurs de veste : chaque survivant se repere d'un coup d'oeil, comme dans K&amp;C.</summary>
+        static readonly Color[] Palette =
+        {
+            new Color(0.25f, 0.45f, 0.75f), new Color(0.75f, 0.25f, 0.20f), new Color(0.85f, 0.65f, 0.20f),
+            new Color(0.30f, 0.60f, 0.55f), new Color(0.60f, 0.35f, 0.65f), new Color(0.85f, 0.45f, 0.15f),
+            new Color(0.40f, 0.55f, 0.25f), new Color(0.80f, 0.80f, 0.75f),
+        };
+
+        static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+
+        static void Tint(GameObject model, Color jacket)
+        {
+            foreach (var r in model.GetComponentsInChildren<Renderer>())
+            {
+                var mats = r.sharedMaterials;
+                for (int i = 0; i < mats.Length; i++)
+                {
+                    if (mats[i] == null || !mats[i].name.Contains("Jacket")) continue;
+                    var block = new MaterialPropertyBlock();
+                    r.GetPropertyBlock(block, i);
+                    block.SetColor(BaseColorId, jacket);
+                    r.SetPropertyBlock(block, i);
+                }
+            }
+        }
 
         void Update()
         {

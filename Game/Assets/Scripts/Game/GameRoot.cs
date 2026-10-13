@@ -62,6 +62,11 @@ namespace AfterCity.Game
                 string hurt = e.DamageTaken < 10 ? "sans blessure" : e.DamageTaken < 25 ? "blessures legeres" : "blesses";
                 Say($"Retour de {e.Target.Name} : {(e.Succeeded ? "reussite" : "echec")} ({(int)(e.Outcome * 100)} %),{loot}, {hurt}");
             };
+            Colony.Harvested += n => { if (n > 0) Say($"Recolte du soir : +{n} vivres"); };
+            Colony.Ate += (eaten, hungry) =>
+            {
+                if (hungry > 0) Say($"Famine : {hungry} survivant(s) n'ont rien mange et s'affaiblissent !");
+            };
             Colony.Salvaged += (p, loot) => Say("Epave demontee :" + Describe(loot));
             Colony.SurvivorArrived += v =>
             {
@@ -83,6 +88,7 @@ namespace AfterCity.Game
             }
 
             gameObject.AddComponent<OrderTool>().Init(this);
+            gameObject.AddComponent<Minimap>().Init(this);
             gameObject.AddComponent<Hud>().Init(this);
             Debug.Log($"[AfterCity] Carte {width}x{height} graine {seed}, ferme en {Map.FarmCenter}, {Colony.Villagers.Count} survivants");
         }

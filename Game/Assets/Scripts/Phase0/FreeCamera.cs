@@ -14,14 +14,14 @@ namespace AfterCity.Game.Phase0
         public float zoomSpeed = 8f;
         public float minDistance = 8f;
         public float maxDistance = 140f;
-        public float pitch = 50f;
+        public float pitch = 48f;
         public bool edgePan = true;
         public Vector2 boundsMin = Vector2.zero;
         public Vector2 boundsMax = new Vector2(256, 256);
 
         Vector3 _pivot;
         float _yaw = 30f;
-        float _distance = 45f;
+        float _distance = 36f;
 
         public float Yaw { get => _yaw; set => _yaw = value; }
 

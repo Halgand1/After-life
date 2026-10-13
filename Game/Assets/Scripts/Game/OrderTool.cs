@@ -16,7 +16,7 @@ namespace AfterCity.Game
         public static readonly JobType[] Tools =
             { JobType.Chop, JobType.Mine, JobType.Salvage, JobType.Dig, JobType.Raise, JobType.Barricade, JobType.Road };
 
-        public static readonly BuildingType[] Buildings = { BuildingType.Shelter, BuildingType.Watchtower, BuildingType.ExpeditionPost, BuildingType.Workshop };
+        public static readonly BuildingType[] Buildings = { BuildingType.Shelter, BuildingType.Watchtower, BuildingType.ExpeditionPost, BuildingType.Workshop, BuildingType.Field };
 
         JobType? _current;
         BuildingType? _building;

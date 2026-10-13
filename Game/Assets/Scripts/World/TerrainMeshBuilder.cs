@@ -72,8 +72,8 @@ namespace AfterCity.Game.World
                     float a0 = rot + s * Mathf.PI * 2 / seg, a1 = rot + (s + 1) * Mathf.PI * 2 / seg;
                     var p0 = bottom + new Vector3(Mathf.Cos(a0), 0, Mathf.Sin(a0)) * radius;
                     var p1 = bottom + new Vector3(Mathf.Cos(a1), 0, Mathf.Sin(a1)) * radius;
-                    Tri(p0, apex, p1, col);
-                    Tri(p1, bottom, p0, col * 0.6f);
+                    if (height >= 0) { Tri(p0, apex, p1, col); Tri(p1, bottom, p0, col * 0.6f); }
+                    else { Tri(p1, apex, p0, col); Tri(p0, bottom, p1, col * 0.6f); } // cone pointe en bas
                 }
             }
 
@@ -184,6 +184,7 @@ namespace AfterCity.Game.World
                         else if (bt == BuildingType.ExpeditionPost) AddExpeditionPost(md, corner);
                         else if (bt == BuildingType.Farmhouse) AddFarmhouse(md, corner);
                         else if (bt == BuildingType.Workshop) AddWorkshop(md, corner, Hash(x, y, 12));
+                        else if (bt == BuildingType.Field) AddField(md, corner, Hash(x, y, 13));
                         else AddWatchtower(md, corner);
                     }
                     continue;
@@ -202,13 +203,38 @@ namespace AfterCity.Game.World
             return md.ToMesh($"Terrain_{cx}_{cy}");
         }
 
+        /// <summary>Arbre : sapin a deux etages (le plus souvent), feuillu rond, ou arbre mort (ambiance apocalypse).</summary>
         static void AddTree(MeshData md, Vector3 at, float r)
         {
+            float kind = Hash((int)(at.x * 7f), (int)(at.z * 13f), 21);
+            if (kind < 0.22f) { AddRoundTree(md, at, r); return; }
+            if (kind < 0.30f) { AddDeadTree(md, at, r); return; }
             float s = 0.8f + r * 0.6f;
             md.Box(at, new Vector3(0.22f, 0.7f, 0.22f) * s, Lin(new Color(0.36f, 0.25f, 0.16f)));
             var leaf = Lin(Color.Lerp(new Color(0.20f, 0.36f, 0.20f), new Color(0.34f, 0.42f, 0.18f), r));
             md.Cone(at + Vector3.up * 0.5f * s, 0.85f * s, 1.5f * s, 6, leaf, r * 6f);
             md.Cone(at + Vector3.up * 1.2f * s, 0.6f * s, 1.2f * s, 6, leaf * 1.1f, r * 6f + 0.5f);
+        }
+
+        /// <summary>Feuillu : tronc et couronne en losange facettee (deux cones opposes).</summary>
+        static void AddRoundTree(MeshData md, Vector3 at, float r)
+        {
+            float s = 0.8f + r * 0.5f;
+            md.Box(at, new Vector3(0.22f, 1.0f, 0.22f) * s, Lin(new Color(0.38f, 0.27f, 0.17f)));
+            var leaf = Lin(Color.Lerp(new Color(0.36f, 0.46f, 0.20f), new Color(0.52f, 0.50f, 0.22f), r));
+            var mid = at + Vector3.up * 1.6f * s;
+            md.Cone(mid, 0.95f * s, 0.9f * s, 7, leaf, r * 5f);
+            md.Cone(mid, 0.95f * s, -0.7f * s, 7, leaf * 0.8f, r * 5f);
+        }
+
+        /// <summary>Arbre mort : tronc gris et deux branches nues.</summary>
+        static void AddDeadTree(MeshData md, Vector3 at, float r)
+        {
+            var bark = Lin(new Color(0.40f, 0.37f, 0.33f));
+            float h = 1.6f + r;
+            md.Box(at, new Vector3(0.2f, h, 0.2f), bark);
+            md.Box(at + new Vector3(0.3f, h * 0.6f, 0), new Vector3(0.6f, 0.1f, 0.1f), bark);
+            md.Box(at + new Vector3(-0.2f, h * 0.8f, 0.1f), new Vector3(0.1f, 0.1f, 0.5f), bark);
         }
 
         /// <summary>Abri de survivants 2 x 2 cases : cabane en planches, toit de tole a deux pans.</summary>
@@ -235,6 +261,21 @@ namespace AfterCity.Game.World
             // Porte et fenetre
             md.Box(center + new Vector3(0, 0, -1.51f), new Vector3(0.7f, 1.2f, 0.04f), Lin(new Color(0.25f, 0.18f, 0.12f)));
             md.Box(center + new Vector3(1.0f, 0.9f, -1.51f), new Vector3(0.5f, 0.45f, 0.04f), Lin(new Color(0.85f, 0.70f, 0.40f)));
+        }
+
+        /// <summary>Champ 2 x 2 : terre labouree, rangs de cultures, petite cloture.</summary>
+        static void AddField(MeshData md, Vector3 corner, float r)
+        {
+            float s = CellSize * 2;
+            md.Box(corner + new Vector3(s / 2, 0, s / 2), new Vector3(s - 0.1f, 0.06f, s - 0.1f), Lin(new Color(0.42f, 0.31f, 0.20f)));
+            var crop = Lin(Color.Lerp(new Color(0.45f, 0.60f, 0.22f), new Color(0.75f, 0.65f, 0.25f), r));
+            for (int i = 0; i < 5; i++)
+                md.Box(corner + new Vector3(0.45f + i * 0.78f, 0.06f, s / 2), new Vector3(0.35f, 0.35f + r * 0.2f, s - 0.6f), crop);
+            var fence = Lin(new Color(0.50f, 0.40f, 0.28f));
+            md.Box(corner + new Vector3(s / 2, 0.3f, 0.05f), new Vector3(s, 0.08f, 0.08f), fence);
+            md.Box(corner + new Vector3(s / 2, 0.3f, s - 0.05f), new Vector3(s, 0.08f, 0.08f), fence);
+            for (int i = 0; i < 4; i++)
+                md.Box(corner + new Vector3((i & 1) == 0 ? 0.05f : s - 0.05f, 0, i < 2 ? 0.05f : s - 0.05f), new Vector3(0.12f, 0.5f, 0.12f), fence);
         }
 
         /// <summary>Atelier de demontage 2 x 2 : appentis ouvert, etabli, tas de ferraille, cheminee.</summary>

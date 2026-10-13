@@ -143,6 +143,58 @@ namespace AfterCity.Core.Sim
         /// <summary>Une epave a ete demontee (case, pieces obtenues).</summary>
         public event Action<GridPos, Dictionary<ResourceType, int>> Salvaged;
 
+        /// <summary>Recolte de la ferme de depart et de chaque champ, chaque soir a 18 h.</summary>
+        public const int FarmYield = 4;
+        public const int FieldYield = 4;
+        public const double HarvestHour = 18;
+        public const double StarvationDamage = 25;
+
+        /// <summary>Recolte du soir (vivres gagnes).</summary>
+        public event Action<int> Harvested;
+        /// <summary>Repas du matin : vivres manges, nombre de survivants qui n'ont rien eu.</summary>
+        public event Action<int, int> Ate;
+        /// <summary>La colonie a une ferme de depart (recolte de base).</summary>
+        public bool HasFarm { get; set; }
+        double _lastHour = -1;
+
+        /// <summary>Vivres recoltes chaque soir.</summary>
+        public int DailyHarvest
+        {
+            get
+            {
+                int n = HasFarm ? FarmYield : 0;
+                foreach (var b in _buildings) if (b.Built && b.Type == BuildingType.Field) n += FieldYield;
+                return n;
+            }
+        }
+
+        static bool Crossed(double prev, double now, double h) =>
+            prev >= 0 && (prev <= now ? prev < h && now >= h : prev < h || now >= h);
+
+        void TickFood()
+        {
+            double h = Hour;
+            if (Crossed(_lastHour, h, HarvestHour))
+            {
+                int n = DailyHarvest;
+                Stock.Add(ResourceType.Food, n);
+                Harvested?.Invoke(n);
+            }
+            if (Crossed(_lastHour, h, 6.0))
+            {
+                int eaters = PresentCount, eaten = 0, hungry = 0;
+                var list = new List<Villager>(_villagers);
+                foreach (var v in list)
+                {
+                    if (v.Away) continue;
+                    if (Stock.TrySpend(ResourceType.Food, 1)) { eaten++; Heal(v, 5); }
+                    else { hungry++; Hurt(v, StarvationDamage); }
+                }
+                Ate?.Invoke(eaten, hungry);
+            }
+            _lastHour = h;
+        }
+
         /// <summary>Atelier : demonte 5 ferrailles en 3 pieces tirees selon leur rarete. Null si impossible.</summary>
         public Dictionary<ResourceType, int> RefineScrap()
         {
@@ -167,7 +219,7 @@ namespace AfterCity.Core.Sim
         /// <summary>Colonie de depart sur la ferme : survivants et vivres du camion (GDD 4.2).</summary>
         public static Colony StartAtFarm(GeneratedMap map, int survivors = 5)
         {
-            var c = new Colony(map.Grid) { Home = map.FarmCenter, Random = new Rng(map.Seed ^ 0xE4BED17105UL) };
+            var c = new Colony(map.Grid) { Home = map.FarmCenter, HasFarm = true, Random = new Rng(map.Seed ^ 0xE4BED17105UL) };
             for (int i = 0; i < survivors; i++)
             {
                 var p = new GridPos(map.FarmCenter.X - 1 + i % 3, map.FarmCenter.Y - 1 + i / 3);
@@ -429,6 +481,7 @@ namespace AfterCity.Core.Sim
             }
             _wasNight = night;
             TickExpeditions(dt);
+            TickFood();
             foreach (var j in _jobs.Values)
                 if (j.BlockedFor > 0) j.BlockedFor -= dt;
 
