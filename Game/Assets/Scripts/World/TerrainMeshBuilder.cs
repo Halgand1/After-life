@@ -22,26 +22,6 @@ namespace AfterCity.Game.World
         public static Vector3 CellCenter(WorldGrid grid, GridPos p) =>
             new Vector3((p.X + 0.5f) * CellSize, TopY(grid.GetLevel(p)), (p.Y + 0.5f) * CellSize);
 
-        public static Transform Build(GeneratedMap map, Material material, Transform parent)
-        {
-            var grid = map.Grid;
-            var root = new GameObject("Terrain").transform;
-            root.SetParent(parent, false);
-            for (int cy = 0; cy < grid.Height; cy += ChunkSize)
-            for (int cx = 0; cx < grid.Width; cx += ChunkSize)
-            {
-                var mesh = BuildChunk(map, cx, cy);
-                var go = new GameObject($"Chunk_{cx / ChunkSize}_{cy / ChunkSize}");
-                go.transform.SetParent(root, false);
-                go.AddComponent<MeshFilter>().sharedMesh = mesh;
-                var mr = go.AddComponent<MeshRenderer>();
-                mr.sharedMaterial = material;
-                mr.shadowCastingMode = ShadowCastingMode.On;
-                go.isStatic = true;
-            }
-            return root;
-        }
-
         sealed class MeshData
         {
             public readonly List<Vector3> V = new List<Vector3>();
@@ -135,7 +115,8 @@ namespace AfterCity.Game.World
             Mathf.Abs(p.X - map.FarmCenter.X) <= MapGenerator.FarmRadius &&
             Mathf.Abs(p.Y - map.FarmCenter.Y) <= MapGenerator.FarmRadius;
 
-        static Mesh BuildChunk(GeneratedMap map, int cx, int cy)
+        /// <summary>Maillage d'un morceau de terrain dont le coin est la case (cx, cy).</summary>
+        public static Mesh BuildChunk(GeneratedMap map, int cx, int cy)
         {
             var grid = map.Grid;
             var md = new MeshData();
@@ -183,19 +164,22 @@ namespace AfterCity.Game.World
                     }
                 }
 
-                // Decor : arbres, rochers, roseaux
+                // Decor : vient de la grille (arbres, rochers, epaves) pour pouvoir etre recolte
                 var c = new Vector3((x + 0.5f) * CellSize, top, (y + 0.5f) * CellSize);
                 var jitter = new Vector3(Hash(x, y, 3) - 0.5f, 0, Hash(x, y, 4) - 0.5f) * 0.8f;
                 float r = Hash(x, y, 5);
-                if (InFarm(map, p)) continue;
-                if ((biome == Biome.DenseForest && r < 0.75f) || (biome == Biome.Meadow && r < 0.06f) || (biome == Biome.Plains && r < 0.015f))
-                    AddTree(md, c + jitter, Hash(x, y, 6));
-                else if (biome == Biome.Rock && r < 0.35f)
-                    AddRock(md, c + jitter, Hash(x, y, 7));
-                else if (biome == Biome.Marsh && r < 0.25f)
-                    md.Box(c + jitter, new Vector3(0.12f, 0.6f + r, 0.12f), Lin(new Color(0.45f, 0.48f, 0.28f)));
+                if (grid.HasWall(p)) { AddBarricade(md, c, Hash(x, y, 8)); continue; }
+                switch (grid.GetFeature(p))
+                {
+                    case CellFeature.Tree: AddTree(md, c + jitter, Hash(x, y, 6)); break;
+                    case CellFeature.Rock: AddRock(md, c + jitter, Hash(x, y, 7)); break;
+                    case CellFeature.Wreck: AddWreck(md, c, Hash(x, y, 9)); break;
+                    default:
+                        if (biome == Biome.Marsh && r < 0.25f && !InFarm(map, p))
+                            md.Box(c + jitter, new Vector3(0.12f, 0.6f + r, 0.12f), Lin(new Color(0.45f, 0.48f, 0.28f)));
+                        break;
+                }
             }
-
             // Grange de la ferme : un bloc rouge delave avec toit
             if (cx <= map.FarmCenter.X && map.FarmCenter.X < cx + ChunkSize && cy <= map.FarmCenter.Y && map.FarmCenter.Y < cy + ChunkSize)
             {
@@ -214,6 +198,29 @@ namespace AfterCity.Game.World
             var leaf = Lin(Color.Lerp(new Color(0.20f, 0.36f, 0.20f), new Color(0.34f, 0.42f, 0.18f), r));
             md.Cone(at + Vector3.up * 0.5f * s, 0.85f * s, 1.5f * s, 6, leaf, r * 6f);
             md.Cone(at + Vector3.up * 1.2f * s, 0.6f * s, 1.2f * s, 6, leaf * 1.1f, r * 6f + 0.5f);
+        }
+
+        static void AddBarricade(MeshData md, Vector3 at, float r)
+        {
+            var wood = Lin(new Color(0.48f, 0.36f, 0.22f) * (0.9f + r * 0.2f));
+            var dark = Lin(new Color(0.32f, 0.24f, 0.15f));
+            for (int i = 0; i < 4; i++)
+                md.Box(at + new Vector3(-0.75f + i * 0.5f, 0, (Hash(i, (int)(r * 100), 1) - 0.5f) * 0.2f),
+                       new Vector3(0.32f, 1.5f + Hash(i, (int)(r * 100), 2) * 0.4f, 0.32f), wood);
+            md.Box(at + new Vector3(0, 0.45f, 0.2f), new Vector3(2.0f, 0.18f, 0.12f), dark);
+            md.Box(at + new Vector3(0, 1.05f, 0.2f), new Vector3(2.0f, 0.18f, 0.12f), dark);
+        }
+
+        static void AddWreck(MeshData md, Vector3 at, float r)
+        {
+            // Carcasse de voiture rouillee, posee de travers
+            var paint = Lin(Color.Lerp(new Color(0.45f, 0.30f, 0.22f), new Color(0.35f, 0.40f, 0.45f), r));
+            var rust = Lin(new Color(0.40f, 0.24f, 0.14f));
+            float dx = (r - 0.5f) * 0.4f;
+            md.Box(at + new Vector3(dx, 0.15f, 0), new Vector3(1.2f, 0.55f, 1.8f), paint);
+            md.Box(at + new Vector3(dx, 0.7f, -0.1f), new Vector3(1.0f, 0.4f, 0.9f), rust);
+            for (int i = 0; i < 4; i++)
+                md.Box(at + new Vector3(dx + ((i & 1) == 0 ? -0.62f : 0.62f), 0, (i < 2 ? -0.6f : 0.6f)), new Vector3(0.15f, 0.35f, 0.35f), Lin(new Color(0.12f, 0.12f, 0.12f)));
         }
 
         static void AddRock(MeshData md, Vector3 at, float r)

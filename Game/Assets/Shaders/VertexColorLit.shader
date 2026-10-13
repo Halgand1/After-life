@@ -25,6 +25,10 @@ Shader "AfterCity/VertexColorLit"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
+            // Ambiance reglee par le jeu (cycle jour/nuit)
+            half4 _AC_AmbientSky;
+            half4 _AC_AmbientGround;
+
             CBUFFER_START(UnityPerMaterial)
                 half4 _BaseColor;
                 half _Ambient;
@@ -64,7 +68,7 @@ Shader "AfterCity/VertexColorLit"
                 Light light = GetMainLight(shadowCoord);
                 half3 n = normalize(i.normalWS);
                 half ndl = saturate(dot(n, light.direction));
-                half3 sky = lerp(half3(0.55, 0.52, 0.48), half3(0.75, 0.80, 0.85), n.y * 0.5 + 0.5);
+                half3 sky = lerp(_AC_AmbientGround.rgb, _AC_AmbientSky.rgb, n.y * 0.5 + 0.5);
                 half3 lit = light.color * ndl * light.shadowAttenuation + sky * _Ambient;
                 half3 col = i.color.rgb * lit;
                 col = MixFog(col, i.fog);

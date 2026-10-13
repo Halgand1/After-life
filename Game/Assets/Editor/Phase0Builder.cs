@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using AfterCity.Game;
 using AfterCity.Game.Phase0;
 using UnityEditor;
 using UnityEditor.Animations;
@@ -128,13 +129,14 @@ namespace AfterCity.EditorTools
             freeCam.boundsMax = new Vector2(128 * 2f, 128 * 2f);
 
             var world = new GameObject("World");
-            var boot = world.AddComponent<Phase0Bootstrap>();
+            var boot = world.AddComponent<GameRoot>();
             boot.width = 128;
             boot.height = 128;
             boot.seed = 1337;
             boot.terrainMaterial = terrainMat;
             boot.villagerPrefab = villager;
             boot.freeCamera = freeCam;
+            boot.sun = light;
 
             var bench = new GameObject("Benchmark").AddComponent<Phase0Benchmark>();
             bench.freeCamera = freeCam;

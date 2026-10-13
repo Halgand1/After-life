@@ -26,10 +26,33 @@ namespace AfterCity.Game.Phase0
             StartCoroutine(Run(dir));
         }
 
+        /// <summary>Donne quelques ordres pour que la mesure et la capture montrent des survivants au travail.</summary>
+        static void DemoOrders()
+        {
+            var game = FindAnyObjectByType<AfterCity.Game.GameRoot>();
+            if (game == null) return;
+            var colony = game.Colony;
+            var farm = game.Map.FarmCenter;
+            int trees = 0;
+            for (int r = 1; r < 30 && trees < 10; r++)
+            for (int dy = -r; dy <= r && trees < 10; dy++)
+            for (int dx = -r; dx <= r && trees < 10; dx++)
+            {
+                if (System.Math.Max(System.Math.Abs(dx), System.Math.Abs(dy)) != r) continue;
+                if (colony.Order(AfterCity.Core.Sim.JobType.Chop, new AfterCity.Core.World.GridPos(farm.X + dx, farm.Y + dy))) trees++;
+            }
+            for (int x = -2; x <= 2; x++)
+                colony.Order(AfterCity.Core.Sim.JobType.Dig, new AfterCity.Core.World.GridPos(farm.X + x, farm.Y - 7));
+            for (int x = -2; x <= 2; x++)
+                colony.Order(AfterCity.Core.Sim.JobType.Barricade, new AfterCity.Core.World.GridPos(farm.X + x, farm.Y + 7));
+            game.Speed = 2;
+        }
+
         IEnumerator Run(string dir)
         {
             Directory.CreateDirectory(dir);
             if (freeCamera != null) freeCamera.edgePan = false;
+            DemoOrders();
             float t0 = Time.realtimeSinceStartup;
             while (Time.realtimeSinceStartup - t0 < warmup) yield return null;
 
