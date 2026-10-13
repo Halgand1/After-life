@@ -326,7 +326,7 @@ namespace AfterCity.Core.Sim
             double damage = 0;
             if (Random.NextDouble() < chance)
                 damage = Random.NextDouble() < SevereShare ? SevereChargeDamage : ChargeDamage;
-            if (damage > 0 && colony != null) colony.Hurt(v, damage);
+            if (damage > 0 && colony != null) damage = colony.Hurt(v, damage, attack: true);
             Charged?.Invoke(a, v, damage);
             // Le sanglier recule et reprend son souffle avant une nouvelle charge
             a.State = AnimalState.Idle;

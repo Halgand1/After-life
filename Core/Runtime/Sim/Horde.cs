@@ -200,7 +200,7 @@ namespace AfterCity.Core.Sim
             {
                 z.State = ZombieState.Feeding;
                 Face(z, prey.X - z.X, prey.Y - z.Y);
-                _colony.Hurt(prey, BiteDamage * dt);
+                _colony.Hurt(prey, BiteDamage * dt, attack: true);
                 return;
             }
 

@@ -69,6 +69,11 @@ namespace AfterCity.Core.Sim
         public bool IsDead => Health <= 0;
         /// <summary>Parti en expedition : absent de la carte.</summary>
         public bool Away { get; internal set; }
+        /// <summary>Role de depart : il fixe le modele 3D et la dotation d'equipement.</summary>
+        public SurvivorRole Role { get; internal set; }
+        /// <summary>Ce qu'il porte (GDD 5.5) : rempli a l'arrivee selon son role.</summary>
+        public Loadout Equipment { get; } = new Loadout();
+        internal double ArmorWear;
 
         internal readonly Queue<GridPos> Path = new Queue<GridPos>();
 
@@ -320,23 +325,100 @@ namespace AfterCity.Core.Sim
             return c;
         }
 
-        public Villager AddVillager(GridPos cell)
+        /// <summary>Roles dans l'ordre d'arrivee : les cinq du camion, puis les renforts.</summary>
+        public static readonly SurvivorRole[] RoleOrder =
+        {
+            SurvivorRole.Worker, SurvivorRole.Quarrier, SurvivorRole.Militiaman, SurvivorRole.Medic,
+            SurvivorRole.Tracker, SurvivorRole.Soldier, SurvivorRole.Cleaner
+        };
+
+        public Villager AddVillager(GridPos cell) => AddVillager(cell, RoleOrder[_nextVillagerId % RoleOrder.Length]);
+
+        /// <summary>Ajoute un survivant deja equipe selon son role.</summary>
+        public Villager AddVillager(GridPos cell, SurvivorRole role)
         {
             int id = _nextVillagerId++;
-            var v = new Villager(id, Names[id % Names.Length], cell);
+            var v = new Villager(id, Names[id % Names.Length], cell) { Role = role };
+            foreach (var itemId in EquipmentSpec.Loadout(role))
+                v.Equipment.Put(new EquipmentItem(EquipmentSpec.Get(itemId)));
             _villagers.Add(v);
             return v;
         }
 
-/// <summary>Blesse un survivant ; a 0 il meurt et quitte la colonie.</summary>
-        public void Hurt(Villager v, double damage)
+        readonly List<EquipmentItem> _storage = new List<EquipmentItem>();
+        /// <summary>Objets ranges a la ferme (trouves en fouille, ou retires a un survivant).</summary>
+        public IReadOnlyList<EquipmentItem> Storage => _storage;
+        /// <summary>Un objet porte vient de casser (survivant, objet).</summary>
+        public event Action<Villager, EquipmentItem> ItemBroken;
+        /// <summary>Un objet a ete trouve en fouillant une epave.</summary>
+        public event Action<GridPos, EquipmentItem> ItemFound;
+        public const double ItemFindChance = 0.12;
+        /// <summary>Degats encaisses par l'armure avant qu'une protection ne s'use d'un cran.</summary>
+        public const double ArmorWearStep = 10;
+
+        public void AddToStorage(EquipmentItem item) { if (item != null && !_storage.Contains(item)) _storage.Add(item); }
+
+        /// <summary>Equipe un objet range ; celui qui occupait l'emplacement retourne au rangement.</summary>
+        public bool Equip(Villager v, EquipmentItem item)
         {
-            if (v.IsDead) return;
+            if (v == null || v.IsDead || item == null || !_storage.Remove(item)) return false;
+            var old = v.Equipment.Put(item);
+            if (old != null) _storage.Add(old);
+            return true;
+        }
+
+        /// <summary>Retire l'objet d'un emplacement et le range.</summary>
+        public bool Unequip(Villager v, EquipSlot slot)
+        {
+            var old = v?.Equipment.Take(slot);
+            if (old == null) return false;
+            _storage.Add(old);
+            return true;
+        }
+
+        void Wear(Villager v, EquipmentItem item)
+        {
+            if (item == null || !item.Wears) return;
+            item.Durability--;
+            if (item.Durability > 0) return;
+            v.Equipment.Take(item.Slot);
+            ItemBroken?.Invoke(v, item);
+        }
+
+        void WearTools(Villager v, JobType job)
+        {
+            var used = new List<EquipmentItem>();
+            foreach (var i in v.Equipment.Items) if (i.Spec.WorkBonus.ContainsKey(job)) used.Add(i);
+            foreach (var i in used) Wear(v, i);
+        }
+
+        /// <summary>
+        /// Blesse un survivant ; a 0 il meurt et quitte la colonie. Une attaque (morsure, charge) est amortie
+        /// par ses protections, qui s'usent. Rend les degats vraiment subis.
+        /// </summary>
+        public double Hurt(Villager v, double damage, bool attack = false)
+        {
+            if (v.IsDead) return 0;
+            if (attack)
+            {
+                double absorbed = damage * v.Equipment.Protection;
+                damage -= absorbed;
+                v.ArmorWear += absorbed;
+                while (v.ArmorWear >= ArmorWearStep)
+                {
+                    v.ArmorWear -= ArmorWearStep;
+                    EquipmentItem worn = null;
+                    foreach (var i in v.Equipment.Items) if (i.Spec.Protection > 0 && (worn == null || i.Durability > worn.Durability)) worn = i;
+                    if (worn == null) break;
+                    Wear(v, worn);
+                }
+            }
             v.Health -= damage;
-            if (!v.IsDead) return;
+            if (!v.IsDead) return damage;
             if (v.Job != null) Release(v.Job);
             _villagers.Remove(v);
             VillagerDied?.Invoke(v);
+            return damage;
         }
 
         /// <summary>Soigne un survivant (sans depasser sa sante maximale).</summary>
@@ -633,8 +715,12 @@ namespace AfterCity.Core.Sim
             }
         }
 
-        double JobDuration(Job job) =>
-            job.Type == JobType.Construct && job.Building != null ? BuildingSpec.Of(job.Building.Type).BuildTime : WorkDuration(job.Type);
+        /// <summary>Duree du travail pour ce survivant : ses outils l'accelerent (une hache : 50 % plus vite).</summary>
+        double JobDuration(Job job, Villager v)
+        {
+            double d = job.Type == JobType.Construct && job.Building != null ? BuildingSpec.Of(job.Building.Type).BuildTime : WorkDuration(job.Type);
+            return d / (1 + v.Equipment.WorkBonus(job.Type));
+        }
 
         public void Tick(double dt)
         {
@@ -816,10 +902,11 @@ namespace AfterCity.Core.Sim
             var job = v.Job;
             if (job != null && job.Type == JobType.Hunt) { HuntWork(v, dt); return; }
             if (job == null || !_jobs.ContainsKey(job.Cell)) { Abort(v); return; }
-            v.WorkProgress += dt / JobDuration(job);
+            v.WorkProgress += dt / JobDuration(job, v);
             if (v.WorkProgress < 1) return;
 
             bool done = Complete(job);
+            if (done) WearTools(v, job.Type);
             _jobs.Remove(job.Cell);
             v.Job = null;
             v.State = VillagerState.Idle;
@@ -865,6 +952,13 @@ namespace AfterCity.Core.Sim
                     if (Random.NextDouble() < 0.4) found[ResourceType.Scrap] = 1;
                     foreach (var kv in found) Stock.Add(kv.Key, kv.Value);
                     Searched?.Invoke(p, found);
+                    if (Random.NextDouble() < ItemFindChance)
+                    {
+                        var specs = new List<EquipmentSpec>(EquipmentSpec.All);
+                        var item = new EquipmentItem(specs[Random.Range(0, specs.Count)]);
+                        _storage.Add(item);
+                        ItemFound?.Invoke(p, item);
+                    }
                     return true;
                 }
                 case JobType.Salvage:
@@ -971,8 +1065,9 @@ namespace AfterCity.Core.Sim
             v.WorkProgress += dt / AimTime;
             if (v.WorkProgress < 1) return;
             v.WorkProgress = 0;
-            double chance = ShotHitChance + (a.State == AnimalState.Idle || a.State == AnimalState.Walking ? CalmHitBonus : 0);
+            double chance = ShotHitChance + v.Equipment.HuntBonus + (a.State == AnimalState.Idle || a.State == AnimalState.Walking ? CalmHitBonus : 0);
             bool hit = Random.NextDouble() < chance;
+            foreach (var i in new List<EquipmentItem>(v.Equipment.Items)) if (i.Spec.HuntBonus > 0) Wear(v, i);
             Shot?.Invoke(v, a, hit);
             if (!hit) { Wildlife?.Provoke(a, v); return; }
             if (Wildlife == null || !Wildlife.Attack(a, v, ShotDamage)) return;
