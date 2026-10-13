@@ -97,6 +97,7 @@ namespace AfterCity.Game
                 transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(facing), Mathf.Clamp01(dt * 10f));
 
             Play(v.State == VillagerState.Walking ? WalkState : IdleState);
+            WorkSound(v, dt);
 
             // Travail : petit mouvement de coups d'outil
             if (_model != null)
@@ -104,6 +105,27 @@ namespace AfterCity.Game
                 float swing = v.State == VillagerState.Working ? Mathf.Sin(Time.time * 9f) * 12f : 0f;
                 _model.localRotation = Quaternion.Euler(Mathf.Max(0, swing), 0, 0);
             }
+        }
+
+        float _soundTimer;
+
+        void WorkSound(Villager v, float dt)
+        {
+            var audio = GameAudio.Instance;
+            if (audio == null || v.State != VillagerState.Working || v.Job == null) { _soundTimer = 0.2f; return; }
+            _soundTimer -= dt;
+            if (_soundTimer > 0) return;
+            _soundTimer = 0.55f;
+            AudioClip clip;
+            switch (v.Job.Type)
+            {
+                case JobType.Chop: clip = audio.Chop; break;
+                case JobType.Dig:
+                case JobType.Raise:
+                case JobType.Road: clip = audio.Shovel; break;
+                default: clip = audio.Hammer; break;
+            }
+            audio.PlayAt(clip, transform.position, 0.6f);
         }
 
         void Play(string state)

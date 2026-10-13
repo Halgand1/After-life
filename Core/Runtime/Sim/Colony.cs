@@ -142,6 +142,8 @@ namespace AfterCity.Core.Sim
         public Rng Random { get; set; } = new Rng(0xC0105EED);
         /// <summary>Une epave a ete demontee (case, pieces obtenues).</summary>
         public event Action<GridPos, Dictionary<ResourceType, int>> Salvaged;
+        /// <summary>Un arbre vient d'etre abattu sur cette case.</summary>
+        public event Action<GridPos> TreeFelled;
 
         /// <summary>Recolte de la ferme de depart et de chaque champ, chaque soir a 18 h.</summary>
         public const int FarmYield = 4;
@@ -623,6 +625,7 @@ namespace AfterCity.Core.Sim
                     if (Grid.GetFeature(p) != CellFeature.Tree) return false;
                     Grid.SetFeature(p, CellFeature.None);
                     Stock.Add(ResourceType.Wood, 3);
+                    TreeFelled?.Invoke(p);
                     return true;
                 case JobType.Mine:
                     if (Grid.GetFeature(p) != CellFeature.Rock) return false;

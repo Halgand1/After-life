@@ -119,7 +119,7 @@ namespace AfterCity.Game
         void TopBar(float w)
         {
             var colony = _game.Colony;
-            var r = Panel(new Rect(w / 2 - 640, 12, 1280, 52));
+            var r = Panel(new Rect(w / 2 - 680, 12, 1360, 52));
             float x = r.x + 18;
             float hour = _game.Hour;
             int hh = (int)hour, mm = (int)((hour - hh) * 60) / 10 * 10;
@@ -148,7 +148,7 @@ namespace AfterCity.Game
                     extra = balance >= 0 ? $" <size=13><color=#9fd27a>+{balance}/j</color></size>" : $" <size=13><color=#ff7a66>{balance}/j</color></size>";
                 }
                 GUI.Label(new Rect(x + 20, r.y, 150, r.height), $"{name} <b>{colony.Stock.Get(type)}</b>{extra}", _label);
-                x += 118;
+                x += type == ResourceType.Food ? 170 : 118;
             }
             GUI.Label(new Rect(x, r.y, 140, r.height), $"Survivants <b>{colony.Villagers.Count}/{colony.Capacity}</b>", _label);
             x += 140;

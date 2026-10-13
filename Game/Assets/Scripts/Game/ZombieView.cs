@@ -19,6 +19,7 @@ namespace AfterCity.Game
         string _current;
         float _y;
         float _dying = -1f;
+        float _groan = 1f;
 
         public static ZombieView Create(Zombie z, GameObject prefab, WorldGrid grid, Transform parent)
         {
@@ -35,6 +36,7 @@ namespace AfterCity.Game
                 view._animator = model.GetComponentInChildren<Animator>();
                 if (view._animator != null) view._animator.speed = 0.85f + (z.Id % 5) * 0.06f;
             }
+            view._groan = Random.Range(0.5f, 7f);
             view._y = TerrainMeshBuilder.TopY(grid.GetLevel(z.Cell));
             view.Sync(1f);
             return view;
@@ -66,6 +68,12 @@ namespace AfterCity.Game
             if (facing.sqrMagnitude > 0.01f)
                 transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(facing), Mathf.Clamp01(dt * 5f));
 
+            _groan -= dt;
+            if (_groan <= 0 && GameAudio.Instance != null)
+            {
+                GameAudio.Instance.PlayAt(GameAudio.Instance.Groan, transform.position, 0.7f, 0.2f);
+                _groan = Random.Range(4f, 10f);
+            }
             bool moving = z.State == ZombieState.Moving;
             Play(moving ? WalkState : IdleState);
             if (_model != null)

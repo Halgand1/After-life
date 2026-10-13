@@ -54,6 +54,8 @@ namespace AfterCity.Game
             Horde = new Horde(Colony, Map.FarmCenter, seed);
             Terrain = TerrainView.Create(Map, terrainMaterial, transform);
             Colony.CellChanged += Terrain.MarkDirty;
+            var audio = gameObject.AddComponent<GameAudio>();
+            audio.Init(this);
             Colony.VillagerDied += OnVillagerDied;
             Colony.ExpeditionReturned += e =>
             {
@@ -61,6 +63,11 @@ namespace AfterCity.Game
                 foreach (var kv in e.Gains) loot.Append($" +{kv.Value} {ResourceName(kv.Key)}");
                 string hurt = e.DamageTaken < 10 ? "sans blessure" : e.DamageTaken < 25 ? "blessures legeres" : "blesses";
                 Say($"Retour de {e.Target.Name} : {(e.Succeeded ? "reussite" : "echec")} ({(int)(e.Outcome * 100)} %),{loot}, {hurt}");
+            };
+            Colony.TreeFelled += p =>
+            {
+                FallingTree.Spawn(Map.Grid, p, terrainMaterial, transform);
+                audio.PlayAt(audio.Fall, TerrainMeshBuilder.CellCenter(Map.Grid, p), 0.9f);
             };
             Colony.Harvested += n => { if (n > 0) Say($"Recolte du soir : +{n} vivres"); };
             Colony.Ate += (eaten, hungry) =>
@@ -73,7 +80,11 @@ namespace AfterCity.Game
                 _villagerViews[v] = VillagerView.Create(v, villagerPrefab, Map.Grid, transform);
                 Say($"{v.Name} a trouve la colonie et rejoint les survivants !");
             };
-            Horde.WaveStarted += n => Say($"Une horde approche : {n} rodeurs ! Barricadez-vous.");
+            Horde.WaveStarted += n =>
+            {
+                Say($"Une horde approche : {n} rodeurs ! Barricadez-vous.");
+                audio.PlayUi(audio.Horn, 0.7f);
+            };
 
             foreach (var v in Colony.Villagers)
                 _villagerViews[v] = VillagerView.Create(v, villagerPrefab, Map.Grid, transform);

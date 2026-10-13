@@ -116,6 +116,17 @@ namespace AfterCity.Game.World
             Mathf.Abs(p.X - map.FarmCenter.X) <= MapGenerator.FarmRadius &&
             Mathf.Abs(p.Y - map.FarmCenter.Y) <= MapGenerator.FarmRadius;
 
+        /// <summary>Maillage d'un arbre seul, pied a l'origine (pour l'animation de chute).</summary>
+        public static Mesh SingleTree(WorldGrid grid, GridPos p, out Vector3 pivot)
+        {
+            var md = new MeshData();
+            var c = new Vector3((p.X + 0.5f) * CellSize, TopY(grid.GetLevel(p)), (p.Y + 0.5f) * CellSize);
+            pivot = c + new Vector3(Hash(p.X, p.Y, 3) - 0.5f, 0, Hash(p.X, p.Y, 4) - 0.5f) * 0.8f;
+            AddTree(md, pivot, Hash(p.X, p.Y, 6));
+            for (int i = 0; i < md.V.Count; i++) md.V[i] -= pivot;
+            return md.ToMesh("FallingTree");
+        }
+
         /// <summary>Maillage d'un morceau de terrain dont le coin est la case (cx, cy).</summary>
         public static Mesh BuildChunk(GeneratedMap map, int cx, int cy)
         {
