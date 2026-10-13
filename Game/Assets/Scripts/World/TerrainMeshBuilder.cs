@@ -182,6 +182,7 @@ namespace AfterCity.Game.World
                         var bt = Building.TypeOf(structure);
                         if (bt == BuildingType.Shelter) AddShelter(md, corner, Hash(x, y, 10));
                         else if (bt == BuildingType.ExpeditionPost) AddExpeditionPost(md, corner);
+                        else if (bt == BuildingType.Farmhouse) AddFarmhouse(md, corner);
                         else AddWatchtower(md, corner);
                     }
                     continue;
@@ -197,14 +198,6 @@ namespace AfterCity.Game.World
                         break;
                 }
             }
-            // Grange de la ferme : un bloc rouge delave avec toit
-            if (cx <= map.FarmCenter.X && map.FarmCenter.X < cx + ChunkSize && cy <= map.FarmCenter.Y && map.FarmCenter.Y < cy + ChunkSize)
-            {
-                var b = new Vector3((map.FarmCenter.X + 3.5f) * CellSize, TopY(farmLevel), (map.FarmCenter.Y + 3.5f) * CellSize);
-                md.Box(b, new Vector3(3.2f, 2.4f, 4.2f), Lin(new Color(0.55f, 0.24f, 0.18f)));
-                md.Box(b + Vector3.up * 2.4f, new Vector3(3.6f, 0.25f, 4.6f), Lin(new Color(0.30f, 0.28f, 0.27f)));
-            }
-
             return md.ToMesh($"Terrain_{cx}_{cy}");
         }
 
@@ -241,6 +234,15 @@ namespace AfterCity.Game.World
             // Porte et fenetre
             md.Box(center + new Vector3(0, 0, -1.51f), new Vector3(0.7f, 1.2f, 0.04f), Lin(new Color(0.25f, 0.18f, 0.12f)));
             md.Box(center + new Vector3(1.0f, 0.9f, -1.51f), new Vector3(0.5f, 0.45f, 0.04f), Lin(new Color(0.85f, 0.70f, 0.40f)));
+        }
+
+        /// <summary>Grange rouge delavee de la ferme de depart (2 x 2 cases).</summary>
+        static void AddFarmhouse(MeshData md, Vector3 corner)
+        {
+            var b = corner + new Vector3(CellSize, 0, CellSize);
+            md.Box(b, new Vector3(3.4f, 2.4f, 3.6f), Lin(new Color(0.55f, 0.24f, 0.18f)));
+            md.Box(b + Vector3.up * 2.4f, new Vector3(3.8f, 0.25f, 4.0f), Lin(new Color(0.30f, 0.28f, 0.27f)));
+            md.Box(b + new Vector3(0, 0, -1.81f), new Vector3(1.4f, 1.8f, 0.04f), Lin(new Color(0.85f, 0.80f, 0.70f)));
         }
 
         /// <summary>Poste d'expedition 2 x 2 : garage en tole, porte roulante, antenne radio, pick-up devant.</summary>

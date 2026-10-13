@@ -162,6 +162,7 @@ namespace AfterCity.Core.Sim
                 var p = new GridPos(map.FarmCenter.X - 1 + i % 3, map.FarmCenter.Y - 1 + i / 3);
                 c.AddVillager(p);
             }
+            c.AddPrebuilt(BuildingType.Farmhouse, new GridPos(map.FarmCenter.X + 2, map.FarmCenter.Y + 2));
             c.Stock.Add(ResourceType.Wood, 10);
             c.Stock.Add(ResourceType.Food, 30);
             return c;
@@ -260,6 +261,20 @@ namespace AfterCity.Core.Sim
                 if (_jobs.ContainsKey(p) || BuildingAt(p) != null || IsOccupied(p)) return false;
             }
             return true;
+        }
+
+        /// <summary>Ajoute un batiment deja construit (decor de depart).</summary>
+        public Building AddPrebuilt(BuildingType type, GridPos origin)
+        {
+            var b = new Building(type, origin) { Built = true };
+            for (int y = 0; y < b.Size; y++)
+            for (int x = 0; x < b.Size; x++)
+            {
+                var p = new GridPos(origin.X + x, origin.Y + y);
+                if (Grid.InBounds(p)) Grid.SetStructure(p, Building.StructureCode(type, x == 0 && y == 0));
+            }
+            _buildings.Add(b);
+            return b;
         }
 
         /// <summary>Pose un chantier : les ressources sont payees tout de suite (rendues si on annule).</summary>

@@ -184,7 +184,7 @@ namespace AfterCity.Game
                 ? "Clic : poser le chantier (terrain plat et degage)    Clic droit : annuler    Echap : deselectionner"
                 : _tool.Current.HasValue
                 ? "Clic ou glisser : donner l'ordre    Clic droit : annuler    Echap : deselectionner"
-                : "Choisis un ordre (1 a 7) ou un batiment (8, 9). Clic droit / glisser droit pour annuler.";
+                : "Choisis un ordre (1 a 7) ou un batiment (8, 9, 0). Clic droit / glisser droit pour annuler.";
             var hr = new Rect(r.x + 40, r.y - 34, r.width - 80, 28);
             GUI.Box(hr, GUIContent.none, _panel);
             GUI.Label(hr, hint, hintStyle);
