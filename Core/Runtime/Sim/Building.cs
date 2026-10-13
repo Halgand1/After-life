@@ -10,7 +10,9 @@ namespace AfterCity.Core.Sim
         ExpeditionPost, // poste d'expedition : envoie des survivants fouiller la ville
         Field,       // champ : recolte des vivres chaque soir
         Workshop,    // atelier de demontage : transforme la ferraille en pieces detachees
-        Farmhouse    // grange de la ferme de depart (deja la, non constructible)
+        Farmhouse,   // grange de la ferme de depart (deja la, non constructible)
+        LivestockPen, // enclos a betail : des vaches retrouvees, du lait chaque soir, un veau de temps en temps
+        HorsePen     // enclos a chevaux : chaque cheval raccourcit les expeditions
     }
 
     /// <summary>Caracteristiques d'un type de batiment.</summary>
@@ -44,6 +46,8 @@ namespace AfterCity.Core.Sim
                 case BuildingType.Farmhouse: return new BuildingSpec("Grange", 2, 0, 0, 0);
                 case BuildingType.Workshop: return new BuildingSpec("Atelier de demontage", 2, 12, 6, 12, BuildingType.ExpeditionPost);
                 case BuildingType.Field: return new BuildingSpec("Champ", 2, 4, 0, 6);
+                case BuildingType.LivestockPen: return new BuildingSpec("Enclos a betail", 3, 12, 0, 10);
+                case BuildingType.HorsePen: return new BuildingSpec("Enclos a chevaux", 3, 16, 4, 12, BuildingType.ExpeditionPost);
                 default: return new BuildingSpec(type.ToString(), 1, 0, 0, 5);
             }
         }
@@ -56,6 +60,13 @@ namespace AfterCity.Core.Sim
         public GridPos Origin { get; }
         public int Size => BuildingSpec.Of(Type).Size;
         public bool Built { get; internal set; }
+        /// <summary>Betes dans l'enclos (vaches ou chevaux).</summary>
+        public int Animals { get; internal set; }
+        public int AnimalCapacity => CapacityOf(Type);
+        internal int DaysSinceNewAnimal;
+
+        public static int CapacityOf(BuildingType type) =>
+            type == BuildingType.LivestockPen ? 4 : type == BuildingType.HorsePen ? 3 : 0;
 
         internal Building(BuildingType type, GridPos origin)
         {

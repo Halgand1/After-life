@@ -204,14 +204,56 @@ namespace AfterCity.Core.Sim
         public bool HasFarm { get; set; }
         double _lastHour = -1;
 
-        /// <summary>Vivres recoltes chaque soir.</summary>
+        /// <summary>Vivres recoltes chaque soir (champs et lait des vaches).</summary>
         public int DailyHarvest
         {
             get
             {
                 int n = HasFarm ? FarmYield : 0;
-                foreach (var b in _buildings) if (b.Built && b.Type == BuildingType.Field) n += FieldYield;
+                foreach (var b in _buildings)
+                {
+                    if (!b.Built) continue;
+                    if (b.Type == BuildingType.Field) n += FieldYield;
+                    if (b.Type == BuildingType.LivestockPen) n += b.Animals * MilkPerCow;
+                }
                 return n;
+            }
+        }
+
+        public const int MilkPerCow = 1;
+        public const int PenStartCows = 2;
+        public const int PenStartHorses = 1;
+        public const int CalfEveryDays = 2;
+        public const int StrayHorseEveryDays = 3;
+        public const double HorseExpeditionBonus = 0.15;
+        public const int MaxHorsesForExpeditions = 2;
+
+        /// <summary>Le nombre de betes d'un enclos a change (enclos fini, naissance, cheval errant).</summary>
+        public event Action<Building> PenChanged;
+
+        public int Horses
+        {
+            get { int n = 0; foreach (var b in _buildings) if (b.Built && b.Type == BuildingType.HorsePen) n += b.Animals; return n; }
+        }
+
+        /// <summary>Duree des expeditions : -15 % par cheval, deux chevaux au plus.</summary>
+        public double ExpeditionDurationFactor => 1.0 - HorseExpeditionBonus * Math.Min(Horses, MaxHorsesForExpeditions);
+
+        /// <summary>A l'aube : un veau naît s'il y a deux vaches et de la place, un cheval errant rejoint l'enclos.</summary>
+        void TickPens()
+        {
+            foreach (var b in _buildings)
+            {
+                if (!b.Built || b.AnimalCapacity == 0) continue;
+                b.DaysSinceNewAnimal++;
+                if (b.Animals >= b.AnimalCapacity) continue;
+                bool add = b.Type == BuildingType.LivestockPen
+                    ? b.Animals >= 2 && b.DaysSinceNewAnimal >= CalfEveryDays
+                    : b.DaysSinceNewAnimal >= StrayHorseEveryDays;
+                if (!add) continue;
+                b.Animals++;
+                b.DaysSinceNewAnimal = 0;
+                PenChanged?.Invoke(b);
             }
         }
 
@@ -534,6 +576,7 @@ namespace AfterCity.Core.Sim
                 m.Away = true;
             }
             var e = new Expedition(target, members);
+            e.Remaining = target.Duration * ExpeditionDurationFactor;
             _expeditions.Add(e);
             return e;
         }
@@ -597,6 +640,7 @@ namespace AfterCity.Core.Sim
         {
             Time += dt;
             bool night = IsNight;
+            if (_wasNight && !night) TickPens();
             if (_wasNight && !night && _villagers.Count < Capacity && Grid.InBounds(Home))
             {
                 var v = AddVillager(Home);
@@ -856,6 +900,9 @@ namespace AfterCity.Core.Sim
                         if (x != 0 || y != 0) CellChanged?.Invoke(c);
                     }
                     b.Built = true;
+                    if (b.Type == BuildingType.LivestockPen) b.Animals = PenStartCows;
+                    if (b.Type == BuildingType.HorsePen) b.Animals = PenStartHorses;
+                    if (b.Animals > 0) PenChanged?.Invoke(b);
                     return true;
                 }
                 case JobType.Barricade:
