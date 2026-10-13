@@ -27,6 +27,7 @@ import sys
 
 import bpy  # noqa: I001 (bpy avant bmesh : obligatoire hors de Blender)
 import bmesh
+import mathutils
 from mathutils import Matrix, Vector
 
 # ---------------------------------------------------------------------------
@@ -85,6 +86,10 @@ for _nom in list(PALETTE):
         gris = sum(rgb) / 3
         rgb = [(v + (gris - v) * 0.45) * 0.8 for v in rgb]
         PALETTE["z_" + _nom] = (5, _c, "".join("%02X" % round(v * 255) for v in rgb))
+
+# Pose de repos exportée en T (bras à l'horizontale) : demandé pour le type Humanoid d'Unity,
+# dont « Enforce T-Pose » ne peut pas être lancé par script. Les animations restent identiques.
+POSE_T = True
 
 CASE = 16  # pixels par case, grille 16 x 16 sur 256 px
 
@@ -1355,6 +1360,100 @@ def exporter_fbx(perso, dossier):
     return chemin
 
 
+def _fcurves(act):
+    """Courbes d'une action, API de Blender 4.4+ (calques et emplacements) ou ancienne API."""
+    if getattr(act, "layers", None):
+        res = []
+        for lay in act.layers:
+            for st in lay.strips:
+                for cb in getattr(st, "channelbags", []):
+                    res.extend(cb.fcurves)
+        if res:
+            return res
+    return list(getattr(act, "fcurves", []))
+
+
+def passer_en_pose_t(perso):
+    """Repos en T (bras à l'horizontale) pour le type Humanoid d'Unity, animations inchangées.
+
+    Les bras sont levés de 90° et cette pose devient la pose de repos (maillages compris) ;
+    chaque clé des os UpperArm est compensée (L' = D⁻¹ · L) pour que le mouvement reste identique."""
+    arm = perso["arm"]
+    bpy.context.view_layer.objects.active = arm
+    for o in bpy.context.selected_objects:
+        o.select_set(False)
+    arm.select_set(True)
+    if arm.animation_data:
+        arm.animation_data.action = None
+    D = {}
+    bpy.ops.object.mode_set(mode="POSE")
+    for pb in arm.pose.bones:
+        pb.rotation_euler = (0, 0, 0)
+        pb.location = (0, 0, 0)
+    for cote, sx in (("L", 1), ("R", -1)):
+        pb = arm.pose.bones["UpperArm_" + cote]
+        meilleur = None
+        for signe in (1, -1):  # le bon sens est celui qui écarte le bras du corps
+            pb.rotation_euler = (0, 0, math.radians(90 * signe))
+            bpy.context.view_layer.update()
+            dx = sx * (pb.tail.x - pb.head.x)
+            if meilleur is None or dx > meilleur[0]:
+                meilleur = (dx, signe)
+        pb.rotation_euler = (0, 0, math.radians(90 * meilleur[1]))
+        D[pb.name] = pb.rotation_euler.to_matrix()
+    bpy.context.view_layer.update()
+    bpy.ops.object.mode_set(mode="OBJECT")
+    # maillages : figer la pose dans les sommets, puis remettre le modificateur
+    for o in perso["objets"]:
+        if o.type != "MESH":
+            continue
+        mod = next((m for m in o.modifiers if m.type == "ARMATURE"), None)
+        if mod is None:
+            continue
+        bpy.context.view_layer.objects.active = o
+        bpy.ops.object.modifier_apply(modifier=mod.name)
+        m = o.modifiers.new("Armature", "ARMATURE")
+        m.object = arm
+    # objets d'équipement accrochés aux os : garder leur place dans le monde
+    enfants = [(o, o.matrix_world.copy()) for o in perso["objets"] if o.parent == arm and o.parent_type == "BONE"]
+    bpy.context.view_layer.objects.active = arm
+    bpy.ops.object.mode_set(mode="POSE")
+    bpy.ops.pose.select_all(action="SELECT")
+    bpy.ops.pose.armature_apply(selected=False)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.context.view_layer.update()
+    for o, mw in enfants:
+        o.matrix_world = mw
+    # compensation des clés
+    for act in perso["actions"]:
+        courbes = {}
+        for fc in _fcurves(act):
+            for nom in D:
+                if fc.data_path == 'pose.bones["%s"].rotation_euler' % nom:
+                    courbes.setdefault(nom, {})[fc.array_index] = fc
+        for nom, fcs in courbes.items():
+            if len(fcs) < 3:
+                continue
+            Dinv = D[nom].inverted()
+            images = sorted({kp.co.x for kp in fcs[0].keyframe_points})
+            prec = None
+            nouvelles = {}
+            for f in images:
+                e = mathutils.Euler([fcs[i].evaluate(f) for i in range(3)], "XYZ")
+                n = (Dinv @ e.to_matrix()).to_euler("XYZ", prec) if prec else (Dinv @ e.to_matrix()).to_euler("XYZ")
+                prec = n
+                nouvelles[f] = n
+            for i in range(3):
+                for kp in fcs[i].keyframe_points:
+                    v = nouvelles[kp.co.x][i]
+                    d = v - kp.co.y
+                    kp.co.y = v
+                    kp.handle_left.y += d
+                    kp.handle_right.y += d
+                fcs[i].update()
+    perso["pose_t"] = True
+
+
 def preparer_nla(perso):
     """Une piste NLA par animation : l'export FBX en fait une prise (take) chacune."""
     arm = perso["arm"]
@@ -1478,6 +1577,9 @@ def principal(sortie=None, rendu=True):
         persos_z.append(pz)
         x += {"Cogneur": .95, "Grimpeur": 1.15}.get(nom, .8)
 
+    if POSE_T:
+        for p in persos_s + persos_z:
+            passer_en_pose_t(p)
     bilan = []
     for p in persos_s + persos_z:
         bilan.append("%-22s hauteur %.2f m  triangles LOD0/1/2 = %s  equipement = %d  animations = %s" % (
@@ -1489,6 +1591,8 @@ def principal(sortie=None, rendu=True):
         os.makedirs(sortie, exist_ok=True)
         with open(os.path.join(sortie, "bilan.txt"), "w", encoding="utf-8") as f:
             f.write("\n".join(bilan) + "\n")
+            if POSE_T:
+                f.write("Pose de repos des SK_ : en T (bras a l'horizontale), animations identiques.\n")
         for p in persos_s + persos_z:
             preparer_nla(p)
             exporter_fbx(p, sortie)

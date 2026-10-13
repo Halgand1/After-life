@@ -1,0 +1,43 @@
+After City · décor urbain abandonné · triangles par LOD, emprise en cases (1 case = 2 m)
+
+[Vehicules]
+SM_Epave_Berline_A             1 x 2 cases  hauteur 1.00 m  triangles LOD0/1/2 = 388/216/108  accroches = SOCKET_Travail_01, SOCKET_Travail_02, SOCKET_Fumee  · épave à fouiller puis démonter
+SM_Epave_Berline_B             1 x 2 cases  hauteur 0.90 m  triangles LOD0/1/2 = 376/216/108  accroches = SOCKET_Travail_01, SOCKET_Travail_02, SOCKET_Fumee  · épave à fouiller puis démonter
+SM_Epave_Berline_Brulee        1 x 2 cases  hauteur 0.88 m  triangles LOD0/1/2 = 292/196/136  accroches = SOCKET_Travail_01, SOCKET_Travail_02, SOCKET_Fumee  · épave à fouiller puis démonter
+SM_Epave_Pickup                1 x 2 cases  hauteur 1.01 m  triangles LOD0/1/2 = 376/244/160  accroches = SOCKET_Travail_01, SOCKET_Travail_02  · pick-up à fouiller, benne pleine de débris
+SM_Epave_Camionnette           1 x 2 cases  hauteur 1.23 m  triangles LOD0/1/2 = 304/196/136  accroches = SOCKET_Travail_01, SOCKET_Travail_02  · camionnette de livraison, portes arrière ouvertes
+
+[Debris]
+SM_Debris_Gravats_Brique       1 x 1 cases  hauteur 0.49 m  triangles LOD0/1/2 = 432/324/168  accroches = SOCKET_Travail_01  · tas de gravats : ordre Nettoyer
+SM_Debris_Gravats_Beton        1 x 1 cases  hauteur 0.49 m  triangles LOD0/1/2 = 432/336/168  accroches = SOCKET_Travail_01  · tas de gravats : ordre Nettoyer
+SM_Debris_Pneus                1 x 1 cases  hauteur 0.65 m  triangles LOD0/1/2 = 328/216/72  accroches = aucune  · pneus usagés : caoutchouc au recycleur
+SM_Debris_Bidons               1 x 1 cases  hauteur 0.77 m  triangles LOD0/1/2 = 192/108/72  accroches = aucune  · bidons de 200 l : un renversé, un brûle-tout
+SM_Debris_Poubelles            1 x 1 cases  hauteur 1.07 m  triangles LOD0/1/2 = 136/60/12  accroches = aucune  · conteneur et sacs : déchets pour le recycleur
+SM_Debris_Palettes             1 x 1 cases  hauteur 0.41 m  triangles LOD0/1/2 = 312/240/36  accroches = aucune  · palettes et planches : bois de récupération
+SM_Debris_Toles                1 x 1 cases  hauteur 0.49 m  triangles LOD0/1/2 = 88/60/24  accroches = aucune  · tôles arrachées et ferraille : ordre Démonter
+
+[Maisons]
+SM_Maison_Pavillon_Ruine       2 x 2 cases  hauteur 3.10 m  triangles LOD0/1/2 = 1036/700/412  accroches = SOCKET_Porte, SOCKET_Travail_01, SOCKET_Travail_02  · pavillon abandonné : à fouiller puis rénover
+SM_Maison_Etage_Ruine          3 x 2 cases  hauteur 5.00 m  triangles LOD0/1/2 = 1588/1024/664  accroches = SOCKET_Porte, SOCKET_Travail_01, SOCKET_Travail_02  · maison à étage effondrée : gravats et pièces rares à l'étage
+SM_Cabane_Jardin_Ruine         1 x 1 cases  hauteur 1.59 m  triangles LOD0/1/2 = 180/108/72  accroches = SOCKET_Porte  · cabane de jardin en ruine : outils
+
+[Clotures]
+SM_Cloture_Bois                1 x 1 cases  hauteur 0.85 m  triangles LOD0/1/2 = 180/108/48  accroches = aucune  · clôture de jardin, segment d'une case
+SM_Cloture_Bois_Cassee         1 x 1 cases  hauteur 0.85 m  triangles LOD0/1/2 = 180/108/48  accroches = aucune  · clôture de jardin, segment d'une case
+SM_Cloture_Grillage            1 x 1 cases  hauteur 1.56 m  triangles LOD0/1/2 = 108/72/52  accroches = aucune  · grillage sur poteaux, segment d'une case
+SM_Cloture_Grillage_Cassee     1 x 1 cases  hauteur 1.56 m  triangles LOD0/1/2 = 132/84/64  accroches = aucune  · grillage sur poteaux, segment d'une case
+
+[Barricades]
+SM_Barricade_Planches          1 x 1 cases  hauteur 1.40 m  triangles LOD0/1/2 = 264/144/72  accroches = aucune  · barricade de planches clouées sur poteaux
+SM_Barricade_SacsDeSable       1 x 1 cases  hauteur 0.77 m  triangles LOD0/1/2 = 228/216/168  accroches = aucune  · mur de sacs de sable, hauteur d'un niveau
+SM_Barricade_ChevalDeFrise     1 x 1 cases  hauteur 0.90 m  triangles LOD0/1/2 = 204/180/100  accroches = aucune  · cheval de frise : ralentit et blesse les zombies
+SM_Barricade_Palettes          1 x 1 cases  hauteur 1.11 m  triangles LOD0/1/2 = 288/288/108  accroches = aucune  · palettes dressées et tôle : barricade d'ère 1
+
+[Panneaux]
+SM_Panneau_Stop                1 x 1 cases  hauteur 1.81 m  triangles LOD0/1/2 = 148/88/76  accroches = aucune  · panneau stop tordu
+SM_Panneau_Limite              1 x 1 cases  hauteur 1.73 m  triangles LOD0/1/2 = 132/24/24  accroches = aucune  · limite de vitesse criblée
+SM_Panneau_Direction           2 x 1 cases  hauteur 2.33 m  triangles LOD0/1/2 = 120/36/36  accroches = aucune  · grand panneau de direction vert, à moitié tombé
+SM_Panneau_Aide                1 x 1 cases  hauteur 1.30 m  triangles LOD0/1/2 = 204/36/36  accroches = aucune  · contreplaqué peint AIDE : signal de sauvetage
+SM_Lampadaire_Casse            1 x 1 cases  hauteur 2.20 m  triangles LOD0/1/2 = 92/80/40  accroches = aucune  · lampadaire plié par une voiture
+SM_Poteau_Electrique           1 x 1 cases  hauteur 3.20 m  triangles LOD0/1/2 = 200/68/40  accroches = aucune  · poteau électrique en bois, câbles coupés
+

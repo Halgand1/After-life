@@ -72,27 +72,27 @@ PALETTE = {
     "crin_noir": (6, 9, "231E1B"), "vache_blanc": (6, 10, "D2CCBE"), "vache_noir": (6, 11, "2A2724"),
     "mufle_rose": (6, 12, "B98A80"), "liste_blanche": (6, 13, "E0DACB"),
     # Ligne 8 et 9 : bâtiments (palette.md)
-    "rouge_grange": (8, 0, "8E3B2A"), "blanc_ecaille": (8, 1, "D8D2C0"),
-    "bardeaux": (8, 2, "5B5650"), "bois_neuf": (8, 3, "B88A57"),
-    "bois_vieilli": (8, 4, "8E8574"), "rondin": (8, 5, "7A5B3C"),
-    "tole_galva": (8, 6, "A3A8A6"), "tole_rouillee": (8, 7, "8B5A3A"),
-    "bache_bleue": (8, 8, "3F6E8F"), "toile_tente": (8, 9, "A49A72"),
-    "sac_sable": (8, 10, "B5A57A"), "pierre": (8, 11, "9C978A"),
+    "rouge_grange": (8, 0, "7E3528"), "blanc_ecaille": (8, 1, "BDB6A3"),
+    "bardeaux": (8, 2, "4E4A45"), "bois_neuf": (8, 3, "A87F51"),
+    "bois_vieilli": (8, 4, "7E7667"), "rondin": (8, 5, "6A4F35"),
+    "tole_galva": (8, 6, "959A98"), "tole_rouillee": (8, 7, "6E4A35"),
+    "bache_bleue": (8, 8, "3F6E8F"), "toile_tente": (8, 9, "938A66"),
+    "sac_sable": (8, 10, "A59670"), "pierre": (8, 11, "8A857A"),
     "brique": (8, 12, "9A5A40"), "beton": (8, 13, "A6A39A"),
-    "vitre_sale": (8, 14, "6F7C78"), "vegetation": (8, 15, "55663A"),
+    "vitre_sale": (8, 14, "4E5A57"), "vegetation": (8, 15, "4A5A32"),
     "fenetre_eclairee": (9, 0, "FFB766"), "braises": (9, 1, "FF8A3D"),
-    "suie": (9, 2, "2B2622"), "paille": (9, 3, "C9B26A"), "terre": (9, 4, "6C5236"),
-    # Ligne 10 : décor urbain (ajout de ce script)
-    "voiture_bleue": (10, 0, "5E7387"), "voiture_rouge": (10, 1, "8E4436"),
-    "voiture_creme": (10, 2, "C8BC9A"), "voiture_verte": (10, 3, "5D6E55"),
-    "pneu": (10, 4, "222324"), "chrome": (10, 5, "A9ADA8"),
-    "feu_rouge": (10, 6, "7A2620"), "panneau_rouge": (10, 7, "A33A2E"),
-    "panneau_blanc": (10, 8, "DCD8CC"), "panneau_vert": (10, 9, "3F6B4E"),
-    "panneau_jaune": (10, 10, "C9A23A"), "peinture_rouge": (10, 11, "9A2B22"),
-    "contreplaque": (10, 12, "B49A6A"), "grillage": (10, 13, "8D928F"),
-    "poubelle_verte": (10, 14, "3E5A45"), "bidon_bleu": (10, 15, "3B5F86"),
-    "interieur_sombre": (11, 0, "1F1D1B"), "mousse": (11, 1, "6F7A45"),
-    "herbe_seche": (11, 2, "9A9256"), "bois_peint_vert": (11, 3, "4E6A5A"),
+    "suie": (9, 2, "2B2622"), "paille": (9, 3, "B8A160"), "terre": (9, 4, "5E4730"),
+    # Ligne 7 et fin de la ligne 9 : décor urbain (palette.md, fusion du fil 3D)
+    "voiture_bleue": (7, 0, "5E7387"), "voiture_rouge": (7, 1, "8E4436"),
+    "voiture_creme": (7, 2, "C8BC9A"), "voiture_verte": (7, 3, "5D6E55"),
+    "pneu": (7, 4, "222324"), "chrome": (7, 5, "A9ADA8"),
+    "feu_rouge": (7, 6, "7A2620"), "panneau_rouge": (7, 7, "A33A2E"),
+    "panneau_blanc": (7, 8, "DCD8CC"), "panneau_vert": (7, 9, "3F6B4E"),
+    "panneau_jaune": (7, 10, "C9A23A"), "peinture_rouge": (7, 11, "9A2B22"),
+    "contreplaque": (7, 12, "B49A6A"), "grillage": (7, 13, "8D928F"),
+    "poubelle_verte": (7, 14, "3E5A45"), "bidon_bleu": (7, 15, "3B5F86"),
+    "interieur_sombre": (9, 12, "1F1D1B"), "mousse": (9, 13, "6F7A45"),
+    "herbe_seche": (9, 14, "9A9256"), "bois_peint_vert": (9, 15, "4E6A5A"),
 }
 # Ligne 5 : tissus de zombies (même calcul que generer_personnages.py)
 for _nom in list(PALETTE):
@@ -117,22 +117,26 @@ def uv_case(nom):
     return ((col + 0.5) / 16.0 * ECH, 1.0 - (ligne + 0.5) / 16.0 * ECH)
 
 
+TEXTURE_CANON = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "modeles3d", "sorties", "T_Batiments_1024.png")
+
+
 def creer_palette(dossier=None):
-    """T_Batiments_1024 : la palette (16 x 16 cases de 16 px) en haut à gauche ; le reste
-    est réservé à la future trim sheet et reste gris neutre pour l'instant."""
+    """Charge la texture canonique T_Batiments_1024 du fil 3D (modeles3d/sorties).
+    Le décor n'en livre pas de copie : Unity utilise la texture partagée."""
+    chemin = os.path.normpath(TEXTURE_CANON)
+    if os.path.exists(chemin):
+        img = bpy.data.images.load(chemin, check_existing=True)
+        img.name = "T_Batiments_1024"
+        return img
+    # secours si le dossier modeles3d est absent : palette seule, non enregistrée
     import numpy as np
-    img = bpy.data.images.get("T_Batiments_1024") or bpy.data.images.new("T_Batiments_1024", TEX, TEX, alpha=False)
-    px = np.full((TEX, TEX, 4), 0.502, dtype=np.float32)   # gris #808080 (image 8 bits : valeurs sRGB)
+    img = bpy.data.images.new("T_Batiments_1024", TEX, TEX, alpha=False)
+    px = np.full((TEX, TEX, 4), 0.502, dtype=np.float32)
     px[..., 3] = 1.0
     for ligne, col, hx in PALETTE.values():
-        rgb = [(int(hx[i:i + 2], 16) / 255) for i in (0, 2, 4)]
         y1 = TEX - ligne * CASE
-        px[y1 - CASE:y1, col * CASE:(col + 1) * CASE, :3] = rgb
+        px[y1 - CASE:y1, col * CASE:(col + 1) * CASE, :3] = [int(hx[i:i + 2], 16) / 255 for i in (0, 2, 4)]
     img.pixels.foreach_set(px.ravel())
-    if dossier:
-        img.filepath_raw = os.path.join(dossier, "T_Batiments_1024.png")
-        img.file_format = "PNG"
-        img.save()
     return img
 
 

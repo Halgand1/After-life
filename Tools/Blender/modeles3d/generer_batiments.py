@@ -802,9 +802,9 @@ BATIMENTS = {
     "SM_EnclosChevaux_Fini": (enclos_chevaux, "Fini", (4, 5), 1500),
 }
 KIT = {  # pièces modulaires : nom -> (fonction, pièce, budget)
-    "SM_Palissade_Droit_A": (palissade, "Droit_A", 250),
-    "SM_Palissade_Droit_B": (palissade, "Droit_B", 270),
-    "SM_Palissade_Droit_C": (palissade, "Droit_C", 270),
+    "SM_Palissade_Droit_A": (palissade, "Droit_A", 270),
+    "SM_Palissade_Droit_B": (palissade, "Droit_B", 290),
+    "SM_Palissade_Droit_C": (palissade, "Droit_C", 300),
     "SM_Palissade_Coin": (palissade, "Coin", 400),
     "SM_Palissade_Fin": (palissade, "Fin", 200),
     "SM_Palissade_Porte": (palissade, "Porte", 600),
