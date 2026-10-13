@@ -68,6 +68,17 @@
 4. Rôles des survivants : le modèle est actuellement choisi par `id % 7` ; il faudra les relier à un vrai rôle dans `Core` (Villager.Role).
 5. Plus tard (retours de Sam) : cerfs et sangliers en forêt, enclos, emplacements d'équipement par survivant, personnages plus détaillés.
 
+## Temps de jeu : journée de 80 s (13/10, 21h45, décision de Sam)
+
+Fait : `Colony.DayLength = 80` (avant 240), calendrier `Colony.Season / DayOfSeason / Year` (4 saisons de 6 jours, année de 24 jours, `Seasons.Name`), tests adaptés (102 verts). Valeurs : `/mnt/project-files/equilibrage/temps_et_paliers.json > temps` (v0.2).
+
+À reprendre (volontairement pas fait ce soir, pour finir vite et proprement) :
+1. **Les hordes n'atteignent pas la ferme** : elles apparaissent au bord de la carte (128 cases) à 20h30, marchent à 0,7 case/s et s'effondrent à l'aube. Mesuré sur 4 cartes avec la journée de 240 s : au plus près 14 à 38 cases de la ferme. Avec 80 s, la nuit dure 32 s, c'est pire. Idée : la horde se met en marche à midi à ~30 cases de la base, on la voit venir, elle attaque la nuit et ne s'effondre plus à l'aube tant qu'il reste des rôdeurs. À faire valider par Sam.
+2. Part de nuit 0,35 de l'équilibrage (actuellement 20h30-6h = 0,40) : touche aussi les lumières et l'ambiance.
+3. Calendrier des hordes de l'équilibrage (1re nuit au jour 18, puis tous les 12 jours, annonce 3 jours avant) : le moteur garde « jour 3 puis chaque nuit ».
+4. Le reste de l'import de l'équilibrage (durées d'expédition en jours, Fruits/Herbes, hygiène, fosses...) : voir `equilibrage/DECISIONS_SAM.md`.
+5. Effets des saisons (GDD 14.4 : l'hiver arrête les cultures et augmente le bois, l'été l'eau) : pas encore branchés.
+
 ## Repères
 
 - Envoi GitHub : la session du projet pousse le code ; le paquet de transfert est dans `Builds/transfer/` (bundle git + objets LFS).

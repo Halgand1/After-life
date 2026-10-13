@@ -96,8 +96,11 @@ namespace AfterCity.Core.Sim
     {
         public const double WalkSpeed = 1.6;   // cases par seconde (3,2 m/s)
         public const int BarricadeWoodCost = 2;
-        /// <summary>Duree d'une journee complete en secondes de jeu.</summary>
-        public const double DayLength = 240;
+        /// <summary>Duree d'une journee complete en secondes de jeu (equilibrage v0.2, decision de Sam : 80 s).</summary>
+        public const double DayLength = 80;
+        /// <summary>Calendrier (equilibrage temps_et_paliers v0.2) : 4 saisons de 6 jours, annee de 24 jours.</summary>
+        public const int DaysPerSeason = 6;
+        public const int DaysPerYear = DaysPerSeason * 4;
         public const double StartHour = 8;
 
         static readonly string[] Names =
@@ -116,6 +119,12 @@ namespace AfterCity.Core.Sim
         /// <summary>Numero du jour, a partir de 1.</summary>
         public int Day => 1 + (int)((Time / DayLength * 24.0 + StartHour) / 24.0);
         public bool IsNight => Hour >= 20.5 || Hour < 6.0;
+        /// <summary>Saison du jour courant (la partie commence au printemps).</summary>
+        public Season Season => (Season)((Day - 1) % DaysPerYear / DaysPerSeason);
+        /// <summary>Jour dans la saison, de 1 a DaysPerSeason.</summary>
+        public int DayOfSeason => (Day - 1) % DaysPerSeason + 1;
+        /// <summary>Annee de jeu, a partir de 1.</summary>
+        public int Year => (Day - 1) / DaysPerYear + 1;
 
         /// <summary>Un survivant est mort (deja retire de la liste).</summary>
         public event Action<Villager> VillagerDied;

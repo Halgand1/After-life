@@ -94,6 +94,7 @@ namespace AfterCity.Core.Tests
         {
             var c = FlatColony();
             c.AddVillager(Farm);
+            c.Stock.Add(ResourceType.Food, 5); // l'aube arrive pendant l'essai : il doit pouvoir manger
             // Douve seche de 2 niveaux tout autour de la ferme
             for (int y = 8; y <= 22; y++)
             for (int x = 8; x <= 22; x++)

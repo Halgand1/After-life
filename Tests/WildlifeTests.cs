@@ -121,14 +121,15 @@ namespace AfterCity.Core.Tests
             var c = Flat();
             c.AddVillager(new GridPos(5, 20));
             var deer = c.Wildlife.Spawn(AnimalKind.Deer, new GridPos(15, 20));
-            int gained = 0;
-            c.Hunted += (a, v, food) => gained += food;
+            int gained = 0, stockAtKill = -1;
+            c.Hunted += (a, v, food) => { gained += food; stockAtKill = c.Stock.Get(ResourceType.Food); };
             Assert.That(c.OrderHunt(deer), Is.True);
             Assert.That(c.OrderHunt(deer), Is.False, "un seul ordre par animal");
             Run(c, 180);
             Assert.That(deer.IsDead, Is.True);
             Assert.That(gained, Is.EqualTo(Wildlife.DeerMeat));
-            Assert.That(c.Stock.Get(ResourceType.Food), Is.EqualTo(Wildlife.DeerMeat));
+            // La viande va au stock (elle peut etre mangee a l'aube suivante, les journees ne durent que 80 s)
+            Assert.That(stockAtKill, Is.EqualTo(Wildlife.DeerMeat));
             Assert.That(c.Hunts, Is.Empty);
         }
 
@@ -138,12 +139,13 @@ namespace AfterCity.Core.Tests
             var c = Flat();
             var hunter = c.AddVillager(new GridPos(5, 20));
             var boar = c.Wildlife.Spawn(AnimalKind.Boar, new GridPos(14, 20));
-            int charges = 0;
+            int charges = 0, stockAtKill = -1;
             c.Wildlife.Charged += (a, v, dmg) => charges++;
+            c.Hunted += (a, v, food) => stockAtKill = c.Stock.Get(ResourceType.Food);
             c.OrderHunt(boar);
             Run(c, 120);
             Assert.That(boar.IsDead || hunter.IsDead, Is.True);
-            if (boar.IsDead) Assert.That(c.Stock.Get(ResourceType.Food), Is.EqualTo(Wildlife.BoarMeat));
+            if (boar.IsDead) Assert.That(stockAtKill, Is.EqualTo(Wildlife.BoarMeat));
         }
 
         [Test]
