@@ -39,3 +39,4 @@ Thumbs.db
 # Builds joueur (hors dépôt)
 Builds/
 
+Game/*.slnx
