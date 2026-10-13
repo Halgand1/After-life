@@ -13,7 +13,7 @@ namespace AfterCity.Core.Tests
             for (int y = 0; y < 20; y++)
             for (int x = 0; x < 20; x++)
                 g.SetLevel(new GridPos(x, y), 3);
-            var c = new Colony(g) { Home = new GridPos(3, 3) };
+            var c = new Colony(g) { Home = new GridPos(3, 3), IgnoreRequirements = true };
             for (int i = 0; i < survivors; i++) c.AddVillager(new GridPos(2 + i, 2));
             c.Stock.Add(ResourceType.Wood, 15);
             c.PlaceBuilding(BuildingType.ExpeditionPost, new GridPos(10, 10));

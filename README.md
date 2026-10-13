@@ -15,9 +15,9 @@ Conception : voir `/mnt/project-files/conception/` (document de conception, cahi
 
 ## Ce qui existe
 
-- `Core/` (moteur, C# pur, testé) : carte générée par graine (relief, biomes, rivière, ferme), décor récoltable (arbres, rochers, épaves), terraformage, survivants avec recherche de chemin A*, ordres (couper, tailler, démonter, creuser, remblayer, barricader, tracer des chemins de terre plus rapides), construction (abri, tour de guet, poste d'expédition), démontage des épaves et atelier (pièces tirées selon leur rareté : métal, caoutchouc, plastique, céramique, acier, électronique), expéditions en ville (réussite 50 à 95 % selon l'équipe et le danger, butin et blessures selon le résultat), cycle jour/nuit, hordes nocturnes de rôdeurs (champ de flux, barricades cassées, fosses de 2 niveaux qui piègent, défense au corps à corps, tirs des tours), arrivée de nouveaux survivants à l'aube.
-- `Game/` (Unity 6000.6, URP) : terrain en blocs par morceaux, survivants et zombies animés (modèles Blender), outil d'ordres façon K&C (clic ou glisser), HUD, SSAO et post-traitement (F2 pour comparer).
-- 51 tests automatisés, tous verts.
+- `Core/` (moteur, C# pur, testé) : carte générée par graine (relief, biomes, rivière, ferme), décor récoltable (arbres, rochers, épaves), terraformage, survivants avec recherche de chemin A*, ordres (couper, tailler, démonter, creuser, remblayer, barricader, tracer des chemins de terre plus rapides), construction avec arbre de progression (abri > poste d'expédition > atelier > tour de guet ; champ libre), technologie Asphalte (recherche à l'atelier, routes x2), nourriture (récolte à 18 h, repas à l'aube, famine), démontage des épaves et atelier (pièces tirées selon leur rareté : métal, caoutchouc, plastique, céramique, acier, électronique), expéditions en ville (réussite 50 à 95 % selon l'équipe et le danger, butin et blessures selon le résultat), cycle jour/nuit, hordes nocturnes de rôdeurs (champ de flux, barricades cassées, fosses de 2 niveaux qui piègent, défense au corps à corps, tirs des tours), arrivée de nouveaux survivants à l'aube.
+- `Game/` (Unity 6000.6, URP) : terrain en blocs par morceaux, survivants et zombies animés (modèles Blender), outil d'ordres façon K&C (clic ou glisser), HUD, minimap, nuit éclairée (feu de camp, lanternes), sons générés, SSAO et post-traitement (F2 pour comparer).
+- 58 tests automatisés, tous verts.
 
 ## Jouer
 
@@ -34,6 +34,8 @@ Lancer `Builds/Phase0/AfterCity.exe` (raccourci « After City (test) » sur le b
 | Espace, + / - | Pause, vitesse |
 | N | Passer à la nuit (la horde arrive à 20h30) |
 | F2 | Effets visuels on/off |
+| H | Aide (objectifs et commandes) |
+| Minimap | Clic pour déplacer la caméra |
 
 ## Modèles 3D
 

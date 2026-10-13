@@ -16,6 +16,7 @@ namespace AfterCity.Core.Sim
         Raise,      // remblayer d'un niveau : consomme de la terre
         Barricade,  // barricade de bois sur la case
         Road,       // tracer un chemin de terre
+        Asphalt,    // goudronner (technologie Asphalte, 1 pierre par case)
         Construct   // chantier d'un batiment (donne par PlaceBuilding)
     }
 
@@ -282,6 +283,9 @@ namespace AfterCity.Core.Sim
                 case JobType.Raise:
                     return feature == CellFeature.None && Grid.GetBiome(p) != Biome.Water && !Grid.HasWall(p)
                            && Grid.GetLevel(p) < WorldGrid.MaxLevel && Stock.Get(ResourceType.Earth) > PendingCount(JobType.Raise);
+                case JobType.Asphalt:
+                    return HasTech(TechType.Asphalt) && feature == CellFeature.None && Grid.GetBiome(p) != Biome.Water && !Grid.HasWall(p)
+                           && Grid.GetRoad(p) != RoadType.Asphalt && Stock.Get(ResourceType.Stone) >= 1;
                 case JobType.Road:
                     return feature == CellFeature.None && Grid.GetBiome(p) != Biome.Water && !Grid.HasWall(p)
                            && Grid.GetRoad(p) == RoadType.None;
@@ -297,6 +301,7 @@ namespace AfterCity.Core.Sim
         {
             if (!CanOrder(type, p)) return false;
             if (type == JobType.Barricade) Stock.TrySpend(ResourceType.Wood, BarricadeWoodCost);
+            if (type == JobType.Asphalt) Stock.TrySpend(ResourceType.Stone, 1);
             _jobs[p] = new Job(type, p);
             return true;
         }
@@ -318,6 +323,7 @@ namespace AfterCity.Core.Sim
         public bool CanPlace(BuildingType type, GridPos origin)
         {
             var spec = BuildingSpec.Of(type);
+            if (!IsUnlocked(type)) return false;
             if (Stock.Get(ResourceType.Wood) < spec.Wood || Stock.Get(ResourceType.Stone) < spec.Stone) return false;
             if (!Grid.InBounds(origin)) return false;
             int level = Grid.GetLevel(origin);
@@ -365,6 +371,7 @@ namespace AfterCity.Core.Sim
             if (planned != null) p = planned.Origin;
             if (!_jobs.TryGetValue(p, out var job)) return false;
             if (job.Type == JobType.Barricade) Stock.Add(ResourceType.Wood, BarricadeWoodCost);
+            if (job.Type == JobType.Asphalt) Stock.Add(ResourceType.Stone, 1);
             if (job.Type == JobType.Construct && job.Building != null)
             {
                 var spec = BuildingSpec.Of(job.Building.Type);
@@ -388,6 +395,36 @@ namespace AfterCity.Core.Sim
         {
             foreach (var v in _villagers) if (!v.Away && v.Cell.Equals(p)) return true;
             return false;
+        }
+
+        /// <summary>Ignore l'arbre de progression (demo, tests visuels).</summary>
+        public bool IgnoreRequirements { get; set; }
+        readonly HashSet<TechType> _techs = new HashSet<TechType>();
+
+        public bool IsUnlocked(BuildingType type)
+        {
+            var req = BuildingSpec.Of(type).Requires;
+            return IgnoreRequirements || !req.HasValue || HasBuilt(req.Value);
+        }
+
+        public bool HasTech(TechType t) => IgnoreRequirements || _techs.Contains(t);
+
+        public bool CanResearch(TechType t)
+        {
+            var s = TechSpec.Of(t);
+            return !_techs.Contains(t) && HasBuilt(s.RequiresBuilding)
+                   && Stock.Get(ResourceType.Scrap) >= s.Scrap && Stock.Get(ResourceType.Stone) >= s.Stone;
+        }
+
+        /// <summary>Recherche une technologie (immediat pour l'instant) en payant son cout.</summary>
+        public bool Research(TechType t)
+        {
+            if (!CanResearch(t)) return false;
+            var s = TechSpec.Of(t);
+            Stock.TrySpend(ResourceType.Scrap, s.Scrap);
+            Stock.TrySpend(ResourceType.Stone, s.Stone);
+            _techs.Add(t);
+            return true;
         }
 
         public bool HasBuilt(BuildingType type)
@@ -469,6 +506,7 @@ namespace AfterCity.Core.Sim
                 case JobType.Raise: return 2.5;
                 case JobType.Barricade: return 4.0;
                 case JobType.Road: return 1.5;
+                case JobType.Asphalt: return 2.5;
                 default: return 3.0;
             }
         }
@@ -575,7 +613,7 @@ namespace AfterCity.Core.Sim
                 }
                 return spots;
             }
-            bool onCell = job.Type == JobType.Chop || job.Type == JobType.Mine || job.Type == JobType.Salvage || job.Type == JobType.Road;
+            bool onCell = job.Type == JobType.Chop || job.Type == JobType.Mine || job.Type == JobType.Salvage || job.Type == JobType.Road || job.Type == JobType.Asphalt;
             if (onCell && Grid.GetBiome(job.Cell) != Biome.Water) spots.Add(job.Cell);
             foreach (var d in GridPos.Neighbours4)
             {
@@ -671,6 +709,9 @@ namespace AfterCity.Core.Sim
                     return Terraformer.Dig(p);
                 case JobType.Raise:
                     return Terraformer.Raise(p);
+                case JobType.Asphalt:
+                    Grid.SetRoad(p, RoadType.Asphalt);
+                    return true;
                 case JobType.Road:
                     if (Grid.GetRoad(p) != RoadType.None) return false;
                     Grid.SetRoad(p, RoadType.Dirt);

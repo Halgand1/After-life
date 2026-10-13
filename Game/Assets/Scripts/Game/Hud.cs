@@ -170,8 +170,13 @@ namespace AfterCity.Game
                 var t = tools[i];
                 var br = new Rect(r.x + 14 + i * (bw + gap), r.y + 12, bw, bh);
                 bool on = _tool.Current == t;
-                if (GUI.Button(br, $"<size=12><color=#9a9a96>{i + 1}</color></size>\n{OrderTool.ToolName(t)}", on ? _buttonOn : _button))
+                bool locked = t == JobType.Asphalt && !_game.Colony.HasTech(TechType.Asphalt);
+                GUI.enabled = !locked;
+                string key = i < 7 ? (i + 1).ToString() : " ";
+                string label = locked ? "Asphalte\n<size=11><color=#c08a7a>recherche a l'atelier</color></size>" : OrderTool.ToolName(t);
+                if (GUI.Button(br, $"<size=12><color=#9a9a96>{key}</color></size>\n{label}", on ? _buttonOn : _button))
                     _tool.Current = on ? (JobType?)null : t;
+                GUI.enabled = true;
                 GUI.color = OrderTool.ToolColor(t);
                 GUI.DrawTexture(new Rect(br.x + 10, br.y + 8, bw - 20, 5), _white);
                 GUI.color = Color.white;
@@ -181,6 +186,19 @@ namespace AfterCity.Game
                 var b = builds[i];
                 var br = new Rect(r.x + 14 + 16 + (tools.Length + i) * (bw + gap), r.y + 12, bw, bh);
                 bool on = _tool.CurrentBuilding == b;
+                var req = BuildingSpec.Of(b).Requires;
+                bool bLocked = !_game.Colony.IsUnlocked(b);
+                GUI.enabled = !bLocked;
+                if (bLocked)
+                {
+                    GUI.Button(br, $"<size=12> </size>\n{BuildingSpec.Of(b).Name}\n<size=11><color=#c08a7a>requiert : {BuildingSpec.Of(req.Value).Name}</color></size>", _button);
+                    GUI.enabled = true;
+                    GUI.color = new Color(0.55f, 0.75f, 0.95f, 0.4f);
+                    GUI.DrawTexture(new Rect(br.x + 10, br.y + 8, bw - 20, 5), _white);
+                    GUI.color = Color.white;
+                    continue;
+                }
+                GUI.enabled = true;
                 if (GUI.Button(br, $"<size=12><color=#9a9a96>{(tools.Length + i + 1 <= 10 ? ((tools.Length + i + 1) % 10).ToString() : " ")}</color></size>\n{OrderTool.BuildingLabel(b)}", on ? _buttonOn : _button))
                     _tool.CurrentBuilding = on ? (BuildingType?)null : b;
                 GUI.color = new Color(0.55f, 0.75f, 0.95f);
@@ -289,7 +307,7 @@ namespace AfterCity.Game
             bool anyPart = false;
             foreach (var (type, _) in Parts) if (colony.Stock.Get(type) > 0) anyPart = true;
             if (!hasWorkshop && !anyPart) return;
-            var r = Panel(new Rect(w - 392, top, 380, hasWorkshop ? 150 : 104));
+            var r = Panel(new Rect(w - 392, top, 380, hasWorkshop ? 196 : 104));
             GUI.Label(new Rect(r.x + 16, r.y + 8, 300, 28), "Pieces detachees", _title);
             var sb = new System.Text.StringBuilder();
             int k = 0;
@@ -307,6 +325,17 @@ namespace AfterCity.Game
                 if (parts != null) _game.Say("Atelier :" + GameRoot.Describe(parts));
             }
             GUI.enabled = true;
+
+            var tech = TechSpec.Of(TechType.Asphalt);
+            if (colony.HasTech(TechType.Asphalt))
+                GUI.Label(new Rect(r.x + 16, r.y + 146, 348, 36), "<color=#9fd27a>Asphalte recherche : outil 8 dans la barre</color>", _small);
+            else
+            {
+                GUI.enabled = colony.CanResearch(TechType.Asphalt);
+                if (GUI.Button(new Rect(r.x + 16, r.y + 146, 348, 36), $"Rechercher : {tech.Name} ({tech.Scrap} ferraille, {tech.Stone} pierre)", _button))
+                    if (colony.Research(TechType.Asphalt)) _game.Say($"Technologie debloquee : {tech.Name}. {tech.Description}");
+                GUI.enabled = true;
+            }
         }
 
         static string Verb(JobType t)
@@ -321,6 +350,7 @@ namespace AfterCity.Game
                 case JobType.Barricade: return "barricader";
                 case JobType.Construct: return "construire";
                 case JobType.Road: return "tracer un chemin";
+                case JobType.Asphalt: return "goudronner";
                 default: return t.ToString();
             }
         }
@@ -388,7 +418,7 @@ namespace AfterCity.Game
                 "1. Coupe du bois (touche 1, glisse sur la foret).\n" +
                 "2. Avant <b>20h30</b>, protege la ferme : barricades (6), douve de 2 niveaux (4, deux fois) ou tour de guet (9).\n" +
                 "4. Nourris la colonie : chacun mange 1 vivre a l'aube, la ferme recolte 4 vivres a 18 h, un champ en ajoute 4.\n" +
-                "5. Grandis : un abri (8) accueille un nouveau survivant a l'aube, le poste d'expedition (0) envoie fouiller la ville.\n" +
+                "5. Grandis : abri (8, +1 survivant a l'aube) > poste d'expedition (0, fouiller la ville) > atelier (pieces, recherche de l'asphalte) > tour de guet.\n" +
                 "3. La nuit, les rodeurs sortent de la foret. Ils cassent les barricades mais restent coinces dans les fosses.\n" +
                 "Astuce : <b>N</b> fait tomber la nuit tout de suite, <b>F2</b> compare les effets visuels, <b>H</b> rouvre cette aide.",
                 new GUIStyle(_small) { fontSize = 16, wordWrap = true, alignment = TextAnchor.UpperLeft, normal = { textColor = new Color(0.92f, 0.92f, 0.9f) } });

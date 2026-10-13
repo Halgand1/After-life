@@ -21,9 +21,12 @@ namespace AfterCity.Core.Sim
         public readonly int Stone;
         public readonly double BuildTime;
         public readonly string Name;
+        /// <summary>Batiment qu'il faut deja avoir construit pour debloquer celui-ci (arbre de progression).</summary>
+        public readonly BuildingType? Requires;
 
-        public BuildingSpec(string name, int size, int wood, int stone, double buildTime)
+        public BuildingSpec(string name, int size, int wood, int stone, double buildTime, BuildingType? requires = null)
         {
+            Requires = requires;
             Name = name;
             Size = size;
             Wood = wood;
@@ -36,10 +39,10 @@ namespace AfterCity.Core.Sim
             switch (type)
             {
                 case BuildingType.Shelter: return new BuildingSpec("Abri", 2, 10, 0, 8);
-                case BuildingType.Watchtower: return new BuildingSpec("Tour de guet", 1, 6, 4, 10);
-                case BuildingType.ExpeditionPost: return new BuildingSpec("Poste d'expedition", 2, 15, 0, 10);
+                case BuildingType.Watchtower: return new BuildingSpec("Tour de guet", 1, 6, 4, 10, BuildingType.Workshop);
+                case BuildingType.ExpeditionPost: return new BuildingSpec("Poste d'expedition", 2, 15, 0, 10, BuildingType.Shelter);
                 case BuildingType.Farmhouse: return new BuildingSpec("Grange", 2, 0, 0, 0);
-                case BuildingType.Workshop: return new BuildingSpec("Atelier de demontage", 2, 12, 6, 12);
+                case BuildingType.Workshop: return new BuildingSpec("Atelier de demontage", 2, 12, 6, 12, BuildingType.ExpeditionPost);
                 case BuildingType.Field: return new BuildingSpec("Champ", 2, 4, 0, 6);
                 default: return new BuildingSpec(type.ToString(), 1, 0, 0, 5);
             }

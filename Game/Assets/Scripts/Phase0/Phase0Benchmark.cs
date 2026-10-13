@@ -42,6 +42,7 @@ namespace AfterCity.Game.Phase0
             var game = FindAnyObjectByType<GameRoot>();
             if (game == null) return;
             var colony = game.Colony;
+            colony.IgnoreRequirements = true; // la demo montre tous les batiments
             var farm = game.Map.FarmCenter;
             int trees = 0;
             for (int r = 1; r < 30 && trees < 10; r++)
@@ -120,6 +121,9 @@ namespace AfterCity.Game.Phase0
                     if (freeCamera != null) freeCamera.Yaw += 6f * Time.unscaledDeltaTime;
                     if (!shot && Time.realtimeSinceStartup - start > half * 0.6f)
                     {
+                        var g0 = FindAnyObjectByType<GameRoot>();
+                        if (freeCamera != null && g0 != null) freeCamera.Focus(AfterCity.Game.World.TerrainMeshBuilder.CellCenter(g0.Map.Grid, g0.Map.FarmCenter));
+                        yield return null;
                         ScreenCapture.CaptureScreenshot(Path.Combine(dir, pass == 0 ? "screenshot.png" : "screenshot_sans_effets.png"));
                         shot = true;
                     }
@@ -136,6 +140,7 @@ namespace AfterCity.Game.Phase0
             if (game != null)
             {
                 game.Colony.SkipToHour(21.5);
+                if (freeCamera != null) freeCamera.Focus(AfterCity.Game.World.TerrainMeshBuilder.CellCenter(game.Map.Grid, game.Map.FarmCenter));
                 float tn = Time.realtimeSinceStartup;
                 while (Time.realtimeSinceStartup - tn < 2.5f) yield return null;
                 ScreenCapture.CaptureScreenshot(Path.Combine(dir, "screenshot_nuit.png"));

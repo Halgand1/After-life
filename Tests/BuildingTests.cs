@@ -1,4 +1,4 @@
-﻿using AfterCity.Core.Sim;
+using AfterCity.Core.Sim;
 using AfterCity.Core.World;
 using NUnit.Framework;
 
@@ -12,7 +12,7 @@ namespace AfterCity.Core.Tests
             for (int y = 0; y < size; y++)
             for (int x = 0; x < size; x++)
                 g.SetLevel(new GridPos(x, y), 3);
-            return new Colony(g) { Home = new GridPos(2, 2) };
+            return new Colony(g) { Home = new GridPos(2, 2), IgnoreRequirements = true };
         }
 
         static void Run(Colony c, double seconds, Horde h = null)
