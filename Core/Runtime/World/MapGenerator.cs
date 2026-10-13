@@ -58,6 +58,7 @@ namespace AfterCity.Core.World
 
             CarveRiver(grid, rng);
             var farm = PlaceFarm(grid, rng);
+            PlaceFeatures(grid, farm, new Rng(seed ^ 0xFEA7_0000_0000_0001UL));
             return new GeneratedMap(grid, seed, farm);
         }
 
@@ -107,6 +108,32 @@ namespace AfterCity.Core.World
                 grid.SetLevel(p, level);
             }
             return best;
+        }
+
+        /// <summary>
+        /// Arbres, rochers et epaves. Generateur separe : ajouter du decor ne change ni le relief ni les biomes.
+        /// La ferme et ses abords immediats restent degages.
+        /// </summary>
+        static void PlaceFeatures(WorldGrid grid, GridPos farm, Rng rng)
+        {
+            int clear = FarmRadius + 2;
+            for (int y = 0; y < grid.Height; y++)
+            for (int x = 0; x < grid.Width; x++)
+            {
+                var p = new GridPos(x, y);
+                double r = rng.NextDouble();
+                if (Math.Abs(x - farm.X) <= clear && Math.Abs(y - farm.Y) <= clear) continue;
+                CellFeature f = CellFeature.None;
+                switch (grid.GetBiome(p))
+                {
+                    case Biome.DenseForest: if (r < 0.75) f = CellFeature.Tree; break;
+                    case Biome.Meadow: if (r < 0.08) f = CellFeature.Tree; else if (r < 0.085) f = CellFeature.Wreck; break;
+                    case Biome.Plains: if (r < 0.025) f = CellFeature.Tree; else if (r < 0.03) f = CellFeature.Wreck; break;
+                    case Biome.Rock: if (r < 0.4) f = CellFeature.Rock; break;
+                    case Biome.Marsh: if (r < 0.04) f = CellFeature.Tree; break;
+                }
+                grid.SetFeature(p, f);
+            }
         }
 
         static int ScoreFarmSite(WorldGrid grid, GridPos c)

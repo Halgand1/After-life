@@ -16,6 +16,7 @@ namespace AfterCity.Core.World
         readonly byte[] _levels;
         readonly Biome[] _biomes;
         readonly bool[] _walls;
+        readonly CellFeature[] _features;
 
         public WorldGrid(int width, int height)
         {
@@ -25,6 +26,7 @@ namespace AfterCity.Core.World
             _levels = new byte[width * height];
             _biomes = new Biome[width * height];
             _walls = new bool[width * height];
+            _features = new CellFeature[width * height];
         }
 
         public bool InBounds(GridPos p) => p.X >= 0 && p.Y >= 0 && p.X < Width && p.Y < Height;
@@ -43,6 +45,9 @@ namespace AfterCity.Core.World
 
         public bool HasWall(GridPos p) => _walls[Index(p)];
         public void SetWall(GridPos p, bool wall) => _walls[Index(p)] = wall;
+
+        public CellFeature GetFeature(GridPos p) => _features[Index(p)];
+        public void SetFeature(GridPos p, CellFeature feature) => _features[Index(p)] = feature;
 
         /// <summary>
         /// Un marcheur peut-il passer de <paramref name="from"/> à <paramref name="to"/> ?
