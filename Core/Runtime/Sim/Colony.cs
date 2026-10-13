@@ -397,23 +397,60 @@ namespace AfterCity.Core.Sim
             return Math.Min(due, 1);
         }
 
-        public bool CanUpgrade(Building b)
+        public bool CanUpgrade(Building b) => WhyNoUpgrade(b) == null;
+
+        /// <summary>Pourquoi cette maison ne peut pas etre amelioree maintenant (texte du panneau), ou null si elle peut l'etre.</summary>
+        public string WhyNoUpgrade(Building b)
         {
             var next = b?.Home?.UpgradeTo;
-            if (next == null || !b.Built || !b.Comfortable || !IsUnlocked(next.Value)) return false;
+            if (next == null) return "Deja le meilleur logement de ce type";
+            if (!b.Built) return "Pas encore construite";
+            if (!b.Comfortable) return "Pas encore confortable (" + b.ComfortDays + "/" + Building.DaysToComfort + " jours)";
+            if (!IsUnlocked(next.Value)) return "Il faut d'abord : " + BuildingSpec.Of(BuildingSpec.Of(next.Value).Requires ?? next.Value).Name;
             var spec = BuildingSpec.Of(next.Value);
-            return spec.Size == b.Size && Stock.Get(ResourceType.Wood) >= spec.Wood && Stock.Get(ResourceType.Stone) >= spec.Stone;
+            int wood = spec.Wood - Stock.Get(ResourceType.Wood), stone = spec.Stone - Stock.Get(ResourceType.Stone);
+            if (wood > 0 || stone > 0)
+                return "Il manque " + (wood > 0 ? wood + " bois" : "") + (wood > 0 && stone > 0 ? " et " : "") + (stone > 0 ? stone + " pierre" : "");
+            if (UpgradeOrigin(b, next.Value) == null) return "Pas assez de place libre autour pour l'agrandir";
+            return null;
         }
 
-        /// <summary>Ameliore une maison confortable (Abri, puis Maison en bois, puis Maison en briques) ; les habitants restent.</summary>
+        /// <summary>Coin bas-gauche de la maison amelioree : l'ancienne emprise reste dedans, les cases en plus doivent etre libres.</summary>
+        GridPos? UpgradeOrigin(Building b, BuildingType next)
+        {
+            int size = BuildingSpec.Of(next).Size, grow = size - b.Size;
+            if (grow <= 0) return b.Origin;
+            int level = Grid.GetLevel(b.Origin);
+            for (int dy = 0; dy <= grow; dy++)
+            for (int dx = 0; dx <= grow; dx++)
+            {
+                var o = new GridPos(b.Origin.X - dx, b.Origin.Y - dy);
+                bool free = true;
+                for (int y = 0; y < size && free; y++)
+                for (int x = 0; x < size && free; x++)
+                {
+                    var p = new GridPos(o.X + x, o.Y + y);
+                    if (b.Covers(p)) continue;
+                    free = Grid.InBounds(p) && Grid.GetLevel(p) == level && Grid.GetBiome(p) != Biome.Water
+                        && Grid.GetFeature(p) == CellFeature.None && !Grid.HasWall(p) && !Grid.HasStructure(p)
+                        && !_jobs.ContainsKey(p) && BuildingAt(p) == null && !IsOccupied(p);
+                }
+                if (free) return o;
+            }
+            return null;
+        }
+
+        /// <summary>Ameliore une maison confortable (Tente, Abri, Maison en bois, Maison en briques) ; elle s'agrandit si besoin, les habitants restent.</summary>
         public bool Upgrade(Building b)
         {
             if (!CanUpgrade(b)) return false;
             var next = b.Home.UpgradeTo.Value;
             var spec = BuildingSpec.Of(next);
+            var origin = UpgradeOrigin(b, next).Value;
             Stock.TrySpend(ResourceType.Wood, spec.Wood);
             Stock.TrySpend(ResourceType.Stone, spec.Stone);
             b.Type = next;
+            b.Origin = origin;
             b.ComfortDays = 0;
             for (int y = 0; y < b.Size; y++)
             for (int x = 0; x < b.Size; x++)

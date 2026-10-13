@@ -18,7 +18,7 @@ namespace AfterCity.Core.Sim
         public double WoodPerDay { get; }
         public double WaterPerResident { get; }
         public double MedicinePerDay { get; }
-        /// <summary>Logement suivant quand celui-ci est confortable (meme emprise).</summary>
+        /// <summary>Logement suivant quand celui-ci est confortable (il peut s'agrandir sur les cases libres autour).</summary>
         public BuildingType? UpgradeTo { get; }
 
         HomeSpec(int places, double food, int shelf, ResourceType[] wants, double wood = 0, double water = 0, double medicine = 0, BuildingType? upgrade = null)
@@ -33,7 +33,7 @@ namespace AfterCity.Core.Sim
             UpgradeTo = upgrade;
         }
 
-        static readonly HomeSpec TentSpec = new HomeSpec(2, 1, 4, new[] { ResourceType.Food });
+        static readonly HomeSpec TentSpec = new HomeSpec(2, 1, 4, new[] { ResourceType.Food }, upgrade: BuildingType.Shelter);
         static readonly HomeSpec ShelterSpec = new HomeSpec(4, 1, 8, new[] { ResourceType.Food, ResourceType.Wood },
             wood: 1, upgrade: BuildingType.WoodHouse);
         static readonly HomeSpec HostelSpec = new HomeSpec(10, 1, 20, new[] { ResourceType.Food, ResourceType.Wood, ResourceType.Water },

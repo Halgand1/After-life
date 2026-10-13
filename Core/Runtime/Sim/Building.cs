@@ -55,8 +55,8 @@ namespace AfterCity.Core.Sim
                 case BuildingType.HorsePen: return new BuildingSpec("Enclos a chevaux", 3, 16, 4, 12, BuildingType.ExpeditionPost);
                 case BuildingType.Tent: return new BuildingSpec("Tente", 1, 3, 0, 4);
                 case BuildingType.Hostel: return new BuildingSpec("Foyer", 3, 30, 10, 20, BuildingType.ExpeditionPost);
-                case BuildingType.WoodHouse: return new BuildingSpec("Maison en bois", 2, 20, 4, 14, BuildingType.ExpeditionPost);
-                case BuildingType.BrickHouse: return new BuildingSpec("Maison en briques", 2, 10, 20, 18, BuildingType.Workshop);
+                case BuildingType.WoodHouse: return new BuildingSpec("Maison en bois", 3, 20, 4, 14, BuildingType.ExpeditionPost);
+                case BuildingType.BrickHouse: return new BuildingSpec("Maison en briques", 3, 10, 20, 18, BuildingType.Workshop);
                 default: return new BuildingSpec(type.ToString(), 1, 0, 0, 5);
             }
         }
@@ -65,8 +65,8 @@ namespace AfterCity.Core.Sim
     public sealed class Building
     {
         public BuildingType Type { get; internal set; }
-        /// <summary>Coin bas-gauche de l'emprise.</summary>
-        public GridPos Origin { get; }
+        /// <summary>Coin bas-gauche de l'emprise (peut reculer quand une maison s'agrandit).</summary>
+        public GridPos Origin { get; internal set; }
         public int Size => BuildingSpec.Of(Type).Size;
         public bool Built { get; internal set; }
         /// <summary>Betes dans l'enclos (vaches ou chevaux).</summary>

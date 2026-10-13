@@ -78,7 +78,35 @@ namespace AfterCity.Core.Tests
             Assert.That(home.Type, Is.EqualTo(BuildingType.WoodHouse));
             Assert.That(home.Residents.Count, Is.EqualTo(2), "les habitants restent");
             Assert.That(home.Comfortable, Is.False, "la nouvelle maison reclame plus (eau, medicaments)");
+            Assert.That(home.Size, Is.EqualTo(3), "la maison en bois s'agrandit sur les cases libres");
             Assert.That(c.Grid.GetStructure(new GridPos(10, 10)), Is.EqualTo(Building.StructureCode(BuildingType.WoodHouse, true)));
+            Assert.That(c.BuildingAt(new GridPos(12, 12)), Is.SameAs(home));
+            Assert.That(c.WhyNoUpgrade(home), Does.StartWith("Pas encore confortable"));
+        }
+
+        [Test]
+        public void AnUpgradeNeedsFreeRoomAroundTheHome()
+        {
+            var c = Flat();
+            var tent = c.AddPrebuilt(BuildingType.Tent, new GridPos(10, 10));
+            c.AddVillager(new GridPos(2, 2));
+            c.Stock.Add(ResourceType.Food, 100);
+            c.Stock.Add(ResourceType.Wood, 100);
+            // Rochers sur les quatre diagonales : aucune emprise 2x2 contenant la tente n'est libre
+            foreach (var p in new[] { new GridPos(9, 9), new GridPos(11, 9), new GridPos(9, 11), new GridPos(11, 11) })
+                c.Grid.SetFeature(p, CellFeature.Rock);
+            Days(c, Building.DaysToComfort + 1);
+            Assert.That(tent.Comfortable, Is.True);
+            Assert.That(c.WhyNoUpgrade(tent), Does.Contain("place"));
+            Assert.That(c.Upgrade(tent), Is.False);
+
+            c.Grid.SetFeature(new GridPos(9, 9), CellFeature.None);
+            Assert.That(c.Upgrade(tent), Is.True, "la tente devient un abri en reculant vers la case degagee");
+            Assert.That(tent.Type, Is.EqualTo(BuildingType.Shelter));
+            Assert.That(tent.Origin, Is.EqualTo(new GridPos(9, 9)));
+            Assert.That(tent.Covers(new GridPos(10, 10)), Is.True);
+            Assert.That(c.Grid.GetStructure(new GridPos(9, 9)), Is.EqualTo(Building.StructureCode(BuildingType.Shelter, true)));
+            Assert.That(c.Grid.GetStructure(new GridPos(10, 10)), Is.EqualTo(Building.StructureCode(BuildingType.Shelter, false)));
         }
 
         [Test]
