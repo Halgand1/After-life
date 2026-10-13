@@ -29,8 +29,19 @@ namespace AfterCity.Game
             survivorPrefabs != null && survivorPrefabs.Length > 0 ? survivorPrefabs[v.Id % survivorPrefabs.Length] : villagerPrefab;
 
         GameObject ZombiePrefab(Zombie z) =>
-            zombiePrefabs != null && zombiePrefabs.Length > 0 ? zombiePrefabs[z.Id % zombiePrefabs.Length] : zombiePrefab;
+            zombiePrefabs != null && zombiePrefabs.Length > 0 ? zombiePrefabs[ZombieType(z.Id) % zombiePrefabs.Length] : zombiePrefab;
+
+        /// <summary>Surtout des rodeurs (6 sur 10), puis coureur, cogneur, grimpeur et brute.</summary>
+        static int ZombieType(int id)
+        {
+            int k = (int)((uint)(id * 2654435761u) % 10u);
+            return k < 6 ? 0 : k - 5;
+        }
         public FreeCamera freeCamera;
+        /// <summary>Modeles fixes de l'equipe 3D (nature, ruines, batiments). Null = decor procedural de test.</summary>
+        public DecorKit decorKit;
+        /// <summary>Animaux de la foret (cerfs, sangliers).</summary>
+        public GameObject[] animalPrefabs;
         public Light sun;
 
         public GeneratedMap Map { get; private set; }
@@ -61,7 +72,9 @@ namespace AfterCity.Game
             Map = MapGenerator.Generate(width, height, seed);
             Colony = Colony.StartAtFarm(Map, survivors);
             Horde = new Horde(Colony, Map.FarmCenter, seed);
+            DecorKit.Current = decorKit;
             Terrain = TerrainView.Create(Map, terrainMaterial, transform);
+            if (animalPrefabs != null && animalPrefabs.Length > 0) AnimalView.Populate(Map, animalPrefabs, transform, seed);
             Colony.CellChanged += Terrain.MarkDirty;
             var audio = gameObject.AddComponent<GameAudio>();
             audio.Init(this);
@@ -75,7 +88,7 @@ namespace AfterCity.Game
             };
             Colony.TreeFelled += p =>
             {
-                FallingTree.Spawn(Map.Grid, p, terrainMaterial, transform);
+                FallingTree.Spawn(Map, p, terrainMaterial, transform);
                 audio.PlayAt(audio.Fall, TerrainMeshBuilder.CellCenter(Map.Grid, p), 0.9f);
             };
             Colony.Harvested += n => { if (n > 0) Say($"Recolte du soir : +{n} vivres"); };

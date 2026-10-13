@@ -20,7 +20,10 @@ namespace AfterCity.EditorTools
         static readonly string[] Animals = { "SK_Cerf", "SK_Sanglier", "SK_Cheval", "SK_Vache" };
 
         /// <summary>Dossiers couverts : personnages, equipement, animaux (et leurs sous-dossiers).</summary>
-        static readonly string[] Roots = { Folder, "Assets/Art/Equipement/", "Assets/Art/Animaux/" };
+        static readonly string[] Roots = { Folder, "Assets/Art/Equipement/", "Assets/Art/Animaux/", "Assets/Art/Decor/", "Assets/Art/Batiments/" };
+
+        /// <summary>Change a chaque modification des reglages : force Unity a reimporter les modeles.</summary>
+        public override uint GetVersion() => 3;
 
         static bool InFolder(string path)
         {
@@ -33,8 +36,18 @@ namespace AfterCity.EditorTools
 
         void OnPreprocessTexture()
         {
-            if (!InFolder(assetPath) || !Path.GetFileNameWithoutExtension(assetPath).StartsWith("T_Palette")) return;
+            if (!InFolder(assetPath)) return;
             var ti = (TextureImporter)assetImporter;
+            if (Path.GetFileNameWithoutExtension(assetPath).StartsWith("T_Batiments"))
+            {
+                // Palette en haut a gauche + trim sheet : bilineaire, sans mipmaps (sinon les couleurs se melangent au loin)
+                ti.filterMode = FilterMode.Bilinear;
+                ti.mipmapEnabled = false;
+                ti.textureCompression = TextureImporterCompression.Uncompressed;
+                ti.wrapMode = TextureWrapMode.Clamp;
+                return;
+            }
+            if (!Path.GetFileNameWithoutExtension(assetPath).StartsWith("T_Palette")) return;
             ti.filterMode = FilterMode.Point;
             ti.mipmapEnabled = false;
             ti.textureCompression = TextureImporterCompression.Uncompressed;
@@ -50,6 +63,7 @@ namespace AfterCity.EditorTools
                 // Equipement (SM_Equip_*) : objet fixe accroche a un SOCKET_* du squelette
                 mi.animationType = ModelImporterAnimationType.None;
                 mi.importAnimation = false;
+                mi.isReadable = true; // cuits dans le DecorKit (CombineMeshes)
             }
             else
             {

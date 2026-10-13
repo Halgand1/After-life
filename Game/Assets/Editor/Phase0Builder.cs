@@ -236,6 +236,8 @@ namespace AfterCity.EditorTools
             boot.survivorPrefabs = survivorModels;
             boot.zombiePrefabs = zombieModels;
             boot.freeCamera = freeCam;
+            boot.decorKit = DecorKitBuilder.Build();
+            boot.animalPrefabs = EnsureAnimals("SK_Cerf", "SK_Sanglier");
             boot.sun = light;
 
             var bench = new GameObject("Benchmark").AddComponent<Phase0Benchmark>();
@@ -359,6 +361,38 @@ namespace AfterCity.EditorTools
                 if (animator == null) animator = instance.AddComponent<Animator>();
                 animator.runtimeAnimatorController = controller;
                 animator.applyRootMotion = false;
+                prefabs.Add(PrefabUtility.SaveAsPrefabAsset(instance, $"{folder}Prefabs/PF_{m}.prefab"));
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
+            return prefabs.ToArray();
+        }
+
+        /// <summary>Un controleur par animal (squelettes differents) avec ses propres clips Animal_*, et un prefab PF_SK_x.</summary>
+        static GameObject[] EnsureAnimals(params string[] models)
+        {
+            const string folder = "Assets/Art/Animaux/";
+            var prefabs = new System.Collections.Generic.List<GameObject>();
+            Directory.CreateDirectory(folder + "Prefabs");
+            foreach (var m in models)
+            {
+                var fbx = $"{folder}{m}.fbx";
+                var model = AssetDatabase.LoadAssetAtPath<GameObject>(fbx);
+                if (model == null) continue;
+                var clips = AssetDatabase.LoadAllAssetsAtPath(fbx).OfType<AnimationClip>()
+                    .Where(c => !c.name.StartsWith("__preview__") && StateName(c.name, "Animal_") != null).ToArray();
+                Debug.Log($"[AfterCity] {m} : clips {string.Join(", ", clips.Select(c => c.name))}");
+                string ctrlPath = $"{folder}AC_{m}.controller";
+                AssetDatabase.DeleteAsset(ctrlPath);
+                var controller = AnimatorController.CreateAnimatorControllerAtPath(ctrlPath);
+                var sm = controller.layers[0].stateMachine;
+                foreach (var clip in clips.OrderBy(c => c.name.EndsWith("Repos") ? 0 : 1))
+                    sm.AddState(StateName(clip.name, "Animal_")).motion = clip;
+                var instance = (GameObject)PrefabUtility.InstantiatePrefab(model);
+                var animator = instance.GetComponent<Animator>();
+                if (animator == null) animator = instance.AddComponent<Animator>();
+                animator.runtimeAnimatorController = controller;
+                animator.applyRootMotion = false;
+                animator.cullingMode = AnimatorCullingMode.CullCompletely;
                 prefabs.Add(PrefabUtility.SaveAsPrefabAsset(instance, $"{folder}Prefabs/PF_{m}.prefab"));
                 UnityEngine.Object.DestroyImmediate(instance);
             }

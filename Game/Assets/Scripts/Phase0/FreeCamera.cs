@@ -24,6 +24,7 @@ namespace AfterCity.Game.Phase0
         float _distance = 36f;
 
         public float Yaw { get => _yaw; set => _yaw = value; }
+        public float Distance { get => _distance; set => _distance = Mathf.Clamp(value, 3f, maxDistance); }
 
         public void Focus(Vector3 point)
         {
@@ -57,7 +58,7 @@ namespace AfterCity.Game.Phase0
             _yaw += rot * rotateSpeed * Time.unscaledDeltaTime;
 
             float scroll = Input.mouseScrollDelta.y;
-            _distance = Mathf.Clamp(_distance * (1f - scroll * zoomSpeed * 0.01f), minDistance, maxDistance);
+            if (scroll != 0) _distance = Mathf.Clamp(_distance * (1f - scroll * zoomSpeed * 0.01f), minDistance, maxDistance);
 
             if (move.sqrMagnitude > 0)
             {

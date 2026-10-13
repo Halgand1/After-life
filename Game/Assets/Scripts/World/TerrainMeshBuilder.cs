@@ -134,7 +134,10 @@ namespace AfterCity.Game.World
         }
 
         /// <summary>Maillage d'un morceau de terrain dont le coin est la case (cx, cy).</summary>
-        public static Mesh BuildChunk(GeneratedMap map, int cx, int cy)
+        public static Mesh BuildChunk(GeneratedMap map, int cx, int cy) => BuildChunk(map, cx, cy, null);
+
+        /// <summary>Idem, les modeles de l'equipe 3D (DecorKit) allant dans <paramref name="kd"/> quand il existe.</summary>
+        public static Mesh BuildChunk(GeneratedMap map, int cx, int cy, DecorKit.Builder kd)
         {
             var grid = map.Grid;
             var md = new MeshData();
@@ -191,7 +194,11 @@ namespace AfterCity.Game.World
                 var c = new Vector3((x + 0.5f) * CellSize, top, (y + 0.5f) * CellSize);
                 var jitter = new Vector3(Hash(x, y, 3) - 0.5f, 0, Hash(x, y, 4) - 0.5f) * 0.8f;
                 float r = Hash(x, y, 5);
-                if (grid.HasWall(p)) { AddBarricade(md, c, Hash(x, y, 8)); continue; }
+                if (grid.HasWall(p))
+                {
+                    if (kd == null || !DecorPlacer.Wall(kd, grid, p, c)) AddBarricade(md, c, Hash(x, y, 8));
+                    continue;
+                }
                 byte structure = grid.GetStructure(p);
                 if (structure != 0)
                 {
@@ -199,7 +206,8 @@ namespace AfterCity.Game.World
                     {
                         var corner = new Vector3(x * CellSize, top, y * CellSize);
                         var bt = Building.TypeOf(structure);
-                        if (bt == BuildingType.Shelter) AddShelter(md, corner, Hash(x, y, 10));
+                        if (kd != null && DecorPlacer.Building(kd, map, bt, corner, BuildingSpec.Of(bt).Size, Hash(x, y, 15))) { }
+                        else if (bt == BuildingType.Shelter) AddShelter(md, corner, Hash(x, y, 10));
                         else if (bt == BuildingType.ExpeditionPost) AddExpeditionPost(md, corner);
                         else if (bt == BuildingType.Farmhouse) AddFarmhouse(md, corner);
                         else if (bt == BuildingType.Workshop) AddWorkshop(md, corner, Hash(x, y, 12));
@@ -208,7 +216,14 @@ namespace AfterCity.Game.World
                     }
                     continue;
                 }
-                switch (grid.GetFeature(p))
+                var feature = grid.GetFeature(p);
+                if (kd != null && feature != CellFeature.None && DecorPlacer.Feature(kd, map, p, feature, c, jitter)) continue;
+                if (kd != null && feature == CellFeature.None)
+                {
+                    DecorPlacer.Ground(kd, map, p, biome, c, road != RoadType.None, InFarm(map, p));
+                    continue;
+                }
+                switch (feature)
                 {
                     case CellFeature.Tree: AddTree(md, c + jitter, Hash(x, y, 6)); break;
                     case CellFeature.Rock: AddRock(md, c + jitter, Hash(x, y, 7)); break;
@@ -224,6 +239,7 @@ namespace AfterCity.Game.World
                         break;
                 }
             }
+            if (kd != null) DecorPlacer.Props(kd, map, cx, cy, ChunkSize);
             return md.ToMesh($"Terrain_{cx}_{cy}");
         }
 

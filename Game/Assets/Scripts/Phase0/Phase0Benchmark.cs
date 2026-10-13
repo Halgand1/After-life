@@ -123,6 +123,12 @@ namespace AfterCity.Game.Phase0
             Application.Quit(0);
         }
 
+        static IEnumerator Wait(float seconds)
+        {
+            float t = Time.realtimeSinceStartup;
+            while (Time.realtimeSinceStartup - t < seconds) yield return null;
+        }
+
         IEnumerator Run(string dir)
         {
             Directory.CreateDirectory(dir);
@@ -163,8 +169,47 @@ namespace AfterCity.Game.Phase0
             }
             if (fx != null) fx.Apply(true);
 
-            // Capture de nuit : on saute a 21 h, les rodeurs de demonstration sont deja a la ferme
+            // Captures supplementaires : vue d'ensemble, survivants au travail de pres, foret et animaux
             var game = FindAnyObjectByType<GameRoot>();
+            if (game != null && freeCamera != null)
+            {
+                var farmPos = AfterCity.Game.World.TerrainMeshBuilder.CellCenter(game.Map.Grid, game.Map.FarmCenter);
+                float d0 = freeCamera.Distance;
+                freeCamera.Distance = 95f;
+                freeCamera.Focus(farmPos);
+                yield return Wait(1f);
+                ScreenCapture.CaptureScreenshot(Path.Combine(dir, "screenshot_ensemble.png"));
+                yield return Wait(0.3f);
+
+                VillagerView worker = null;
+                foreach (var v in FindObjectsByType<VillagerView>(FindObjectsSortMode.None))
+                    if (v.Villager != null && v.Villager.State == VillagerState.Working) { worker = v; break; }
+                if (worker == null) worker = FindAnyObjectByType<VillagerView>();
+                if (worker != null)
+                {
+                    freeCamera.Distance = 9f;
+                    freeCamera.Focus(worker.transform.position);
+                    yield return Wait(0.4f);
+                    freeCamera.Focus(worker.transform.position);
+                    yield return null;
+                    ScreenCapture.CaptureScreenshot(Path.Combine(dir, "screenshot_survivants.png"));
+                    yield return Wait(0.3f);
+                }
+                var animal = FindAnyObjectByType<AnimalView>();
+                if (animal != null)
+                {
+                    freeCamera.Distance = 16f;
+                    freeCamera.Focus(animal.transform.position);
+                    yield return Wait(0.5f);
+                    freeCamera.Focus(animal.transform.position);
+                    yield return null;
+                    ScreenCapture.CaptureScreenshot(Path.Combine(dir, "screenshot_foret.png"));
+                    yield return Wait(0.3f);
+                }
+                freeCamera.Distance = d0;
+            }
+
+            // Capture de nuit : on saute a 21 h, les rodeurs de demonstration sont deja a la ferme
             if (game != null)
             {
                 game.Colony.SkipToHour(21.5);

@@ -1,4 +1,4 @@
-﻿using AfterCity.Core.World;
+using AfterCity.Core.World;
 using AfterCity.Game.World;
 using UnityEngine;
 
@@ -11,9 +11,18 @@ namespace AfterCity.Game
         Vector3 _axis;
         Mesh _mesh;
 
-        public static void Spawn(WorldGrid grid, GridPos p, Material material, Transform parent)
+        public static void Spawn(GeneratedMap map, GridPos p, Material material, Transform parent)
         {
+            var grid = map.Grid;
             var mesh = TerrainMeshBuilder.SingleTree(grid, p, out var pivot);
+            var kitMesh = DecorPlacer.SingleTree(map, p, pivot);
+            if (kitMesh != null)
+            {
+                // Meme modele que celui pose sur le terrain (DecorKit)
+                Destroy(mesh);
+                mesh = kitMesh;
+                material = DecorKit.Current.material;
+            }
             var go = new GameObject("FallingTree");
             go.transform.SetParent(parent, false);
             go.transform.position = pivot;

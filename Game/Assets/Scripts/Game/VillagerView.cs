@@ -41,7 +41,8 @@ namespace AfterCity.Game
                 model.transform.localScale = Vector3.one * 1.3f; // lisible de loin, garde le gabarit K&C
                 Tint(model, Palette[v.Id % Palette.Length]);
                 view._animator = model.GetComponentInChildren<Animator>();
-                view.CreateTool(model.transform, terrainMaterial);
+                // Les modeles de l'equipe 3D portent deja leur outil (hache, pioche...) sur les SOCKET_*
+                if (!prefab.name.StartsWith("PF_SK_")) view.CreateTool(model.transform, terrainMaterial);
             }
             view._y = TerrainMeshBuilder.TopY(grid.GetLevel(v.Cell));
             view.Sync(1f);

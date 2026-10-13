@@ -13,6 +13,7 @@ namespace AfterCity.Game.World
     {
         GeneratedMap _map;
         MeshFilter[,] _chunks;
+        MeshFilter[,] _decor;
         readonly HashSet<Vector2Int> _dirty = new HashSet<Vector2Int>();
 
         public static TerrainView Create(GeneratedMap map, Material material, Transform parent)
@@ -24,6 +25,8 @@ namespace AfterCity.Game.World
             int nx = (map.Grid.Width + TerrainMeshBuilder.ChunkSize - 1) / TerrainMeshBuilder.ChunkSize;
             int ny = (map.Grid.Height + TerrainMeshBuilder.ChunkSize - 1) / TerrainMeshBuilder.ChunkSize;
             view._chunks = new MeshFilter[nx, ny];
+            view._decor = new MeshFilter[nx, ny];
+            var kit = DecorKit.Current;
             for (int j = 0; j < ny; j++)
             for (int i = 0; i < nx; i++)
             {
@@ -34,6 +37,16 @@ namespace AfterCity.Game.World
                 mr.sharedMaterial = material;
                 mr.shadowCastingMode = ShadowCastingMode.On;
                 view._chunks[i, j] = mf;
+                if (kit != null && kit.material != null)
+                {
+                    // Modeles de l'equipe 3D : un second maillage par morceau, materiau a palette
+                    var d = new GameObject($"Decor_{i}_{j}");
+                    d.transform.SetParent(go.transform, false);
+                    view._decor[i, j] = d.AddComponent<MeshFilter>();
+                    var dr = d.AddComponent<MeshRenderer>();
+                    dr.sharedMaterial = kit.material;
+                    dr.shadowCastingMode = ShadowCastingMode.On;
+                }
                 view.Rebuild(i, j);
             }
             return view;
@@ -63,8 +76,16 @@ namespace AfterCity.Game.World
         {
             var mf = _chunks[i, j];
             var old = mf.sharedMesh;
-            mf.sharedMesh = TerrainMeshBuilder.BuildChunk(_map, i * TerrainMeshBuilder.ChunkSize, j * TerrainMeshBuilder.ChunkSize);
+            var df = _decor[i, j];
+            var kd = df != null ? new DecorKit.Builder(DecorKit.Current) : null;
+            mf.sharedMesh = TerrainMeshBuilder.BuildChunk(_map, i * TerrainMeshBuilder.ChunkSize, j * TerrainMeshBuilder.ChunkSize, kd);
             if (old != null) Destroy(old);
+            if (df != null)
+            {
+                var oldDecor = df.sharedMesh;
+                df.sharedMesh = kd.ToMesh($"Decor_{i}_{j}");
+                if (oldDecor != null) Destroy(oldDecor);
+            }
         }
 
         /// <summary>Case visee par un rayon (souris), en suivant le relief. Faux si le rayon ne touche pas la carte.</summary>

@@ -1,4 +1,4 @@
-﻿// Personnages, animaux et equipement : texture palette (filtre Point) x couleur de sommet
+// Personnages, animaux et equipement : texture palette (filtre Point) x couleur de sommet
 // R = occlusion (1 = degage), G = salete (0 = propre). Lumiere principale avec ombres, lumieres additionnelles, ambiance SH.
 Shader "AfterCity/CharacterPalette"
 {
@@ -34,6 +34,9 @@ Shader "AfterCity/CharacterPalette"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
             TEXTURE2D(_BaseMap); SAMPLER(sampler_BaseMap);
+            // Ambiance du jeu (GameRoot, jour/nuit), la meme que le terrain
+            half4 _AC_AmbientSky;
+            half4 _AC_AmbientGround;
 
             CBUFFER_START(UnityPerMaterial)
                 float4 _BaseMap_ST;
@@ -84,7 +87,8 @@ Shader "AfterCity/CharacterPalette"
 
                 half3 n = normalize(i.normalWS);
                 Light light = GetMainLight(TransformWorldToShadowCoord(i.positionWS));
-                half3 lit = light.color * saturate(dot(n, light.direction)) * light.shadowAttenuation + SampleSH(n);
+                half3 lit = light.color * saturate(dot(n, light.direction)) * light.shadowAttenuation
+                           + lerp(_AC_AmbientGround.rgb, _AC_AmbientSky.rgb, n.y * 0.5 + 0.5) * 0.55;
 
                 #if defined(_ADDITIONAL_LIGHTS)
                 InputData inputData = (InputData)0;
