@@ -1,0 +1,162 @@
+{
+  "version": "0.1",
+  "description": "Peuplement de la carte pour la démo : quels modèles poser dans chaque zone, à quelle densité, et comment ils se rattachent aux ressources de equilibrage/. Densité = probabilité qu'une case de la zone reçoive un modèle de ce groupe (tirage indépendant par groupe, avec la graine de la carte). 1 case = 2 m.",
+  "reglesGenerales": {
+    "graine": "utiliser le Rng de la carte (même graine = même décor)",
+    "positionDansLaCase": "décalage aléatoire de ±0,6 m en x et y autour du centre de la case",
+    "rotation": "0 à 360° autour de Z",
+    "echelle": { "arbres": [0.85, 1.15], "rochers": [0.8, 1.25], "sol": [0.9, 1.4] },
+    "uneSeuleGrossePieceParCase": "arbre, rocher, buisson, épave ou maison occupent la case (bloquent la construction) ; les détails de sol (herbe, fleurs, feuilles, branches, flaques, boue) ne bloquent rien et se cumulent",
+    "pente": "pas de grosse pièce sur une case dont l'écart de hauteur avec une voisine est ≥ 2 niveaux ; détails de sol autorisés",
+    "eauEtRoche": "rien sur Water ; sur Rock seulement les groupes 'roche'",
+    "saison": "remplacer *_Ete par *_Automne et Tapis_Feuilles_A par Tapis_Feuilles_Automne en automne, par *_Hiver et Pin_Neige_* en hiver ; en hiver ne pas poser Fleurs ni Buisson_Baies_*",
+    "dossiers": {
+      "nature": "decor/nature/SM_Nature_<Nom>.fbx",
+      "ruines": "decor/ruines/<Nom>.fbx",
+      "modeles": "modeles3d/sorties/<Nom>.fbx"
+    }
+  },
+
+  "zones": [
+    {
+      "id": "ForetDense",
+      "fr": "Forêt dense",
+      "selection": "cases de biome DenseForest à plus de 2 cases du bord de la forêt",
+      "groupes": [
+        { "nom": "blocs", "densite": 0.25, "modeles": ["Foret_Dense_A", "Foret_Dense_B", "Foret_Dense_C"], "note": "un bloc couvre 2 x 2 cases : poser seulement sur les cases (x pair, y pair) libres, puis marquer les 4 cases occupées" },
+        { "nom": "arbres", "densite": 0.55, "modeles": { "Pin_A": 3, "Pin_B": 3, "Pin_C": 2, "Feuillu_A_Ete": 2, "Feuillu_B_Ete": 2, "Bouleau_A": 1, "Arbre_Mort_A": 1 }, "note": "nombres = poids du tirage" },
+        { "nom": "sousBois", "densite": 0.35, "modeles": { "Fougere": 4, "Buisson_A": 2, "Champignons": 1, "Tronc_Couche": 1, "Souche_A": 1 } },
+        { "nom": "sol", "densite": 0.6, "modeles": { "Tapis_Feuilles_A": 3, "Branches_Mortes_A": 2, "Branches_Mortes_B": 1, "Boue_A": 1 } }
+      ],
+      "visibilite": "brouillard réduit et risque d'embuscade (GDD § 4.1, hordes.json > detection)"
+    },
+    {
+      "id": "Lisiere",
+      "fr": "Forêt claire / lisière",
+      "selection": "cases Plains ou Meadow à 3 cases au plus d'une case DenseForest",
+      "groupes": [
+        { "nom": "arbres", "densite": 0.22, "modeles": { "Feuillu_A_Ete": 3, "Feuillu_B_Ete": 2, "Feuillu_C_Ete": 2, "Bouleau_A": 2, "Bouleau_B": 2, "Pin_C": 2, "Arbre_Mort_B": 1 } },
+        { "nom": "buissons", "densite": 0.10, "modeles": { "Buisson_A": 2, "Buisson_B": 2, "Buisson_Baies_Rouges": 1, "Buisson_Baies_Bleues": 1 } },
+        { "nom": "sol", "densite": 0.45, "modeles": { "Herbe_Haute": 3, "Fougere": 2, "Tapis_Feuilles_B": 2, "Branches_Mortes_A": 1, "Souche_B": 1 } }
+      ]
+    },
+    {
+      "id": "Prairie",
+      "fr": "Prairie et plaines",
+      "selection": "cases Plains et Meadow hors lisière, hors zone de la ferme",
+      "groupes": [
+        { "nom": "arbresIsoles", "densite": 0.015, "modeles": { "Feuillu_B_Ete": 3, "Feuillu_A_Ete": 2, "Arbre_Mort_A": 1 } },
+        { "nom": "buissons", "densite": 0.025, "modeles": { "Buisson_A": 2, "Buisson_B": 1, "Buisson_Baies_Rouges": 1 } },
+        { "nom": "rochers", "densite": 0.008, "modeles": { "Rocher_C": 2, "Rocher_A": 1, "Rocher_Mousse": 1 } },
+        { "nom": "cailloux", "densite": 0.006, "modeles": ["Cailloux_A", "Cailloux_B"] },
+        { "nom": "sol", "densite": 0.5, "modeles": { "Herbe_A": 4, "Herbe_B": 3, "Herbe_Haute": 2, "Fleurs": 2, "Flaque_A": 0.3, "Boue_B": 0.3 } }
+      ]
+    },
+    {
+      "id": "Roche",
+      "fr": "Affleurements rocheux",
+      "selection": "cases de biome Rock et cases à 1 case d'un Rock",
+      "groupes": [
+        { "nom": "roche", "densite": 0.35, "modeles": { "Rocher_A": 3, "Rocher_B": 2, "Rocher_C": 2, "Rocher_Ocre": 2, "Rocher_Mousse": 1 } },
+        { "nom": "cailloux", "densite": 0.12, "modeles": ["Cailloux_A", "Cailloux_B"] },
+        { "nom": "sol", "densite": 0.2, "modeles": { "Herbe_B": 2, "Herbe_A": 1 } }
+      ]
+    },
+    {
+      "id": "Marais",
+      "fr": "Marais",
+      "selection": "cases de biome Marsh",
+      "groupes": [
+        { "nom": "arbres", "densite": 0.08, "modeles": { "Arbre_Mort_A": 2, "Arbre_Mort_B": 2, "Bouleau_B": 1 } },
+        { "nom": "sol", "densite": 0.7, "modeles": { "Flaque_A": 3, "Flaque_B": 2, "Boue_A": 3, "Boue_B": 2, "Herbe_Haute": 3 } }
+      ]
+    },
+    {
+      "id": "Ferme",
+      "fr": "Abords de la ferme de départ",
+      "selection": "cases à 12 cases au plus du centre de la ferme (MapGenerator > ferme), hors emprise des bâtiments",
+      "posesFixes": [
+        { "modele": "modeles3d:SM_Ferme_CorpsDeFerme_Ruine", "note": "bâtiments en ruine : placement par le fil de la démo" },
+        { "modele": "modeles3d:SM_Ferme_Grange_Ruine" },
+        { "modele": "decor/ruines:SM_Cloture_Bois_Cassee", "nombre": [10, 16], "regle": "alignées en rectangle de 10 x 8 cases autour des bâtiments, 30 % de segments manquants" },
+        { "modele": "decor/ruines:SM_Debris_Pneus", "nombre": [1, 2] },
+        { "modele": "decor/ruines:SM_Debris_Bidons", "nombre": [1, 2] },
+        { "modele": "decor/ruines:SM_Debris_Palettes", "nombre": [1, 2] },
+        { "modele": "modeles3d:SK_Vache", "nombre": [0, 2], "note": "bétail errant, facultatif pour la démo" }
+      ],
+      "garantiesDeDepart": {
+        "Buisson_Baies_Rouges ou Buisson_Baies_Bleues": { "nombre": 6, "rayonCases": [6, 20] },
+        "Cailloux_A ou Cailloux_B": { "nombre": 8, "rayonCases": [4, 15] },
+        "arbres (Feuillu_*_Ete, Bouleau_*)": { "nombre": 12, "rayonCases": [8, 18] },
+        "Rocher_*": { "nombre": 2, "rayonCases": [10, 22] },
+        "pourquoi": "le joueur doit pouvoir faire le Puits (10 pierres) et 2 tentes avant d'avoir une carrière, et tenir les premiers jours (equilibrage/temps_et_paliers.json > depart)"
+      },
+      "groupes": [
+        { "nom": "sol", "densite": 0.55, "modeles": { "Herbe_Haute": 4, "Herbe_A": 3, "Fleurs": 1, "Boue_B": 1, "Flaque_A": 0.5 } }
+      ]
+    },
+    {
+      "id": "RuinesBordDeRoute",
+      "fr": "Ruines au bord de la route",
+      "selection": "si la carte a une route : cases à 1–3 cases de la route ; sinon 3 à 5 hameaux posés sur des Plains à plus de 30 cases de la ferme, chacun dans un rayon de 6 cases",
+      "groupes": [
+        { "nom": "maisons", "densite": 0.03, "modeles": { "decor/ruines:SM_Maison_Pavillon_Ruine": 3, "decor/ruines:SM_Maison_Etage_Ruine": 1, "decor/ruines:SM_Cabane_Jardin_Ruine": 2 }, "note": "pavillon 2 x 2, maison à étage 3 x 2 : vérifier l'emprise libre, porte tournée vers la route" },
+        { "nom": "epaves", "densite": 0.05, "modeles": { "decor/ruines:SM_Epave_Berline_A": 3, "decor/ruines:SM_Epave_Berline_B": 2, "decor/ruines:SM_Epave_Berline_Brulee": 1, "decor/ruines:SM_Epave_Pickup": 2, "decor/ruines:SM_Epave_Camionnette": 1 }, "note": "épaves sur la route ou en travers du bas‑côté, à démonter (equilibrage/raffinerie.json > objets Car, Truck)" },
+        { "nom": "mobilier", "densite": 0.06, "modeles": { "decor/ruines:SM_Poteau_Electrique": 3, "decor/ruines:SM_Lampadaire_Casse": 1, "decor/ruines:SM_Panneau_Stop": 1, "decor/ruines:SM_Panneau_Limite": 1, "decor/ruines:SM_Panneau_Direction": 1, "decor/ruines:SM_Panneau_Aide": 0.5 } },
+        { "nom": "debris", "densite": 0.08, "modeles": { "decor/ruines:SM_Debris_Gravats_Brique": 2, "decor/ruines:SM_Debris_Gravats_Beton": 1, "decor/ruines:SM_Debris_Poubelles": 2, "decor/ruines:SM_Debris_Pneus": 1, "decor/ruines:SM_Debris_Toles": 1, "decor/ruines:SM_Barricade_Planches": 0.5, "decor/ruines:SM_Barricade_SacsDeSable": 0.5 } },
+        { "nom": "clotures", "densite": 0.05, "modeles": { "decor/ruines:SM_Cloture_Grillage_Cassee": 2, "decor/ruines:SM_Cloture_Bois_Cassee": 2, "decor/ruines:SM_Cloture_Grillage": 1 } },
+        { "nom": "sol", "densite": 0.5, "modeles": { "Herbe_Haute": 3, "Herbe_B": 2, "Flaque_B": 1, "Boue_A": 1, "Arbre_Mort_B": 0.2, "Ossements": 0.3 } }
+      ]
+    }
+  ],
+
+  "ressourcesDesModeles": {
+    "note": "chiffres rattachés à equilibrage/ (production.json, ressources.json) ; à recopier dans les données du moteur quand l'équilibrage sera importé",
+    "arbre": { "modeles": "Pin_*, Feuillu_*, Bouleau_*", "ordre": "Couper du bois", "donne": { "Wood": 6 }, "joursTravail": 2, "apres": "remplacer par Souche_A ou Souche_B ; repousse en jeune arbre (échelle 0,5) au bout de 2 saisons si la case est libre" },
+    "arbreMort": { "modeles": "Arbre_Mort_*", "donne": { "Wood": 3 }, "joursTravail": 1, "apres": "rien" },
+    "blocForet": { "modeles": "Foret_Dense_*", "donne": { "Wood": 48 }, "joursTravail": 16, "apres": "remplacer par 2 à 4 souches, bloc coupé arbre par arbre (8 arbres de 6 bois)" },
+    "troncCouche": { "modeles": "Tronc_Couche", "donne": { "Wood": 4 }, "joursTravail": 0.5 },
+    "rocher": { "modeles": "Rocher_*", "ordre": "Tailler la pierre", "donne": { "Stone": 30 }, "joursTravail": 15, "apres": "Cailloux_B (encore 3 pierres)" },
+    "cailloux": { "modeles": "Cailloux_A (3 pierres), Cailloux_B (5 pierres)", "ordre": "Ramasser (ordre Nettoyer ou Tailler la pierre)", "joursTravail": 0.25, "repousse": "jamais" },
+    "baies": { "modeles": "Buisson_Baies_Rouges, Buisson_Baies_Bleues", "ordre": "Cueillir (travailleur de la Cabane de chasseur ou du Potager, ou ordre de zone)", "donne": { "Vegetables": 6 }, "joursTravail": 0.5, "apres": "Buisson_Baies_Vide, regarnit en 1 saison (8 jours), pas en hiver" },
+    "champignons": { "modeles": "Champignons", "donne": { "Vegetables": 2 }, "joursTravail": 0.25, "apres": "disparaît, réapparaît 30 % de chance par saison en forêt dense" },
+    "ordreDeGrandeur": "6 buissons garantis près de la ferme = 36 nourriture par saison, soit 4,5 jours pour les 8 survivants de départ ; 8 tas de cailloux ≈ 30 pierres = Puits + Fosse à incinérer + marge"
+  },
+
+  "animaux": {
+    "Cerf": {
+      "modele": "modeles3d:SK_Cerf",
+      "zones": ["ForetDense", "Lisiere"],
+      "troupeaux": "1 troupeau pour 400 cases de forêt dense (au moins 2, au plus 12 sur la carte)",
+      "tailleTroupeau": [2, 4],
+      "apparition": "au centre d'une zone de forêt dense d'au moins 60 cases, à plus de 25 cases de la ferme",
+      "comportement": "erre dans un rayon de 12 cases autour de son point d'apparition ; broute (Animal_Brouter) en lisière le jour, rentre en forêt dense la nuit ; fuit (Animal_Fuite) tout survivant ou zombie à moins de 8 cases",
+      "chasse": { "donne": { "Meat": 8 }, "par": "travailleur de la Cabane de chasseur (Pistage) ; chance 0,35 + 0,1 × (Pistage − 2) par tentative" },
+      "renouvellement": "+1 cerf par troupeau et par saison si le troupeau compte moins de 4 bêtes (pas en hiver) ; un troupeau vidé réapparaît au bout de 2 saisons",
+      "lienEquilibrage": "la recette Hunting (1,5 viande par jour de travail) ne tourne que s'il reste un troupeau à moins de 14 cases de la cabane"
+    },
+    "Sanglier": {
+      "modele": "modeles3d:SK_Sanglier",
+      "zones": ["ForetDense"],
+      "groupes": "1 groupe pour 600 cases de forêt dense (au plus 8 sur la carte)",
+      "tailleGroupe": [1, 3],
+      "apparition": "en forêt dense, à plus de 35 cases de la ferme",
+      "comportement": "fouit (Animal_Fouir) près des chênes et des champignons ; charge (Animal_Charge) un survivant seul à moins de 4 cases avec 40 % de chance, sinon s'enfuit ; ignore les zombies",
+      "danger": { "chanceBlessureParCharge": 0.35, "partGrave": 0.2, "parade": "groupe de 3 ou plus, ou un pisteur dans le groupe : pas de charge" },
+      "chasse": { "donne": { "Meat": 6 }, "chance": "0,25 + 0,1 × (Combat − 2)" },
+      "renouvellement": "+1 par groupe et par saison jusqu'à 3"
+    },
+    "zombiesCaches": {
+      "note": "facultatif pour la démo : quelques Rôdeurs immobiles (pose Repos) en forêt dense, pour l'ambiance et le risque d'embuscade",
+      "modele": "modeles3d:SK_Rodeur",
+      "densite": "1 pour 150 cases de forêt dense, jamais à moins de 30 cases de la ferme"
+    }
+  },
+
+  "budgetAffichage": {
+    "note": "repères pour 60 FPS sur le PC de Sam (cahier des charges NF‑01)",
+    "grossesPiecesVisibles": "≈ 1 500 à l'écran en vue large ; LOD1 au‑delà de 25 % d'écran, LOD2 au‑delà de 8 %",
+    "detailsDeSol": "ne les afficher qu'à moins de 60 m de la caméra (distance de culling par couche) ; GPU instancing obligatoire",
+    "forets": "préférer les blocs Foret_Dense_* aux arbres isolés au cœur des forêts : 1 appel de rendu pour 8 à 10 arbres"
+  }
+}

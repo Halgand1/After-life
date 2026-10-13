@@ -20,7 +20,7 @@
       "categorie": "Arbre",
       "empriseCases": 1,
       "ressource": "Wood",
-      "hauteur_m": 3.31,
+      "hauteur_m": 3.25,
       "triangles": [
         140,
         70,
@@ -32,7 +32,7 @@
       "categorie": "Arbre",
       "empriseCases": 1,
       "ressource": "Wood",
-      "hauteur_m": 2.36,
+      "hauteur_m": 2.29,
       "triangles": [
         140,
         70,
@@ -44,7 +44,7 @@
       "categorie": "Arbre_Hiver",
       "empriseCases": 1,
       "ressource": "Wood",
-      "hauteur_m": 2.77,
+      "hauteur_m": 2.75,
       "triangles": [
         188,
         94,
@@ -68,7 +68,7 @@
       "categorie": "Arbre",
       "empriseCases": 1,
       "ressource": "Wood",
-      "hauteur_m": 2.42,
+      "hauteur_m": 2.43,
       "triangles": [
         172,
         84,
@@ -80,7 +80,7 @@
       "categorie": "Arbre",
       "empriseCases": 1,
       "ressource": "Wood",
-      "hauteur_m": 2.58,
+      "hauteur_m": 2.62,
       "triangles": [
         192,
         96,
@@ -92,7 +92,7 @@
       "categorie": "Arbre",
       "empriseCases": 1,
       "ressource": "Wood",
-      "hauteur_m": 2.13,
+      "hauteur_m": 2.18,
       "triangles": [
         172,
         86,
@@ -116,7 +116,7 @@
       "categorie": "Arbre_Automne",
       "empriseCases": 1,
       "ressource": "Wood",
-      "hauteur_m": 2.51,
+      "hauteur_m": 2.57,
       "triangles": [
         192,
         96,
@@ -128,7 +128,7 @@
       "categorie": "Arbre_Automne",
       "empriseCases": 1,
       "ressource": "Wood",
-      "hauteur_m": 2.17,
+      "hauteur_m": 2.18,
       "triangles": [
         172,
         86,
@@ -164,7 +164,7 @@
       "categorie": "Arbre",
       "empriseCases": 1,
       "ressource": "Wood",
-      "hauteur_m": 2.87,
+      "hauteur_m": 2.9,
       "triangles": [
         128,
         64,
@@ -179,7 +179,7 @@
       "hauteur_m": 2.5,
       "triangles": [
         128,
-        64,
+        62,
         28
       ]
     },
@@ -212,7 +212,7 @@
       "categorie": "Foret",
       "empriseCases": 2,
       "ressource": "Wood",
-      "hauteur_m": 3.55,
+      "hauteur_m": 3.57,
       "triangles": [
         1748,
         694,
@@ -224,7 +224,7 @@
       "categorie": "Foret",
       "empriseCases": 2,
       "ressource": "Wood",
-      "hauteur_m": 2.95,
+      "hauteur_m": 2.91,
       "triangles": [
         1848,
         738,
@@ -248,7 +248,7 @@
       "categorie": "Buisson",
       "empriseCases": 1,
       "ressource": null,
-      "hauteur_m": 0.34,
+      "hauteur_m": 0.33,
       "triangles": [
         80,
         40,
@@ -260,7 +260,7 @@
       "categorie": "Buisson",
       "empriseCases": 1,
       "ressource": null,
-      "hauteur_m": 0.42,
+      "hauteur_m": 0.43,
       "triangles": [
         80,
         40,
@@ -296,7 +296,7 @@
       "categorie": "Cueillette",
       "empriseCases": 1,
       "ressource": null,
-      "hauteur_m": 0.36,
+      "hauteur_m": 0.37,
       "triangles": [
         80,
         40,
@@ -308,7 +308,7 @@
       "categorie": "Rocher",
       "empriseCases": 1,
       "ressource": "Stone",
-      "hauteur_m": 0.71,
+      "hauteur_m": 0.72,
       "triangles": [
         80,
         40,
@@ -320,7 +320,7 @@
       "categorie": "Rocher",
       "empriseCases": 1,
       "ressource": "Stone",
-      "hauteur_m": 0.71,
+      "hauteur_m": 0.69,
       "triangles": [
         100,
         50,
@@ -332,7 +332,7 @@
       "categorie": "Rocher",
       "empriseCases": 1,
       "ressource": "Stone",
-      "hauteur_m": 0.61,
+      "hauteur_m": 0.64,
       "triangles": [
         80,
         40,
@@ -344,7 +344,7 @@
       "categorie": "Rocher",
       "empriseCases": 1,
       "ressource": "Stone",
-      "hauteur_m": 0.82,
+      "hauteur_m": 0.76,
       "triangles": [
         100,
         50,
@@ -356,7 +356,7 @@
       "categorie": "Rocher",
       "empriseCases": 1,
       "ressource": "Stone",
-      "hauteur_m": 0.69,
+      "hauteur_m": 0.72,
       "triangles": [
         80,
         40,
@@ -493,6 +493,126 @@
         80,
         35,
         14
+      ]
+    },
+    "Tapis_Feuilles_A": {
+      "fichier": "SM_Nature_Tapis_Feuilles_A.fbx",
+      "categorie": "Sol_Detail",
+      "empriseCases": 0,
+      "ressource": null,
+      "hauteur_m": 0.01,
+      "triangles": [
+        33,
+        19,
+        9
+      ]
+    },
+    "Tapis_Feuilles_B": {
+      "fichier": "SM_Nature_Tapis_Feuilles_B.fbx",
+      "categorie": "Sol_Detail",
+      "empriseCases": 0,
+      "ressource": null,
+      "hauteur_m": 0.01,
+      "triangles": [
+        27,
+        27,
+        27
+      ]
+    },
+    "Tapis_Feuilles_Automne": {
+      "fichier": "SM_Nature_Tapis_Feuilles_Automne.fbx",
+      "categorie": "Sol_Detail",
+      "empriseCases": 0,
+      "ressource": null,
+      "hauteur_m": 0.01,
+      "triangles": [
+        39,
+        23,
+        11
+      ]
+    },
+    "Branches_Mortes_A": {
+      "fichier": "SM_Nature_Branches_Mortes_A.fbx",
+      "categorie": "Sol_Detail",
+      "empriseCases": 0,
+      "ressource": "Wood",
+      "hauteur_m": 0.05,
+      "triangles": [
+        85,
+        51,
+        25
+      ]
+    },
+    "Branches_Mortes_B": {
+      "fichier": "SM_Nature_Branches_Mortes_B.fbx",
+      "categorie": "Sol_Detail",
+      "empriseCases": 0,
+      "ressource": "Wood",
+      "hauteur_m": 0.06,
+      "triangles": [
+        109,
+        65,
+        31
+      ]
+    },
+    "Flaque_A": {
+      "fichier": "SM_Nature_Flaque_A.fbx",
+      "categorie": "Sol_Detail",
+      "empriseCases": 0,
+      "ressource": null,
+      "hauteur_m": 0.01,
+      "triangles": [
+        26,
+        26,
+        26
+      ]
+    },
+    "Flaque_B": {
+      "fichier": "SM_Nature_Flaque_B.fbx",
+      "categorie": "Sol_Detail",
+      "empriseCases": 0,
+      "ressource": null,
+      "hauteur_m": 0.01,
+      "triangles": [
+        36,
+        21,
+        10
+      ]
+    },
+    "Boue_A": {
+      "fichier": "SM_Nature_Boue_A.fbx",
+      "categorie": "Sol_Detail",
+      "empriseCases": 0,
+      "ressource": null,
+      "hauteur_m": 0.03,
+      "triangles": [
+        113,
+        67,
+        33
+      ]
+    },
+    "Boue_B": {
+      "fichier": "SM_Nature_Boue_B.fbx",
+      "categorie": "Sol_Detail",
+      "empriseCases": 0,
+      "ressource": null,
+      "hauteur_m": 0.03,
+      "triangles": [
+        113,
+        66,
+        33
+      ]
+    },
+    "Ossements": {
+      "fichier": "SM_Nature_Ossements.fbx",
+      "categorie": "Sol_Detail",
+      "empriseCases": 0,
+      "ressource": null,
+      "hauteur_m": 0.12,
+      "triangles": [
+        198,
+        116,
+        59
       ]
     }
   }
