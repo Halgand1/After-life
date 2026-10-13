@@ -1,0 +1,32 @@
+SM_Logement_Tente              emprise 1x1  hauteur 1.1 m  coque LOD0/1/2 = 192/82/32 (budget 500)  toit = 48/20/8 (budget 120)  couchages = 2  cases d'etagere = 2
+SM_Logement_Abri               emprise 2x2  hauteur 2.0 m  coque LOD0/1/2 = 448/174/72 (budget 1300)  toit = 84/32/14 (budget 300)  couchages = 4  cases d'etagere = 6
+SM_Logement_Foyer              emprise 3x3  hauteur 3.1 m  coque LOD0/1/2 = 2236/918/384 (budget 3800)  toit = 112/48/18 (budget 400)  couchages = 10  cases d'etagere = 18
+SM_Logement_MaisonBois         emprise 2x3  hauteur 3.1 m  coque LOD0/1/2 = 1684/690/280 (budget 3000)  toit = 100/44/22 (budget 300)  couchages = 5  cases d'etagere = 12
+SM_Logement_MaisonBriques      emprise 3x3  hauteur 3.8 m  coque LOD0/1/2 = 2176/900/370 (budget 3800)  toit = 84/34/14 (budget 400)  couchages = 6  cases d'etagere = 18
+SM_Interieur_Couchage          triangles LOD0/1/2 = 36/14/6  (budget 60)
+SM_Interieur_LitCamp           triangles LOD0/1/2 = 84/38/14  (budget 150)
+SM_Interieur_LitDouble         triangles LOD0/1/2 = 60/24/10  (budget 100)
+SM_Interieur_Etagere           triangles LOD0/1/2 = 84/32/14  (budget 120)
+SM_Interieur_Caisse            triangles LOD0/1/2 = 36/16/6  (budget 60)
+SM_Interieur_Poele             triangles LOD0/1/2 = 100/40/20  (budget 150)
+SM_Interieur_Cuisiniere        triangles LOD0/1/2 = 88/38/16  (budget 150)
+SM_Interieur_Table             triangles LOD0/1/2 = 380/150/62  (budget 400)
+SM_Interieur_TableBancs        triangles LOD0/1/2 = 164/68/26  (budget 300)
+SM_Etagere_Buches_1            triangles LOD0/1/2 = 80/37/12  (budget 300)
+SM_Etagere_Buches_2            triangles LOD0/1/2 = 160/73/24  (budget 300)
+SM_Etagere_Buches_3            triangles LOD0/1/2 = 240/110/44  (budget 300)
+SM_Etagere_Bocaux_1            triangles LOD0/1/2 = 80/36/14  (budget 300)
+SM_Etagere_Bocaux_2            triangles LOD0/1/2 = 160/76/28  (budget 300)
+SM_Etagere_Bocaux_3            triangles LOD0/1/2 = 240/116/40  (budget 300)
+SM_Etagere_BidonsEau_1         triangles LOD0/1/2 = 76/38/16  (budget 300)
+SM_Etagere_BidonsEau_2         triangles LOD0/1/2 = 152/76/32  (budget 300)
+SM_Etagere_BidonsEau_3         triangles LOD0/1/2 = 228/114/50  (budget 300)
+SM_Etagere_Conserves_1         triangles LOD0/1/2 = 60/30/12  (budget 300)
+SM_Etagere_Conserves_2         triangles LOD0/1/2 = 120/60/26  (budget 300)
+SM_Etagere_Conserves_3         triangles LOD0/1/2 = 200/100/40  (budget 300)
+SM_Etagere_Pharmacie_1         triangles LOD0/1/2 = 68/30/14  (budget 300)
+SM_Etagere_Pharmacie_2         triangles LOD0/1/2 = 108/50/22  (budget 300)
+SM_Etagere_Pharmacie_3         triangles LOD0/1/2 = 160/76/32  (budget 300)
+SM_Etagere_Savon_1             triangles LOD0/1/2 = 88/44/18  (budget 300)
+SM_Etagere_Savon_2             triangles LOD0/1/2 = 168/84/36  (budget 300)
+SM_Etagere_Savon_3             triangles LOD0/1/2 = 248/124/52  (budget 300)
