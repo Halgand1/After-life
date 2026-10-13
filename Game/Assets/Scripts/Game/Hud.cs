@@ -15,7 +15,7 @@ namespace AfterCity.Game
     {
         GameRoot _game;
         OrderTool _tool;
-        GUIStyle _alertPanel;
+        GUIStyle _alertPanel, _goodPanel;
         GUIStyle _panel, _label, _small, _title, _button, _buttonOn, _center;
         Texture2D _round, _white;
         float _scale = 1f;
@@ -28,6 +28,8 @@ namespace AfterCity.Game
             (ResourceType.Earth, "Terre", new Color(0.65f, 0.48f, 0.30f)),
             (ResourceType.Scrap, "Ferraille", new Color(0.95f, 0.60f, 0.25f)),
             (ResourceType.Food, "Vivres", new Color(0.55f, 0.80f, 0.40f)),
+            (ResourceType.Water, "Eau", new Color(0.45f, 0.65f, 0.95f)),
+            (ResourceType.Medicine, "Medic.", new Color(0.95f, 0.45f, 0.50f)),
         };
 
         public void Init(GameRoot game)
@@ -50,6 +52,7 @@ namespace AfterCity.Game
             _white = Texture2D.whiteTexture;
             _panel = new GUIStyle { normal = { background = _round }, border = new RectOffset(12, 12, 12, 12), padding = new RectOffset(14, 14, 10, 10) };
             _alertPanel = new GUIStyle(_panel) { normal = { background = RoundedTexture(32, 10, new Color(0.45f, 0.07f, 0.05f, 0.88f)) } };
+            _goodPanel = new GUIStyle(_panel) { normal = { background = RoundedTexture(32, 10, new Color(0.12f, 0.30f, 0.14f, 0.88f)) } };
             _label = new GUIStyle { fontSize = 18, normal = { textColor = new Color(0.92f, 0.92f, 0.90f) }, alignment = TextAnchor.MiddleLeft, richText = true };
             _small = new GUIStyle(_label) { fontSize = 14, normal = { textColor = new Color(0.75f, 0.76f, 0.74f) } };
             _title = new GUIStyle(_label) { fontSize = 20, fontStyle = FontStyle.Bold };
@@ -122,7 +125,7 @@ namespace AfterCity.Game
         void TopBar(float w)
         {
             var colony = _game.Colony;
-            var r = Panel(new Rect(w / 2 - 680, 12, 1360, 52));
+            var r = Panel(new Rect(w / 2 - 800, 12, 1600, 52));
             float x = r.x + 18;
             float hour = _game.Hour;
             int hh = (int)hour, mm = (int)((hour - hh) * 60) / 10 * 10;
@@ -151,7 +154,7 @@ namespace AfterCity.Game
                     extra = balance >= 0 ? $" <size=13><color=#9fd27a>+{balance}/j</color></size>" : $" <size=13><color=#ff7a66>{balance}/j</color></size>";
                 }
                 GUI.Label(new Rect(x + 20, r.y, 150, r.height), $"{name} <b>{colony.Stock.Get(type)}</b>{extra}", _label);
-                x += type == ResourceType.Food ? 170 : 118;
+                x += type == ResourceType.Food ? 170 : type == ResourceType.Water ? 100 : 118;
             }
             GUI.Label(new Rect(x, r.y, 140, r.height), $"Survivants <b>{colony.Villagers.Count}/{colony.Capacity}</b>", _label);
             x += 140;
@@ -348,7 +351,7 @@ namespace AfterCity.Game
                 int chance = colony.PreviewChance(t, _expeditionSize);
                 string danger = new string('!', t.Danger);
                 GUI.Label(new Rect(r.x + 16, y, 200, 22), $"<b>{t.Name}</b> <color=#ff7a66>{danger}</color>", _small);
-                GUI.Label(new Rect(r.x + 16, y + 20, 220, 20), $"{(int)t.Duration} s   reussite <b>{chance} %</b>", _small);
+                GUI.Label(new Rect(r.x + 16, y + 20, 220, 20), $"{Mathf.RoundToInt((float)(t.Duration * colony.ExpeditionDurationFactor))} s   reussite <b>{chance} %</b>", _small);
                 GUI.enabled = canSend;
                 if (GUI.Button(new Rect(r.x + 260, y + 4, 104, 34), "Envoyer", _button))
                 {
@@ -368,7 +371,11 @@ namespace AfterCity.Game
                 GUI.Label(new Rect(r.x + 16, y, 350, 22), $"<color=#8fc0ff>{e.Target.Name}</color> : retour dans {Mathf.CeilToInt((float)e.Remaining)} s", _small);
                 y += 24;
             }
-            GUI.Label(new Rect(r.x + 16, r.y + r.height - 30, 360, 24), "<color=#9a9a96>Plus d'equipiers et moins de danger : meilleures chances.</color>", new GUIStyle(_small) { fontSize = 12 });
+            double factor = colony.ExpeditionDurationFactor;
+            string footer = factor < 0.999
+                ? $"<color=#9fe08a>-{Mathf.RoundToInt((float)(1 - factor) * 100)} % de duree grace aux chevaux</color>"
+                : "<color=#9a9a96>Plus d'equipiers et moins de danger : meilleures chances.</color>";
+            GUI.Label(new Rect(r.x + 16, r.y + r.height - 30, 360, 24), footer, new GUIStyle(_small) { fontSize = 12 });
             return r.yMax + 10;
         }
 
@@ -544,7 +551,7 @@ namespace AfterCity.Game
             if (age > 6f) return;
             GUI.color = new Color(1, 1, 1, Mathf.Clamp01(6f - age));
             var r = new Rect(w / 2 - 420, 126, 840, 54);
-            GUI.Box(r, GUIContent.none, _alertPanel);
+            GUI.Box(r, GUIContent.none, _game.AlertGood ? _goodPanel : _alertPanel);
             GUI.Label(r, $"<b>{_game.Alert}</b>", new GUIStyle(_center) { fontSize = 20, wordWrap = true });
             GUI.color = Color.white;
         }

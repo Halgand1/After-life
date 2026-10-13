@@ -338,6 +338,34 @@ namespace AfterCity.Game.Phase0
             yield return Wait(0.3f);
 
             HomeView.Selected = null;
+
+            // Enclos : chantiers construits par les survivants (les betes arrivent a la fin du chantier)
+            var pens = new System.Collections.Generic.List<Building>();
+            foreach (var t in new[] { BuildingType.LivestockPen, BuildingType.HorsePen })
+            {
+                var o = FreeSpot(colony, farm, t, 0);
+                var pb = o.HasValue ? colony.PlaceBuilding(t, o.Value) : null;
+                Debug.Log($"[AfterCity] Enclos : {t} {(pb != null ? "chantier en " + o.Value : "impossible")}");
+                if (pb != null) pens.Add(pb);
+            }
+            var post = FreeSpot(colony, farm, BuildingType.ExpeditionPost, 0);
+            if (post.HasValue) colony.AddPrebuilt(BuildingType.ExpeditionPost, post.Value);
+            game.Speed = 3;
+            t0 = Time.realtimeSinceStartup;
+            while (Time.realtimeSinceStartup - t0 < 90f && pens.Exists(pb => !pb.Built)) yield return null;
+            game.Speed = 1;
+            foreach (var pb in pens) Debug.Log($"[AfterCity] Enclos : {pb.Type} fini={pb.Built} betes={pb.Animals} duree expeditions x{colony.ExpeditionDurationFactor:F2}");
+            if (pens.Count > 0)
+            {
+                var pc = Vector3.zero;
+                foreach (var pb in pens) pc += TerrainMeshBuilder.CellCenter(grid, pb.Origin) + new Vector3(3f, 0, 3f);
+                freeCamera.Distance = 24f;
+                freeCamera.Focus(pc / pens.Count);
+                yield return Wait(2f);
+                ScreenCapture.CaptureScreenshot(Path.Combine(dir, "enclos.png"));
+                yield return Wait(0.3f);
+            }
+
             float fpsAfter = 0; int fa = 0;
             t0 = Time.realtimeSinceStartup;
             freeCamera.Distance = 36f;

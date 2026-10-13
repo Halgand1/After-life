@@ -245,6 +245,9 @@ namespace AfterCity.EditorTools
             Debug.Log("[AfterCity] Peuplement : " + (boot.peuplement != null ? "peuplement.json" : "ABSENT, placement code en dur"));
             boot.animalPrefabs = EnsureAnimals("SK_Cerf", "SK_Sanglier");
             boot.chickenPrefabs = EnsureAnimals("SK_Poule_Blanche", "SK_Poule_Rousse", "SK_Poule_Noire");
+            var penAnimals = EnsureAnimals("SK_Vache", "SK_Cheval");
+            boot.cowPrefab = penAnimals.FirstOrDefault(p => p.name.Contains("Vache"));
+            boot.horsePrefab = penAnimals.FirstOrDefault(p => p.name.Contains("Cheval"));
             boot.smokeMaterial = EnsureParticleMaterial("Assets/Materials/MAT_Fumee.mat");
             boot.mistMaterial = EnsureParticleMaterial("Assets/Materials/MAT_Brume.mat");
             boot.sun = light;

@@ -31,6 +31,7 @@ namespace AfterCity.Game
             ("Defense", new[] { new ToolItem(JobType.Barricade), new ToolItem(BuildingType.Watchtower) }),
             ("Batiments", new[] { new ToolItem(BuildingType.Tent), new ToolItem(BuildingType.Shelter), new ToolItem(BuildingType.Hostel),
                                   new ToolItem(BuildingType.Well), new ToolItem(BuildingType.Field),
+                                  new ToolItem(BuildingType.LivestockPen), new ToolItem(BuildingType.HorsePen),
                                   new ToolItem(BuildingType.ExpeditionPost), new ToolItem(BuildingType.Workshop) }),
         };
 

@@ -506,10 +506,12 @@ namespace AfterCity.Game.World
                 case BuildingType.Field: name = "JardinPotager_Fini"; break;
                 case BuildingType.Watchtower: name = "TourDeGuet_Fini"; break;
                 case BuildingType.Farmhouse: name = "Ferme_Grange_Ruine"; scale = 0.8f; break;
+                case BuildingType.LivestockPen: name = "EnclosBetail_Fini"; scale = 0.75f; break; // modele 4 x 4 sur 3 x 3 cases
+                case BuildingType.HorsePen: name = "EnclosChevaux_Fini"; scale = 0.6f; break;     // modele 4 x 5 sur 3 x 3 cases
                 default: return false;
             }
             var center = corner + new Vector3(size * Cell * 0.5f, 0, size * Cell * 0.5f);
-            float yaw = bt == BuildingType.Farmhouse ? 180f : Mathf.Round(r * 4f) * 90f;
+            float yaw = bt == BuildingType.Farmhouse ? 180f : bt == BuildingType.LivestockPen || bt == BuildingType.HorsePen ? 0f : Mathf.Round(r * 4f) * 90f;
             return kd.Add(name, center, yaw, scale);
         }
 

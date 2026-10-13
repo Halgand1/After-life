@@ -52,6 +52,9 @@ namespace AfterCity.Game
         public TextAsset peuplement;
         /// <summary>Modeles de l'equipe 3D utilises en objets (logements, objets d'etagere), retrouves par nom.</summary>
         public GameObject[] artPrefabs;
+        /// <summary>Betes des enclos : vache (enclos a betail) et cheval (enclos a chevaux).</summary>
+        public GameObject cowPrefab, horsePrefab;
+        readonly Dictionary<Building, PenView> _penViews = new Dictionary<Building, PenView>();
 
         Dictionary<string, GameObject> _prefabsByName;
         readonly Dictionary<Building, HomeView> _homeViews = new Dictionary<Building, HomeView>();
@@ -82,6 +85,12 @@ namespace AfterCity.Game
             _goneHomes.Clear();
             foreach (var kv in _homeViews)
                 if (!Colony.Buildings.Contains(kv.Key) || kv.Key.Home == null) _goneHomes.Add(kv.Key);
+            foreach (var b in Colony.Buildings)
+            {
+                if (b.AnimalCapacity == 0 || _penViews.ContainsKey(b)) continue;
+                var prefab = b.Type == BuildingType.HorsePen ? horsePrefab : cowPrefab;
+                _penViews[b] = PenView.Create(b, prefab, this, _homeRoot);
+            }
             foreach (var b in _goneHomes)
             {
                 if (HomeView.Selected == _homeViews[b]) HomeView.Selected = null;
@@ -157,9 +166,9 @@ namespace AfterCity.Game
             Colony.Wildlife.Charged += (a, v, damage) => { if (damage > 0) Say($"{v.Name} est blesse par un sanglier"); };
             Colony.HomeComfortChanged += b => Say(b.Comfortable
                 ? $"{BuildingSpec.Of(b.Type).Name} : confortable, ses habitants travaillent 10 % plus vite"
-                : $"{BuildingSpec.Of(b.Type).Name} : n'est plus confortable (il manque {MissingText(b)})");
-            Colony.WaterDrawn += w => Say((Time.unscaledTime - AlertTime < 1f && Alert != null ? Alert + "  -  " : "") + $"Puits : +{w} eau");
-            Colony.HomeUpgraded += b => Say($"Logement ameliore : {BuildingSpec.Of(b.Type).Name}");
+                : $"{BuildingSpec.Of(b.Type).Name} : n'est plus confortable (il manque {MissingText(b)})", b.Comfortable);
+            Colony.WaterDrawn += w => Say((Time.unscaledTime - AlertTime < 1f && Alert != null ? Alert + "  -  " : "") + $"Puits : +{w} eau", true);
+            Colony.HomeUpgraded += b => Say($"Logement ameliore : {BuildingSpec.Of(b.Type).Name}", true);
             Colony.Harvested += n => { if (n > 0) Say($"Recolte du soir : +{n} vivres"); };
             Colony.Ate += (eaten, hungry) =>
             {
@@ -257,10 +266,16 @@ namespace AfterCity.Game
             return sb.ToString();
         }
 
-        public void Say(string alert)
+        /// <summary>Le dernier message est une bonne nouvelle (bandeau vert au lieu de rouge).</summary>
+        public bool AlertGood { get; private set; }
+
+        public void Say(string alert) => Say(alert, false);
+
+        public void Say(string alert, bool good)
         {
             Alert = alert;
             AlertTime = Time.unscaledTime;
+            AlertGood = good;
         }
 
         void OnVillagerDied(Villager v)
