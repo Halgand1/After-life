@@ -312,6 +312,19 @@ namespace AfterCity.Game.Phase0
             ScreenCapture.CaptureScreenshot(Path.Combine(dir, "panneau_maison.png"));
             yield return Wait(0.3f);
 
+            // Gros plan sur l'etagere pleine
+            var sv = game.HomeViewOf(shelter);
+            Debug.Log("[AfterCity] Etagere : " + (sv != null ? sv.DebugShelf() : "pas de vue"));
+            if (sv != null && sv.FirstCase.HasValue)
+            {
+                freeCamera.Distance = 7f;
+                freeCamera.Yaw = 35f;
+                freeCamera.Focus(sv.FirstCase.Value);
+                yield return Wait(0.8f);
+                ScreenCapture.CaptureScreenshot(Path.Combine(dir, "etagere_zoom.png"));
+                yield return Wait(0.3f);
+            }
+
             // Jours sautes : remplissage de l'apres-midi, puis le matin (repas, consommation, confort)
             for (int day = 0; day < 6 && !shelter.Comfortable; day++)
             {

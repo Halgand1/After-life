@@ -441,7 +441,11 @@ namespace AfterCity.EditorTools
         [MenuItem("After City/Phase 0/3. Build Windows (Builds/Phase0)")]
         public static void BuildPlayer()
         {
-            string outDir = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", "Builds", "Phase0"));
+            // -aftercity-out <dossier> : autre dossier (quand le jeu est ouvert dans Builds/Phase0)
+            var cli = Environment.GetCommandLineArgs();
+            int oi = Array.IndexOf(cli, "-aftercity-out");
+            string outDir = oi >= 0 && oi + 1 < cli.Length ? Path.GetFullPath(cli[oi + 1])
+                : Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", "Builds", "Phase0"));
             Directory.CreateDirectory(outDir);
             var options = new BuildPlayerOptions
             {

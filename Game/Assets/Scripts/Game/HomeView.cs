@@ -97,6 +97,7 @@ namespace AfterCity.Game
             _cases.Sort((x, y) => string.CompareOrdinal(x.name, y.name));
 
             if (b.Type == BuildingType.WoodHouse) FitWoodHouse(cell);
+            FaceShelfToCamera();
             _roofOff = !RoofsVisible();
             SetRoofs(!_roofOff);
             RefreshShelves();
@@ -125,6 +126,52 @@ namespace AfterCity.Game
             pile.AddComponent<MeshFilter>().sharedMesh = kd.ToMesh("TasDeBois");
             pile.AddComponent<MeshRenderer>().sharedMaterial = kit.material;
             pile.transform.SetParent(_model, true);
+        }
+
+        /// <summary>
+        /// Tourne la maison d'un quart de tour pour que son etagere soit contre le mur du fond vu par la camera
+        /// (lacet de depart 35 degres) : depuis la vue du jeu, on voit l'etagere de face, pas le dos de son mur.
+        /// </summary>
+        void FaceShelfToCamera()
+        {
+            if (_cases.Count == 0) return;
+            var c = Vector3.zero;
+            foreach (var t in _cases) c += t.position;
+            var dir = c / _cases.Count - transform.position;
+            dir.y = 0;
+            if (dir.sqrMagnitude < 0.01f) return;
+            var camForward = Quaternion.Euler(0, 35f, 0) * Vector3.forward;
+            float best = -2f, bestYaw = 0f;
+            for (int k = 0; k < 4; k++)
+            {
+                float d = Vector3.Dot(Quaternion.Euler(0, k * 90f, 0) * dir.normalized, camForward);
+                if (d > best) { best = d; bestYaw = k * 90f; }
+            }
+            transform.rotation = Quaternion.Euler(0, bestYaw, 0);
+        }
+
+        /// <summary>Position de la premiere case d'etagere (camera de test), ou null.</summary>
+        public Vector3? FirstCase => _cases.Count > 0 ? _cases[0].position : (Vector3?)null;
+
+        /// <summary>Etat de l'etagere pour le journal de test : cases, objets poses, echelles et tailles.</summary>
+        public string DebugShelf()
+        {
+            var sb = new System.Text.StringBuilder($"cases={_cases.Count} objets={_props.Count}");
+            if (_cases.Count > 0)
+            {
+                var c = _cases[0];
+                sb.Append($" case0 pos={c.position} echelle={c.lossyScale} rot={c.rotation.eulerAngles}");
+            }
+            foreach (var kv in _props)
+            {
+                if (kv.Value.go == null) continue;
+                var r = kv.Value.go.GetComponentInChildren<Renderer>();
+                sb.Append($" | {kv.Value.key} echelle={kv.Value.go.transform.lossyScale} taille={(r != null ? r.bounds.size.ToString() : "pas de rendu")}");
+                break;
+            }
+            var p = _game.PrefabNamed("SM_Etagere_Bocaux_3");
+            if (p != null) sb.Append($" | prefab racine echelle={p.transform.localScale} rot={p.transform.localRotation.eulerAngles}");
+            return sb.ToString();
         }
 
         bool RoofsVisible() => Building.Built && !RoofsHidden && Selected != this;

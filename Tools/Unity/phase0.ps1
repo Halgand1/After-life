@@ -1,9 +1,10 @@
-# Phase 0 : cree/ouvre le projet Unity Game/, configure URP, construit la scene, build Windows et mesure.
+﻿# Phase 0 : cree/ouvre le projet Unity Game/, configure URP, construit la scene, build Windows et mesure.
 # Usage (PowerShell, depuis la racine du depot) :  .\Tools\Unity\phase0.ps1
 # Necessite une licence Unity active (Unity Hub > Preferences > Licences).
 param(
     [string]$Unity = "",
-    [int]$Seconds = 20
+    [int]$Seconds = 20,
+    [string]$OutDir = ""
 )
 $ErrorActionPreference = "Stop"
 $Root = Resolve-Path (Join-Path $PSScriptRoot "..\..")
@@ -53,10 +54,12 @@ if (-not $deps.'com.unity.render-pipelines.universal') {
 # 3. Configuration URP, scene, build
 Invoke-Unity "02_setup" @("-batchmode", "-quit", "-projectPath", "`"$Game`"", "-executeMethod", "AfterCity.EditorTools.Phase0Builder.SetupProject")
 Invoke-Unity "03_scene" @("-batchmode", "-quit", "-projectPath", "`"$Game`"", "-executeMethod", "AfterCity.EditorTools.Phase0Builder.BuildScene")
-Invoke-Unity "04_build" @("-batchmode", "-quit", "-projectPath", "`"$Game`"", "-executeMethod", "AfterCity.EditorTools.Phase0Builder.BuildPlayer")
+$outArgs = @()
+if ($OutDir) { $outArgs = @("-aftercity-out", "`"$OutDir`"") }
+Invoke-Unity "04_build" (@("-batchmode", "-quit", "-projectPath", "`"$Game`"", "-executeMethod", "AfterCity.EditorTools.Phase0Builder.BuildPlayer") + $outArgs)
 
 # 4. Lancement mesure : ~20 s, capture d'ecran et FPS moyen
-$out = Join-Path $Root "Builds\Phase0"
+$out = if ($OutDir) { $OutDir } else { Join-Path $Root "Builds\Phase0" }
 $exe = Join-Path $out "AfterCity.exe"
 Remove-Item (Join-Path $out "fps.txt"), (Join-Path $out "screenshot.png") -ErrorAction SilentlyContinue
 $p = Start-Process $exe -ArgumentList "-screen-fullscreen", "0", "-screen-width", "1920", "-screen-height", "1080", "-logFile", "`"$(Join-Path $Logs 'player.log')`"", "-aftercity-benchmark", "`"$out`"" -PassThru
