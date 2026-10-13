@@ -76,6 +76,8 @@ namespace AfterCity.Core.Sim
         public static int WaveSize(int night) => 3 + 2 * (night - 1);
 
         public double WallDamageAt(GridPos p) => _wallDamage.TryGetValue(p, out var d) ? d : 0;
+        /// <summary>Barricades en cours d'attaque et degats recus (0 a WallHealth).</summary>
+        public IEnumerable<KeyValuePair<GridPos, double>> DamagedWalls => _wallDamage;
 
         public void Tick(double dt)
         {

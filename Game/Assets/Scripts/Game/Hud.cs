@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using AfterCity.Core.Sim;
+using AfterCity.Core.World;
 using UnityEngine;
 
 namespace AfterCity.Game
@@ -95,11 +96,13 @@ namespace AfterCity.Game
             float w = Screen.width / _scale, h = Screen.height / _scale;
             _uiRects.Clear();
 
+            WorldBars();
             TopBar(w);
             Toolbar(w, h);
             Survivors();
             Messages(w);
             AlertBanner(w);
+            Welcome(w, h);
             Help(w, h);
         }
 
@@ -220,6 +223,61 @@ namespace AfterCity.Game
             GUI.Box(r, GUIContent.none, _panel);
             GUI.Label(r, _tool.LastMessage, _center);
             GUI.color = Color.white;
+        }
+
+        /// <summary>Barres au-dessus des tetes : travail en cours, sante des survivants blesses, barricades attaquees.</summary>
+        void WorldBars()
+        {
+            var cam = Camera.main;
+            if (cam == null) return;
+            foreach (var v in _game.Colony.Villagers)
+            {
+                var world = new Vector3((float)v.X * 2f, 0, (float)v.Y * 2f);
+                world.y = AfterCity.Game.World.TerrainMeshBuilder.TopY(_game.Map.Grid.GetLevel(v.Cell)) + 1.9f;
+                if (v.State == VillagerState.Working && v.Job != null)
+                    Bar(cam, world, (float)v.WorkProgress, OrderTool.ToolColor(v.Job.Type));
+                if (v.Health < Villager.MaxHealth)
+                    Bar(cam, world + Vector3.up * 0.35f, (float)(v.Health / Villager.MaxHealth), new Color(0.9f, 0.25f, 0.2f));
+            }
+            foreach (var kv in _game.Horde.DamagedWalls)
+            {
+                var p = kv.Key;
+                var world = new Vector3(p.X * 2f + 1f, AfterCity.Game.World.TerrainMeshBuilder.TopY(_game.Map.Grid.GetLevel(p)) + 2.4f, p.Y * 2f + 1f);
+                Bar(cam, world, 1f - (float)(kv.Value / Horde.WallHealth), new Color(0.95f, 0.6f, 0.2f));
+            }
+        }
+
+        void Bar(Camera cam, Vector3 world, float t, Color color)
+        {
+            var sp = cam.WorldToScreenPoint(world);
+            if (sp.z < 0) return;
+            float x = sp.x / _scale, y = (Screen.height - sp.y) / _scale;
+            const float bw = 36, bh = 6;
+            GUI.color = new Color(0, 0, 0, 0.7f);
+            GUI.DrawTexture(new Rect(x - bw / 2 - 1, y - 1, bw + 2, bh + 2), _white);
+            GUI.color = color;
+            GUI.DrawTexture(new Rect(x - bw / 2, y, bw * Mathf.Clamp01(t), bh), _white);
+            GUI.color = Color.white;
+        }
+
+        bool _welcomeClosed;
+        public void CloseWelcome() => _welcomeClosed = true;
+
+        void Welcome(float w, float h)
+        {
+            if (_welcomeClosed) return;
+            if (_game.Colony.Time > 45 || Input.GetKeyDown(KeyCode.Return)) { _welcomeClosed = true; return; }
+            var r = Panel(new Rect(w / 2 - 300, h / 2 - 150, 600, 250));
+            GUI.Label(new Rect(r.x + 24, r.y + 16, 552, 34), "After City : premiers pas", _title);
+            GUI.Label(new Rect(r.x + 24, r.y + 54, 552, 140),
+                "Tes 5 survivants viennent d'arriver a la ferme.\n" +
+                "1. Coupe du bois (touche 1, glisse sur la foret).\n" +
+                "2. Avant <b>20h30</b>, protege la ferme : barricades (6) ou une douve de 2 niveaux (4, deux fois).\n" +
+                "3. La nuit, les rodeurs sortent de la foret. Ils cassent les barricades mais restent coinces dans les fosses.\n" +
+                "Astuce : <b>N</b> fait tomber la nuit tout de suite, <b>F2</b> compare les effets visuels.",
+                new GUIStyle(_small) { fontSize = 16, wordWrap = true, alignment = TextAnchor.UpperLeft, normal = { textColor = new Color(0.92f, 0.92f, 0.9f) } });
+            if (GUI.Button(new Rect(r.x + r.width / 2 - 70, r.y + r.height - 48, 140, 36), "C'est parti", _buttonOn))
+                _welcomeClosed = true;
         }
 
         void AlertBanner(float w)

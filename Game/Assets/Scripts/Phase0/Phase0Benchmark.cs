@@ -52,6 +52,8 @@ namespace AfterCity.Game.Phase0
             for (int k = 0; k < 4; k++)
                 game.Horde.Spawn(new GridPos(farm.X + 12 + k % 2, farm.Y - 3 + k * 2));
             game.Speed = 2;
+            var hud = game.GetComponent<Hud>();
+            if (hud != null) hud.CloseWelcome();
         }
 
         IEnumerator Run(string dir)
