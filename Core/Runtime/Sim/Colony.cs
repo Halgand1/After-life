@@ -227,6 +227,17 @@ namespace AfterCity.Core.Sim
             }
         }
 
+        /// <summary>Eau tiree de chaque puits le soir (equilibrage : recette WellWater).</summary>
+        public const int WellYield = 10;
+
+        /// <summary>Eau tiree chaque soir a l'heure de la recolte.</summary>
+        public event Action<int> WaterDrawn;
+
+        public int DailyWater
+        {
+            get { int n = 0; foreach (var b in _buildings) if (b.Built && b.Type == BuildingType.Well) n += WellYield; return n; }
+        }
+
         /// <summary>Habitant d'une maison confortable : travail 10 % plus rapide.</summary>
         public const double ComfortWorkBonus = 0.1;
         public const int MilkPerCow = 1;
@@ -277,6 +288,12 @@ namespace AfterCity.Core.Sim
                 int n = DailyHarvest;
                 Stock.Add(ResourceType.Food, n);
                 Harvested?.Invoke(n);
+                int w = DailyWater;
+                if (w > 0)
+                {
+                    Stock.Add(ResourceType.Water, w);
+                    WaterDrawn?.Invoke(w);
+                }
             }
             if (Crossed(_lastHour, h, 14.0)) RefillShelves();
             if (Crossed(_lastHour, h, 6.0))

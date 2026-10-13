@@ -137,6 +137,19 @@ namespace AfterCity.Core.Tests
         }
 
         [Test]
+        public void AWellGivesWaterEveryEveningForTheBiggerHomes()
+        {
+            var c = Flat();
+            c.AddPrebuilt(BuildingType.Well, new GridPos(5, 5));
+            int drawn = 0;
+            c.WaterDrawn += n => drawn += n;
+            c.SkipToHour(17.9);
+            Days(c, 0.05);
+            Assert.That(drawn, Is.EqualTo(Colony.WellYield));
+            Assert.That(c.Stock.Get(ResourceType.Water), Is.EqualTo(Colony.WellYield));
+        }
+
+        [Test]
         public void ShelfCapacityFollowsTheHomeAndItsResidents()
         {
             var c = Flat();

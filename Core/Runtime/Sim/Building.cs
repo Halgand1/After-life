@@ -17,7 +17,8 @@ namespace AfterCity.Core.Sim
         Tent,        // tente : 2 places, ne reclame que des vivres
         Hostel,      // foyer : grand dortoir commun de 10 places
         WoodHouse,   // maison en bois : amelioration de l'abri
-        BrickHouse   // maison en briques : amelioration de la maison en bois
+        BrickHouse,  // maison en briques : amelioration de la maison en bois
+        Well         // puits : de l'eau chaque soir pour les maisons qui en reclament
     }
 
     /// <summary>Caracteristiques d'un type de batiment.</summary>
@@ -57,6 +58,7 @@ namespace AfterCity.Core.Sim
                 case BuildingType.Hostel: return new BuildingSpec("Foyer", 3, 30, 10, 20, BuildingType.ExpeditionPost);
                 case BuildingType.WoodHouse: return new BuildingSpec("Maison en bois", 3, 20, 4, 14, BuildingType.ExpeditionPost);
                 case BuildingType.BrickHouse: return new BuildingSpec("Maison en briques", 3, 10, 20, 18, BuildingType.Workshop);
+                case BuildingType.Well: return new BuildingSpec("Puits", 1, 10, 10, 8);
                 default: return new BuildingSpec(type.ToString(), 1, 0, 0, 5);
             }
         }
