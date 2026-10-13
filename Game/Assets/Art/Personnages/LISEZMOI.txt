@@ -1,0 +1,10 @@
+﻿# Personnages (equipe 3D)
+
+Deposer ici les FBX : SK_Survivant_{Ouvrier,Milicien,Militaire,Pisteur,Medecin,Nettoyeur}.fbx,
+SK_{Rodeur,Coureur,Cogneur,Grimpeur,Brute}.fbx, SK_{Cerf,Sanglier,Cheval,Vache}.fbx et la texture T_Palette_256.png.
+
+A l'import (Assets/Editor/CharacterImport.cs) : squelette Humanoid (Generic pour les animaux), materiau URP Lit
+partage avec la palette (filtre Point), LODGroup depuis les suffixes _LOD0/_LOD1/_LOD2, clips en boucle.
+Clips attendus : ANIM_Humain_{Repos,Marche,Course,MarcheChargee,Hache,Piocher,Ramasser,Fouiller,Cueillir,Frapper},
+ANIM_Zombie_{Repos,Marche,Course,Attaque}. Puis relancer Tools/Unity/phase0.ps1 : controleurs AC_Humain / AC_Zombie
+et prefabs generes, le jeu les utilise a la place des modeles de test.

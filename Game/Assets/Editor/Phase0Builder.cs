@@ -68,6 +68,7 @@ namespace AfterCity.EditorTools
             PlayerSettings.resizableWindow = true;
             PlayerSettings.runInBackground = true;
             SetInputHandlerBoth();
+            CharacterImport.PrepareFolder();
 
             AssetDatabase.SaveAssets();
             Debug.Log("[AfterCity] Projet configure : URP " + PipelinePath);
@@ -174,6 +175,8 @@ namespace AfterCity.EditorTools
             var terrainMat = EnsureTerrainMaterial();
             var villager = EnsureCharacter("Villager");
             var zombie = EnsureCharacter("Zombie");
+            var survivorModels = EnsurePersonnages(SurvivorModels, "Humain_", "AC_Humain");
+            var zombieModels = EnsurePersonnages(ZombieModels, "Zombie_", "AC_Zombie");
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -230,6 +233,8 @@ namespace AfterCity.EditorTools
             boot.terrainMaterial = terrainMat;
             boot.villagerPrefab = villager;
             boot.zombiePrefab = zombie;
+            boot.survivorPrefabs = survivorModels;
+            boot.zombiePrefabs = zombieModels;
             boot.freeCamera = freeCam;
             boot.sun = light;
 
@@ -298,6 +303,66 @@ namespace AfterCity.EditorTools
             var prefab = PrefabUtility.SaveAsPrefabAsset(instance, prefabPath);
             UnityEngine.Object.DestroyImmediate(instance);
             return prefab;
+        }
+
+        /// <summary>Modeles attendus dans Assets/Art/Personnages (equipe 3D). Ordre = role des survivants.</summary>
+        static readonly string[] SurvivorModels =
+            { "SK_Survivant_Ouvrier", "SK_Survivant_Carrier", "SK_Survivant_Milicien", "SK_Survivant_Pisteur", "SK_Survivant_Medecin", "SK_Survivant_Nettoyeur", "SK_Survivant_Militaire" };
+        static readonly string[] ZombieModels = { "SK_Rodeur", "SK_Coureur", "SK_Cogneur", "SK_Grimpeur", "SK_Brute" };
+
+        /// <summary>
+        /// Construit un controleur commun (un etat par clip « prefixe + Etat » trouve dans le dossier, ex. ANIM_Humain_Marche -> Marche)
+        /// et un prefab par modele present. Liste vide si aucun modele n'est encore arrive : le jeu garde les modeles de test.
+        /// </summary>
+        /// <summary>« ANIM_Humain_Marche » ou « Humain_Marche » -> « Marche » ; null si le clip n'a pas ce prefixe.</summary>
+        static string StateName(string clip, string prefix)
+        {
+            if (clip.StartsWith("ANIM_")) clip = clip.Substring(5);
+            return clip.StartsWith(prefix) && clip.Length > prefix.Length ? clip.Substring(prefix.Length) : null;
+        }
+
+        static GameObject[] EnsurePersonnages(string[] models, string clipPrefix, string controllerName)
+        {
+            string folder = CharacterImport.Folder;
+            if (!AssetDatabase.IsValidFolder(folder.TrimEnd('/'))) return new GameObject[0];
+            var fbxs = AssetDatabase.FindAssets("t:Model", new[] { folder.TrimEnd('/') }).Select(AssetDatabase.GUIDToAssetPath).ToArray();
+            var clips = fbxs.SelectMany(p => AssetDatabase.LoadAllAssetsAtPath(p).OfType<AnimationClip>())
+                .Where(c => !c.name.StartsWith("__preview__") && StateName(c.name, clipPrefix) != null)
+                .GroupBy(c => StateName(c.name, clipPrefix)).Select(g => g.First()).ToArray();
+            var present = models.Where(m => AssetDatabase.LoadAssetAtPath<GameObject>($"{folder}{m}.fbx") != null).ToArray();
+            Debug.Log($"[AfterCity] {controllerName} : {present.Length} modele(s), clips {string.Join(", ", clips.Select(c => c.name))}");
+            foreach (var m in present)
+            {
+                var av = AssetDatabase.LoadAllAssetsAtPath($"{folder}{m}.fbx").OfType<Avatar>().FirstOrDefault();
+                var rend = AssetDatabase.LoadAssetAtPath<GameObject>($"{folder}{m}.fbx").GetComponentInChildren<Renderer>();
+                Debug.Log($"[AfterCity]   {m} : avatar {(av == null ? "absent" : $"valide={av.isValid} humanoide={av.isHuman}")}, materiau {(rend != null && rend.sharedMaterial != null ? rend.sharedMaterial.name : "aucun")}");
+            }
+            if (present.Length == 0) return new GameObject[0];
+
+            string ctrlPath = $"{folder}{controllerName}.controller";
+            AssetDatabase.DeleteAsset(ctrlPath);
+            var controller = AnimatorController.CreateAnimatorControllerAtPath(ctrlPath);
+            var sm = controller.layers[0].stateMachine;
+            foreach (var clip in clips.OrderBy(c => c.name.EndsWith("Repos") ? 0 : 1))
+            {
+                var state = sm.AddState(StateName(clip.name, clipPrefix));
+                state.motion = clip;
+            }
+
+            Directory.CreateDirectory(folder + "Prefabs");
+            var prefabs = new System.Collections.Generic.List<GameObject>();
+            foreach (var m in present)
+            {
+                var model = AssetDatabase.LoadAssetAtPath<GameObject>($"{folder}{m}.fbx");
+                var instance = (GameObject)PrefabUtility.InstantiatePrefab(model);
+                var animator = instance.GetComponent<Animator>();
+                if (animator == null) animator = instance.AddComponent<Animator>();
+                animator.runtimeAnimatorController = controller;
+                animator.applyRootMotion = false;
+                prefabs.Add(PrefabUtility.SaveAsPrefabAsset(instance, $"{folder}Prefabs/PF_{m}.prefab"));
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
+            return prefabs.ToArray();
         }
 
         [MenuItem("After City/Phase 0/3. Build Windows (Builds/Phase0)")]

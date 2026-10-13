@@ -75,7 +75,9 @@ namespace AfterCity.Game
                 _groan = Random.Range(4f, 10f);
             }
             bool moving = z.State == ZombieState.Moving;
-            Play(moving ? WalkState : IdleState);
+            bool attacking = z.State == ZombieState.Smashing || z.State == ZombieState.Feeding;
+            var st = AnimStates.Resolve(_animator, moving ? AnimStates.ZombieWalk : attacking ? AnimStates.ZombieAttack : AnimStates.ZombieIdle);
+            if (st != null) Play(st);
             if (_model != null)
             {
                 float hit = (z.State == ZombieState.Smashing || z.State == ZombieState.Feeding)

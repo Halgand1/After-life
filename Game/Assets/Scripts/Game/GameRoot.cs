@@ -21,6 +21,15 @@ namespace AfterCity.Game
         public Material terrainMaterial;
         public GameObject villagerPrefab;
         public GameObject zombiePrefab;
+        /// <summary>Nouveaux modeles (equipe 3D) : un par role de survivant / type de zombie. Vide = modeles de test.</summary>
+        public GameObject[] survivorPrefabs;
+        public GameObject[] zombiePrefabs;
+
+        GameObject SurvivorPrefab(Villager v) =>
+            survivorPrefabs != null && survivorPrefabs.Length > 0 ? survivorPrefabs[v.Id % survivorPrefabs.Length] : villagerPrefab;
+
+        GameObject ZombiePrefab(Zombie z) =>
+            zombiePrefabs != null && zombiePrefabs.Length > 0 ? zombiePrefabs[z.Id % zombiePrefabs.Length] : zombiePrefab;
         public FreeCamera freeCamera;
         public Light sun;
 
@@ -77,7 +86,7 @@ namespace AfterCity.Game
             Colony.Salvaged += (p, loot) => Say("Epave demontee :" + Describe(loot));
             Colony.SurvivorArrived += v =>
             {
-                _villagerViews[v] = VillagerView.Create(v, villagerPrefab, Map.Grid, transform, terrainMaterial);
+                _villagerViews[v] = VillagerView.Create(v, SurvivorPrefab(v), Map.Grid, transform, terrainMaterial);
                 Say($"{v.Name} a trouve la colonie et rejoint les survivants !");
             };
             Horde.WaveStarted += n =>
@@ -87,7 +96,7 @@ namespace AfterCity.Game
             };
 
             foreach (var v in Colony.Villagers)
-                _villagerViews[v] = VillagerView.Create(v, villagerPrefab, Map.Grid, transform, terrainMaterial);
+                _villagerViews[v] = VillagerView.Create(v, SurvivorPrefab(v), Map.Grid, transform, terrainMaterial);
             _zombieRoot = new GameObject("Horde").transform;
             _zombieRoot.SetParent(transform, false);
 
@@ -184,7 +193,7 @@ namespace AfterCity.Game
             {
                 _alive.Add(z);
                 if (!_zombieViews.ContainsKey(z))
-                    _zombieViews[z] = ZombieView.Create(z, zombiePrefab, Map.Grid, _zombieRoot);
+                    _zombieViews[z] = ZombieView.Create(z, ZombiePrefab(z), Map.Grid, _zombieRoot);
             }
             _gone.Clear();
             foreach (var kv in _zombieViews)

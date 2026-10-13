@@ -103,13 +103,27 @@ namespace AfterCity.Game
             if (facing.sqrMagnitude > 0.01f)
                 transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(facing), Mathf.Clamp01(dt * 10f));
 
-            string state = IdleState;
-            if (v.State == VillagerState.Walking) state = WalkState;
+            string[] wanted = AnimStates.Idle;
+            if (v.State == VillagerState.Walking) wanted = AnimStates.Walk;
             else if (v.State == VillagerState.Working && v.Job != null)
             {
-                if (v.Job.Type == JobType.Mine) state = MineState;
-                else if (v.Job.Type == JobType.Gather || v.Job.Type == JobType.Pick || v.Job.Type == JobType.Search) state = GatherState;
+                switch (v.Job.Type)
+                {
+                    case JobType.Chop: wanted = AnimStates.Chop; break;
+                    case JobType.Mine:
+                    case JobType.Dig: wanted = AnimStates.Mine; break;
+                    case JobType.Gather: wanted = AnimStates.Gather; break;
+                    case JobType.Pick: wanted = AnimStates.Pick; break;
+                    case JobType.Search: wanted = AnimStates.Search; break;
+                    case JobType.Construct:
+                    case JobType.Barricade:
+                    case JobType.Salvage: wanted = AnimStates.Hit; break;
+                }
             }
+            // Etat dedie s'il existe dans ce modele, sinon repos + gestes procedures
+            string state = AnimStates.Resolve(_animator, wanted);
+            bool ownAnim = state != null && wanted != AnimStates.Idle && wanted != AnimStates.Walk;
+            if (state == null) state = AnimStates.Resolve(_animator, AnimStates.Idle);
             Play(state);
             UpdateTool(v);
             WorkSound(v, dt);
@@ -117,7 +131,6 @@ namespace AfterCity.Game
             // Travail : petit mouvement de coups d'outil (la pioche et la cueillette ont leur propre animation)
             if (_model != null)
             {
-                bool ownAnim = state == MineState || state == GatherState;
                 float swing = v.State == VillagerState.Working && !ownAnim ? Mathf.Sin(Time.time * 9f) * 12f : 0f;
                 _model.localRotation = Quaternion.Euler(Mathf.Max(0, swing), 0, 0);
             }
@@ -128,8 +141,11 @@ namespace AfterCity.Game
         {
             if (material == null) return;
             Transform body = null;
-            foreach (var t in model.GetComponentsInChildren<Transform>())
-                if (t.name == "Body") { body = t; break; }
+            var anim = model.GetComponentInChildren<Animator>();
+            if (anim != null && anim.isHuman) body = anim.GetBoneTransform(HumanBodyBones.RightHand);
+            if (body == null)
+                foreach (var t in model.GetComponentsInChildren<Transform>())
+                    if (t.name == "Body") { body = t; break; }
             var go = new GameObject("Tool");
             _tool = go.transform;
             _tool.SetParent(model, false);
@@ -181,7 +197,7 @@ namespace AfterCity.Game
 
         void Play(string state)
         {
-            if (_animator == null || _current == state) return;
+            if (_animator == null || state == null || _current == state) return;
             _current = state;
             _animator.CrossFadeInFixedTime(state, 0.15f);
         }
