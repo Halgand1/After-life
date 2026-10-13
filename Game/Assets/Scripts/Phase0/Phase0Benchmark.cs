@@ -24,6 +24,12 @@ namespace AfterCity.Game.Phase0
         void Start()
         {
             var args = Environment.GetCommandLineArgs();
+            int s = Array.IndexOf(args, "-aftercity-soak");
+            if (s >= 0 && s + 1 < args.Length && float.TryParse(args[s + 1], NumberStyles.Float, CultureInfo.InvariantCulture, out var soakSeconds))
+            {
+                StartCoroutine(Soak(soakSeconds));
+                return;
+            }
             int i = Array.IndexOf(args, "-aftercity-benchmark");
             if (i < 0) return;
             string dir = i + 1 < args.Length ? args[i + 1] : Application.persistentDataPath;
@@ -66,6 +72,26 @@ namespace AfterCity.Game.Phase0
             game.Speed = 2;
             var hud = game.GetComponent<Hud>();
             if (hud != null) hud.CloseWelcome();
+        }
+
+        /// <summary>Test d'endurance : ordres de demo, vitesse x3, journal d'etat toutes les 10 s, puis on quitte.</summary>
+        IEnumerator Soak(float seconds)
+        {
+            DemoOrders();
+            var game = FindAnyObjectByType<GameRoot>();
+            game.Speed = 3;
+            float start = Time.realtimeSinceStartup, next = 0;
+            while (Time.realtimeSinceStartup - start < seconds)
+            {
+                if (Time.realtimeSinceStartup - start >= next)
+                {
+                    var c = game.Colony;
+                    Debug.Log($"[AfterCity] Soak t={Time.realtimeSinceStartup - start:F0}s jour {c.Day} {c.Hour:F1}h survivants {c.Villagers.Count}/{c.Capacity} rodeurs {game.Horde.Zombies.Count} ordres {c.Jobs.Count} bois {c.Stock.Get(ResourceType.Wood)} batiments {c.Buildings.Count} vitesse {game.Speed} fps {1f / Time.smoothDeltaTime:F0} expeditions {c.Expeditions.Count}");
+                    next += 10;
+                }
+                yield return null;
+            }
+            Application.Quit(0);
         }
 
         IEnumerator Run(string dir)
