@@ -12,7 +12,7 @@ SM_Tente_Fini                  emprise 1x1  hauteur 1.1 m  triangles LOD0/1/2 = 
 SM_Puits_Fini                  emprise 1x1  hauteur 1.8 m  triangles LOD0/1/2 = 276/131/38  (budget 500)  accroches = SOCKET_Travail_01
 SM_JardinPotager_Fini          emprise 2x2  hauteur 1.9 m  triangles LOD0/1/2 = 616/284/110  (budget 1100)  accroches = SOCKET_Travail_01, SOCKET_Travail_02, SOCKET_Travail_03, SOCKET_Travail_04
 SM_FosseIncineration_Fini      emprise 2x2  hauteur 0.3 m  triangles LOD0/1/2 = 356/160/63  (budget 600)  accroches = SOCKET_Fumee, SOCKET_Travail_01
-SM_EnclosBetail_Fini           emprise 4x4  hauteur 1.8 m  triangles LOD0/1/2 = 376/172/74  (budget 1200)  accroches = SOCKET_Travail_01, SOCKET_Travail_02, SOCKET_Animal_01, SOCKET_Animal_02, SOCKET_Animal_03, SOCKET_Animal_04, SOCKET_Animal_05, SOCKET_Animal_06
+SM_EnclosBetail_Fini           emprise 4x4  hauteur 1.8 m  triangles LOD0/1/2 = 376/170/74  (budget 1200)  accroches = SOCKET_Travail_01, SOCKET_Travail_02, SOCKET_Animal_01, SOCKET_Animal_02, SOCKET_Animal_03, SOCKET_Animal_04, SOCKET_Animal_05, SOCKET_Animal_06
 SM_EnclosChevaux_Fini          emprise 4x5  hauteur 2.1 m  triangles LOD0/1/2 = 556/244/93  (budget 1500)  accroches = SOCKET_Travail_01, SOCKET_Travail_02, SOCKET_Animal_01, SOCKET_Animal_02, SOCKET_Animal_03, SOCKET_Animal_04
 SM_Palissade_Droit_A           emprise 1x1  hauteur 1.9 m  triangles LOD0/1/2 = 264/120/46  (budget 270)  accroches = -
 SM_Palissade_Droit_B           emprise 1x1  hauteur 1.9 m  triangles LOD0/1/2 = 276/124/50  (budget 290)  accroches = -
@@ -24,3 +24,15 @@ SM_Cloture_Droit               emprise 1x1  hauteur 1.0 m  triangles LOD0/1/2 = 
 SM_Cloture_Coin                emprise 1x1  hauteur 1.0 m  triangles LOD0/1/2 = 84/34/14  (budget 160)  accroches = -
 SM_Cloture_Porte               emprise 1x1  hauteur 1.0 m  triangles LOD0/1/2 = 72/30/12  (budget 160)  accroches = SOCKET_Porte
 SM_ClotureChevaux_Droit        emprise 1x1  hauteur 1.2 m  triangles LOD0/1/2 = 48/18/8  (budget 120)  accroches = -
+SM_Tracteur_Repare             emprise 1x2  hauteur 1.8 m  triangles LOD0/1/2 = 676/292/132  (budget 1800)  accroches = SOCKET_Fumee, SOCKET_Siege, SOCKET_Travail_01
+SM_Tracteur_Epave              emprise 1x2  hauteur 1.8 m  triangles LOD0/1/2 = 820/356/164  (budget 1800)  accroches = SOCKET_Travail_01
+SM_Tracteur_Demonte            emprise 1x2  hauteur 1.8 m  triangles LOD0/1/2 = 384/170/62  (budget 1000)  accroches = -
+SM_Prop_BotteFoin_Ronde        emprise 1x1  hauteur 0.9 m  triangles LOD0/1/2 = 88/44/14  (budget 120)  accroches = -
+SM_Prop_BottesFoin_Carrees     emprise 1x1  hauteur 0.6 m  triangles LOD0/1/2 = 168/78/36  (budget 200)  accroches = -
+SM_Prop_Brouette               emprise 1x1  hauteur 0.6 m  triangles LOD0/1/2 = 108/48/18  (budget 200)  accroches = -
+SM_Prop_OutilsFerme            emprise 1x1  hauteur 1.8 m  triangles LOD0/1/2 = 216/96/44  (budget 400)  accroches = -
+SM_Prop_BidonsLait             emprise 1x1  hauteur 0.6 m  triangles LOD0/1/2 = 168/84/34  (budget 250)  accroches = -
+SM_Prop_BoiteAuxLettres        emprise 1x1  hauteur 1.2 m  triangles LOD0/1/2 = 68/32/14  (budget 80)  accroches = -
+SM_Prop_PanneauAVendre         emprise 1x1  hauteur 1.2 m  triangles LOD0/1/2 = 60/26/10  (budget 80)  accroches = -
+SM_Prop_Charrue                emprise 1x1  hauteur 0.5 m  triangles LOD0/1/2 = 112/50/20  (budget 250)  accroches = -
+SM_Prop_BalancoirePneu         emprise 1x1  hauteur 3.9 m  triangles LOD0/1/2 = 108/54/22  (budget 250)  accroches = -

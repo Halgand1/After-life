@@ -76,7 +76,7 @@ PALETTE = {
     "bois_cerf": (6, 3, "B7A889"), "sanglier_poil": (6, 4, "4A3B2E"), "sanglier_crete": (6, 5, "2E2620"),
     "defense": (6, 6, "D8CFB4"), "groin": (6, 7, "8A6658"), "cheval_bai": (6, 8, "6B4226"),
     "crin_noir": (6, 9, "231E1B"), "vache_blanc": (6, 10, "D2CCBE"), "vache_noir": (6, 11, "2A2724"),
-    "mufle_rose": (6, 12, "B98A80"), "liste_blanche": (6, 13, "E0DACB"),
+    "mufle_rose": (6, 12, "B98A80"), "liste_blanche": (6, 13, "E0DACB"), "poule_rousse": (6, 14, "8A5232"), "crete": (6, 15, "A3352B"),
 }
 # Ligne 5 : tissus de zombies = ligne 1 désaturée de 45 % et assombrie de 20 %
 for _nom in list(PALETTE):

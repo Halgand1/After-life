@@ -38,7 +38,7 @@ gp.PALETTE.update({
     "fenetre_eclairee": (9, 0, "FFB766"), "braises": (9, 1, "FF8A3D"), "suie": (9, 2, "2B2622"),
     "paille": (9, 3, "B8A160"), "terre": (9, 4, "5E4730"), "grillage": (9, 5, "5C5E58"),
     "gravats": (9, 6, "6F695E"), "eau_sale": (9, 7, "3E4C47"), "feuillage": (9, 8, "3F5230"),
-    "chaux": (9, 9, "A9A394"),
+    "chaux": (9, 9, "A9A394"), "tracteur_rouge": (9, 10, "8C3E26"), "pneu_agricole": (9, 11, "262422"),
     # Ligne 7 et ligne 9 col. 12-15 : décor urbain en ruines (fil interface, decor/ruines/), déplacé
     # depuis ses lignes 10-11 d'origine pour laisser les lignes 10-15 à la nature
     "rui_voiture_bleue": (7, 0, "5E7387"), "rui_voiture_rouge": (7, 1, "8E4436"),
@@ -781,6 +781,141 @@ def enclos_chevaux(c, etat):
 
 
 # ---------------------------------------------------------------------------
+# Tracteur (fiche 03 § 4) et accessoires de ferme (fiche 03 § 8)
+# ---------------------------------------------------------------------------
+def tracteur(c, etat):
+    """1 × 2 cases, regarde vers −Y. États : Epave, Repare, Demonte."""
+    rnd = random.Random(12)
+    epave, demonte = etat == "Epave", etat == "Demonte"
+    peint = "tracteur_rouge"
+    # châssis et capot rond
+    c.b((0, -.1, .55), (.42, 1.9, .16), "acier_sombre")
+    capot = c.cyl((0, -.55, .82), .3, 1.1, peint, segments=8, rot=(90, 0, 0))
+    c.sale(capot, .6 if epave else .3)
+    c.b((0, -1.12, .78), (.5, .06, .5), "acier_sombre")  # calandre
+    for k in range(4):
+        c.b((0, -1.16, .6 + k * .1), (.44, .02, .03), "acier")
+    c.b((0, .35, .85), (.55, .5, .45), peint)  # bloc moteur / réservoir
+    # cheminée d'échappement
+    c.cyl((.12, -.75, 1.35), .04, .7, "acier_sombre", segments=6)
+    c.cyl((.12, -.75, 1.72), .055, .06, "rouille", segments=6)
+    # poste de conduite
+    c.b((0, .75, 1.15), (.36, .3, .07), "plastique_noir")  # siège
+    c.b((0, .9, 1.35), (.36, .06, .35), "plastique_noir", rot=(-15, 0, 0))
+    c.b((0, .2, 1.25), (.04, .04, .5), "acier_sombre", rot=(-35, 0, 0))  # colonne de direction
+    c.cyl((0, .05, 1.47), .16, .04, "plastique_noir", segments=8, rot=(-35, 0, 0))
+    # garde-boue
+    for sx in (-1, 1):
+        c.b((sx * .52, .7, 1.12), (.38, .9, .05), peint, rot=(0, 0, 0))
+        c.b((sx * .52, 1.12, .85), (.38, .05, .5), peint)
+    c.b((0, 1.2, .5), (.2, .3, .1), "acier_sombre")  # attelage
+    if demonte:
+        for x, y in ((-.35, .7), (.35, .7), (-.25, -.85), (.25, -.85)):
+            c.b((x, y, .2), (.25, .25, .4), "bois_gris")  # cales
+        for k in range(3):
+            c.cyl((rnd.uniform(-1, 1), rnd.uniform(-1.6, 1.6), .1), .1, .2, "rouille", segments=6)
+        return
+    # roues : grosses à l'arrière, petites à l'avant
+    for sx in (-1, 1):
+        r_ar = .55 if not (epave and sx > 0) else .5
+        c.cyl((sx * .55, .7, r_ar), r_ar, .3, "pneu_agricole", segments=12, rot=(0, 90, 0))
+        c.cyl((sx * .56, .7, r_ar), r_ar * .55, .32, peint if not epave else "rouille", segments=8, rot=(0, 90, 0))
+        for k in range(6):  # crampons
+            a = k * 60
+            c.b((sx * .55, .7 + math.cos(math.radians(a)) * r_ar, r_ar + math.sin(math.radians(a)) * r_ar),
+                (.31, .08, .06), "pneu_agricole", rot=(a, 0, 0))
+        r_av = .3 if not (epave and sx < 0) else .24  # pneu avant à plat
+        c.cyl((sx * .38, -.85, r_av), r_av, .16, "pneu_agricole", segments=10, rot=(0, 90, 0))
+        c.cyl((sx * .39, -.85, r_av), r_av * .5, .18, "acier", segments=6, rot=(0, 90, 0))
+    if epave:
+        for _ in range(5):  # rouille, herbe dans le moteur
+            c.b((rnd.uniform(-.25, .25), rnd.uniform(-1.0, -.2), 1.08), (.12, .2, .02), "rouille",
+                rot=(0, rnd.uniform(-20, 20), rnd.uniform(0, 90)))
+        c.herbes(rnd, 6, .6, 1.2, coul="lierre", h=(.3, .6))
+        c.b((0, -.55, 1.05), (.25, .5, .2), "lierre", effile=(.3, .3))
+    else:
+        c.socket("SOCKET_Fumee", (.12, -.75, 1.75))
+        c.socket("SOCKET_Siege", (0, .75, 1.2))
+    c.socket("SOCKET_Travail_01", (.9, 0, 0))
+
+
+def acc_botte_ronde(c, etat):
+    c.cyl((0, 0, .45), .45, .7, "paille", segments=12, rot=(0, 90, 0))
+    c.cyl((0, 0, .45), .46, .05, "grillage", segments=12, rot=(0, 90, 0))
+
+
+def acc_bottes_carrees(c, etat):
+    for i, (x, y, z) in enumerate(((-.3, 0, .15), (.3, 0, .15), (0, 0, .45))):
+        c.b((x, y, z), (.55, .35, .3), "paille", biseau=.03)
+        c.b((x, y, z), (.56, .02, .31), "cuir")
+
+
+def acc_brouette(c, etat):
+    c.b((0, -.05, .42), (.5, .65, .25), "acier", effile=(1.15, 1.2))
+    c.b((0, -.05, .55), (.48, .62, .02), "terre")
+    c.cyl((0, -.48, .17), .17, .07, "pneu_agricole", segments=10, rot=(0, 90, 0))
+    for sx in (-1, 1):
+        c.b((sx * .2, .35, .45), (.04, .9, .04), "bois_manche", rot=(-8, 0, 0))
+        c.b((sx * .2, .2, .17), (.04, .04, .3), "acier_sombre")
+
+
+def acc_outils_ferme(c, etat):
+    """Râtelier contre un mur : fourche, pelle, râteau, faux ; seau et sac de grain au pied."""
+    c.b((0, .15, .9), (1.4, .06, 1.8), "bois_gris")
+    c.b((0, .1, 1.45), (1.3, .08, .06), "bois_sombre")
+    for i, (nom, x) in enumerate((("fourche", -.45), ("pelle", -.15), ("rateau", .15), ("faux", .45))):
+        c.b((x, .05, .75), (.04, .04, 1.3), "bois_manche", rot=(0, 4 - i * 3, 0))
+        if nom == "fourche":
+            for k in (-1, 0, 1):
+                c.b((x + k * .04, .05, .07), (.015, .015, .2), "acier_sombre")
+        elif nom == "pelle":
+            c.b((x, .05, .1), (.2, .02, .25), "acier", effile=(.8, 1))
+        elif nom == "rateau":
+            c.b((x, .05, 1.45), (.35, .04, .04), "acier_sombre")
+        else:
+            c.b((x - .2, .05, 1.4), (.45, .02, .07), "acier", rot=(0, -20, 0))
+    c.cyl((.75, -.25, .14), .13, .28, "metal_gourde", segments=8, rayon_haut=.15)
+    c.b((-.8, -.25, .2), (.3, .22, .4), "toile_sac", biseau=.06, effile=(.8, .8))
+
+
+def acc_bidons_lait(c, etat):
+    for i, (x, y) in enumerate(((-.2, 0), (.15, .1), (.05, -.25))):
+        c.cyl((x, y, .25), .14, .5, "metal_gourde" if i != 1 else "rouille", segments=8)
+        c.cyl((x, y, .56), .08, .12, "acier", segments=8)
+
+
+def acc_boite_lettres(c, etat):
+    c.b((0, 0, .5), (.08, .08, 1.0), "bois_gris")
+    c.b((0, -.1, 1.08), (.22, .45, .2), "acier", biseau=.06)
+    c.b((.13, -.05, 1.15), (.02, .05, .2), "rouille")
+
+
+def acc_panneau_vente(c, etat):
+    for x in (-.45, .45):
+        c.b((x, 0, .6), (.07, .07, 1.2), "bois_gris")
+    c.b((0, -.05, .95), (1.1, .04, .5), "blanc_ferme", rot=(0, 4, 0))
+    c.b((0, -.08, 1.0), (.8, .02, .12), "rouge_grange", rot=(0, 4, 0))
+    c.b((0, -.08, .85), (.6, .02, .08), "suie", rot=(0, 4, 0))
+
+
+def acc_charrue(c, etat):
+    c.b((0, 0, .45), (.1, 1.4, .1), "rouille")
+    for k in range(3):
+        y = -.4 + k * .4
+        c.b((0, y, .25), (.06, .1, .4), "acier_sombre", rot=(25, 0, 0))
+        c.b((.06, y - .1, .08), (.18, .25, .04), "rouille", rot=(10, 0, 30))
+    c.cyl((.35, .4, .2), .2, .08, "acier_sombre", segments=8, rot=(0, 90, 0))
+
+
+def acc_balancoire_pneu(c, etat):
+    c.cyl((0, 0, 1.5), .22, 3.0, "nat_ecorce", segments=7)
+    c.cyl((0, 0, 3.2), .8, 1.4, "nat_feuille_fonce", segments=7, rayon_haut=.3)
+    c.b((.55, 0, 2.4), (1.1, .12, .12), "nat_ecorce", rot=(0, -12, 0))
+    c.b((1.0, 0, 1.6), (.02, .02, 1.5), "cuir")
+    c.cyl((1.0, 0, .75), .25, .12, "pneu_agricole", segments=10, rot=(90, 0, 0))
+
+
+# ---------------------------------------------------------------------------
 # Catalogue : nom -> (fonction, état ou pièce, emprise en cases, budget de triangles LOD0)
 # ---------------------------------------------------------------------------
 BATIMENTS = {
@@ -800,6 +935,20 @@ BATIMENTS = {
     "SM_FosseIncineration_Fini": (fosse_incineration, "Fini", (2, 2), 600),
     "SM_EnclosBetail_Fini": (enclos_betail, "Fini", (4, 4), 1200),
     "SM_EnclosChevaux_Fini": (enclos_chevaux, "Fini", (4, 5), 1500),
+}
+ACCESSOIRES_FERME = {  # nom -> (fonction, état, emprise, budget)
+    "SM_Tracteur_Repare": (tracteur, "Repare", (1, 2), 1800),
+    "SM_Tracteur_Epave": (tracteur, "Epave", (1, 2), 1800),
+    "SM_Tracteur_Demonte": (tracteur, "Demonte", (1, 2), 1000),
+    "SM_Prop_BotteFoin_Ronde": (acc_botte_ronde, "", (1, 1), 120),
+    "SM_Prop_BottesFoin_Carrees": (acc_bottes_carrees, "", (1, 1), 200),
+    "SM_Prop_Brouette": (acc_brouette, "", (1, 1), 200),
+    "SM_Prop_OutilsFerme": (acc_outils_ferme, "", (1, 1), 400),
+    "SM_Prop_BidonsLait": (acc_bidons_lait, "", (1, 1), 250),
+    "SM_Prop_BoiteAuxLettres": (acc_boite_lettres, "", (1, 1), 80),
+    "SM_Prop_PanneauAVendre": (acc_panneau_vente, "", (1, 1), 80),
+    "SM_Prop_Charrue": (acc_charrue, "", (1, 1), 250),
+    "SM_Prop_BalancoirePneu": (acc_balancoire_pneu, "", (1, 1), 250),
 }
 KIT = {  # pièces modulaires : nom -> (fonction, pièce, budget)
     "SM_Palissade_Droit_A": (palissade, "Droit_A", 270),
@@ -946,6 +1095,13 @@ def principal(sortie=None, rendu=True):
         b["budget"], b["emprise"] = budget, (int(larg / 2), 1)
         kit.append(b)
         x += larg + .6
+    props = []
+    yp = y + 12.0
+    for i, (nom, (fn, arg, (cx, cy), budget)) in enumerate(ACCESSOIRES_FERME.items()):
+        b = creer_batiment(nom, fn, arg, mat, col, x=(i % 6) * 3.2, y=yp + (i // 6) * 4.0)
+        b["budget"], b["emprise"] = budget, (cx, cy)
+        props.append(b)
+    kit = kit + props
     bilan = ["%-30s emprise %dx%d  hauteur %.1f m  triangles LOD0/1/2 = %s  (budget %d)%s  accroches = %s" % (
         b["nom"], b["emprise"][0], b["emprise"][1], b["hauteur"], "/".join(map(str, b["tri"])), b["budget"],
         "  DEPASSE" if b["tri"][0] > b["budget"] else "", ", ".join(s.name.split(".")[0] for s in b["sockets"]) or "-")
@@ -1019,8 +1175,10 @@ def principal(sortie=None, rendu=True):
         cx = (min(b["racine"].location.x for b in r12) + max(b["racine"].location.x for b in r12)) / 2
         cy = (min(b["racine"].location.y for b in r12) + max(b["racine"].location.y for b in r12)) / 2
         vue((cx, cy, .8), 30, os.path.join(sortie, "apercu_batiments.png"))
-        kx = (kit[0]["racine"].location.x + kit[-1]["racine"].location.x) / 2
+        kit_seul = [b for b in kit if b not in props]
+        kx = (kit_seul[0]["racine"].location.x + kit_seul[-1]["racine"].location.x) / 2
         vue((kx, kit[0]["racine"].location.y, .6), 24, os.path.join(sortie, "apercu_palissade.png"), 1900, 700)
+        vue((8.0, yp + 2.0, .6), 17, os.path.join(sortie, "apercu_accessoires.png"), 1900, 900)
         del xs, ys
     if sortie:
         bpy.ops.wm.save_as_mainfile(filepath=os.path.join(sortie, "AfterCity_Batiments.blend"))
