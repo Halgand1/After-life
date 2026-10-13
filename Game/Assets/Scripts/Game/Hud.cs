@@ -13,6 +13,7 @@ namespace AfterCity.Game
     {
         GameRoot _game;
         OrderTool _tool;
+        GUIStyle _alertPanel;
         GUIStyle _panel, _label, _small, _title, _button, _buttonOn, _center;
         Texture2D _round, _white;
         float _scale = 1f;
@@ -46,6 +47,7 @@ namespace AfterCity.Game
             _round = RoundedTexture(32, 10, new Color(0.08f, 0.09f, 0.10f, 0.82f));
             _white = Texture2D.whiteTexture;
             _panel = new GUIStyle { normal = { background = _round }, border = new RectOffset(12, 12, 12, 12), padding = new RectOffset(14, 14, 10, 10) };
+            _alertPanel = new GUIStyle(_panel) { normal = { background = RoundedTexture(32, 10, new Color(0.45f, 0.07f, 0.05f, 0.88f)) } };
             _label = new GUIStyle { fontSize = 18, normal = { textColor = new Color(0.92f, 0.92f, 0.90f) }, alignment = TextAnchor.MiddleLeft, richText = true };
             _small = new GUIStyle(_label) { fontSize = 14, normal = { textColor = new Color(0.75f, 0.76f, 0.74f) } };
             _title = new GUIStyle(_label) { fontSize = 20, fontStyle = FontStyle.Bold };
@@ -97,6 +99,7 @@ namespace AfterCity.Game
             Toolbar(w, h);
             Survivors();
             Messages(w);
+            AlertBanner(w);
             Help(w, h);
         }
 
@@ -110,7 +113,7 @@ namespace AfterCity.Game
         void TopBar(float w)
         {
             var colony = _game.Colony;
-            var r = Panel(new Rect(w / 2 - 470, 12, 940, 52));
+            var r = Panel(new Rect(w / 2 - 640, 12, 1280, 52));
             float x = r.x + 18;
             float hour = _game.Hour;
             int hh = (int)hour, mm = (int)((hour - hh) * 60) / 10 * 10;
@@ -133,9 +136,13 @@ namespace AfterCity.Game
                 GUI.DrawTexture(new Rect(x, r.y + 19, 14, 14), _white);
                 GUI.color = Color.white;
                 GUI.Label(new Rect(x + 20, r.y, 110, r.height), $"{name} <b>{colony.Stock.Get(type)}</b>", _label);
-                x += 108;
+                x += 118;
             }
-            GUI.Label(new Rect(x - 4, r.y, 120, r.height), $"Survivants <b>{colony.Villagers.Count}</b>", _label);
+            GUI.Label(new Rect(x, r.y, 140, r.height), $"Survivants <b>{colony.Villagers.Count}</b>", _label);
+            x += 140;
+            int z = _game.Horde.Zombies.Count;
+            if (z > 0) GUI.Label(new Rect(x, r.y, 140, r.height), $"<color=#ff7a66>Rodeurs <b>{z}</b></color>", _label);
+            else GUI.Label(new Rect(x, r.y, 160, r.height), $"<color=#9a9a96>Nuit {(_game.Horde.WavesSpawned + 1)} a 20h30</color>", _small);
         }
 
         void Toolbar(float w, float h)
@@ -155,20 +162,23 @@ namespace AfterCity.Game
                 GUI.DrawTexture(new Rect(br.x + 10, br.y + 8, bw - 20, 5), _white);
                 GUI.color = Color.white;
             }
+            var hintStyle = new GUIStyle(_small) { alignment = TextAnchor.MiddleCenter, normal = { textColor = new Color(0.95f, 0.95f, 0.92f) } };
             string hint = _tool.Current.HasValue
                 ? "Clic ou glisser : donner l'ordre    Clic droit : annuler    Echap : deselectionner"
                 : "Choisis un ordre (1 a 6). Clic droit / glisser droit pour annuler des ordres.";
-            GUI.Label(new Rect(r.x, r.y - 30, r.width, 26), hint, new GUIStyle(_small) { alignment = TextAnchor.MiddleCenter });
+            var hr = new Rect(r.x + 40, r.y - 34, r.width - 80, 28);
+            GUI.Box(hr, GUIContent.none, _panel);
+            GUI.Label(hr, hint, hintStyle);
         }
 
         void Survivors()
         {
             var colony = _game.Colony;
             float rowH = 26;
-            var r = Panel(new Rect(12, 80, 300, 46 + colony.Villagers.Count * rowH));
+            var r = Panel(new Rect(12, 80, 320, 46 + colony.Villagers.Count * rowH));
             GUI.Label(new Rect(r.x + 16, r.y + 8, 260, 26), "Survivants", _title);
             int jobs = colony.Jobs.Count;
-            GUI.Label(new Rect(r.x + 150, r.y + 8, 136, 26), $"{jobs} ordre(s)", new GUIStyle(_small) { alignment = TextAnchor.MiddleRight });
+            GUI.Label(new Rect(r.x + 170, r.y + 8, 136, 26), $"{jobs} ordre(s)", new GUIStyle(_small) { alignment = TextAnchor.MiddleRight });
             float y = r.y + 40;
             foreach (var v in colony.Villagers)
             {
@@ -177,10 +187,11 @@ namespace AfterCity.Game
                 {
                     case VillagerState.Walking: what = v.Job != null ? $"va {Verb(v.Job.Type)}" : "marche"; break;
                     case VillagerState.Working: what = $"{Verb(v.Job.Type)} <color=#c8c8a0>{(int)(v.WorkProgress * 100)}%</color>"; break;
-                    default: what = "<color=#8a8a86>attend</color>"; break;
+                    default: what = "<color=#b0b0aa>attend</color>"; break;
                 }
-                GUI.Label(new Rect(r.x + 16, y, 80, rowH), $"<b>{v.Name}</b>", _small);
-                GUI.Label(new Rect(r.x + 96, y, 200, rowH), what, _small);
+                int hp = (int)System.Math.Ceiling(v.Health);
+                GUI.Label(new Rect(r.x + 16, y, 80, rowH), hp < 100 ? $"<b>{v.Name}</b> <color=#ff7a66>{hp}</color>" : $"<b>{v.Name}</b>", _small);
+                GUI.Label(new Rect(r.x + 120, y, 180, rowH), what, _small);
                 y += rowH;
             }
         }
@@ -211,11 +222,23 @@ namespace AfterCity.Game
             GUI.color = Color.white;
         }
 
+        void AlertBanner(float w)
+        {
+            if (string.IsNullOrEmpty(_game.Alert)) return;
+            float age = Time.unscaledTime - _game.AlertTime;
+            if (age > 6f) return;
+            GUI.color = new Color(1, 1, 1, Mathf.Clamp01(6f - age));
+            var r = new Rect(w / 2 - 330, 126, 660, 54);
+            GUI.Box(r, GUIContent.none, _alertPanel);
+            GUI.Label(r, $"<b>{_game.Alert}</b>", new GUIStyle(_center) { fontSize = 22 });
+            GUI.color = Color.white;
+        }
+
         void Help(float w, float h)
         {
-            var r = Panel(new Rect(w - 262, h - 150, 250, 138));
-            GUI.Label(new Rect(r.x + 14, r.y + 8, 230, 122),
-                "<b>Camera</b>\nWASD / fleches / bords : bouger\nMolette : zoom   Q / E : tourner\n<b>Temps</b>\nEspace : pause   F1 F2 F3 : vitesse",
+            var r = Panel(new Rect(w - 292, h - 196, 280, 184));
+            GUI.Label(new Rect(r.x + 16, r.y + 10, 252, 168),
+                "<b>Camera</b>\nWASD / fleches / bords : bouger\nMolette : zoom    Q / E : tourner\n<b>Temps</b>\nEspace : pause    + / - : vitesse\nN : passer a la nuit\n<b>Image</b>\nF2 : effets visuels on/off",
                 new GUIStyle(_small) { alignment = TextAnchor.UpperLeft, wordWrap = true });
         }
     }

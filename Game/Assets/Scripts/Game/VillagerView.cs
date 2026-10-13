@@ -32,6 +32,7 @@ namespace AfterCity.Game
                 model.transform.localPosition = Vector3.zero;
                 model.transform.localRotation = Quaternion.identity;
                 view._model = model.transform;
+                model.transform.localScale = Vector3.one * 1.3f; // lisible de loin, garde le gabarit K&C
                 view._animator = model.GetComponentInChildren<Animator>();
             }
             view._y = TerrainMeshBuilder.TopY(grid.GetLevel(v.Cell));
@@ -39,7 +40,22 @@ namespace AfterCity.Game
             return view;
         }
 
-        void Update() => Sync(Time.deltaTime);
+        float _dying = -1f;
+
+        /// <summary>Le survivant tombe puis disparait.</summary>
+        public void Die() { if (_dying < 0) _dying = 0; }
+
+        void Update()
+        {
+            if (_dying >= 0)
+            {
+                _dying += Time.deltaTime;
+                if (_model != null) _model.localRotation = Quaternion.Euler(0, 0, Mathf.Min(90f, _dying * 200f));
+                if (_dying > 3f) Destroy(gameObject);
+                return;
+            }
+            Sync(Time.deltaTime);
+        }
 
         void Sync(float dt)
         {

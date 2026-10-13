@@ -11,6 +11,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
+using FreeCamera = AfterCity.Game.Phase0.FreeCamera;
 
 namespace AfterCity.EditorTools
 {
@@ -28,8 +29,7 @@ namespace AfterCity.EditorTools
         const string RendererPath = SettingsDir + "/URP_AfterCity_Renderer.asset";
         const string ScenePath = "Assets/Scenes/Phase0.unity";
         const string TerrainMatPath = "Assets/Materials/MAT_Terrain.mat";
-        const string VillagerFbx = "Assets/Art/Characters/SK_Villager_Test.fbx";
-        const string VillagerController = "Assets/Art/Characters/AC_Villager_Test.controller";
+        const string PostProfilePath = SettingsDir + "/PP_AfterCity.asset";
 
         [MenuItem("After City/Phase 0/1. Configurer le projet (URP)")]
         public static void SetupProject()
@@ -48,6 +48,7 @@ namespace AfterCity.EditorTools
             pipeline.msaaSampleCount = 4;
             pipeline.supportsHDR = true;
             EditorUtility.SetDirty(pipeline);
+            EnsureSsao(AssetDatabase.LoadAssetAtPath<UniversalRendererData>(RendererPath));
 
             GraphicsSettings.defaultRenderPipeline = pipeline;
             int current = QualitySettings.GetQualityLevel();
@@ -72,6 +73,87 @@ namespace AfterCity.EditorTools
             Debug.Log("[AfterCity] Projet configure : URP " + PipelinePath);
         }
 
+        /// <summary>Ajoute l'occlusion ambiante (SSAO) au renderer URP, qualite moyenne, sans « After Opaque ».</summary>
+        static ScriptableRendererFeature EnsureSsao(UniversalRendererData renderer)
+        {
+            if (renderer == null) { Debug.LogWarning("[AfterCity] Renderer URP introuvable, pas de SSAO"); return null; }
+            ScriptableRendererFeature feature = renderer.rendererFeatures.FirstOrDefault(f => f != null && f.GetType().Name == "ScreenSpaceAmbientOcclusion");
+            if (feature == null)
+            {
+                var type = typeof(UniversalRendererData).Assembly.GetType("UnityEngine.Rendering.Universal.ScreenSpaceAmbientOcclusion");
+                feature = (ScriptableRendererFeature)ScriptableObject.CreateInstance(type);
+                feature.name = "SSAO";
+                AssetDatabase.AddObjectToAsset(feature, renderer);
+                renderer.rendererFeatures.Add(feature);
+                AssetDatabase.SaveAssets();
+                AssetDatabase.TryGetGUIDAndLocalFileIdentifier(feature, out string _, out long localId);
+                var rso = new SerializedObject(renderer);
+                var map = rso.FindProperty("m_RendererFeatureMap");
+                if (map != null)
+                {
+                    map.InsertArrayElementAtIndex(map.arraySize);
+                    map.GetArrayElementAtIndex(map.arraySize - 1).longValue = localId;
+                    rso.ApplyModifiedProperties();
+                }
+            }
+            var so = new SerializedObject(feature);
+            SetProp(so, "m_Settings.AfterOpaque", p => p.boolValue = false);
+            SetProp(so, "m_Settings.Downsample", p => p.boolValue = false);
+            SetProp(so, "m_Settings.Intensity", p => p.floatValue = 0.9f);
+            SetProp(so, "m_Settings.DirectLightingStrength", p => p.floatValue = 0.25f);
+            SetProp(so, "m_Settings.Radius", p => p.floatValue = 0.6f);
+            SetProp(so, "m_Settings.Samples", p => p.enumValueIndex = 1); // Medium
+            so.ApplyModifiedProperties();
+            feature.SetActive(true);
+            EditorUtility.SetDirty(renderer);
+            EditorUtility.SetDirty(feature);
+            AssetDatabase.SaveAssets();
+            Debug.Log("[AfterCity] SSAO actif sur " + RendererPath);
+            return feature;
+        }
+
+        static void SetProp(SerializedObject so, string path, Action<SerializedProperty> set)
+        {
+            var p = so.FindProperty(path);
+            if (p == null) { Debug.LogWarning("[AfterCity] Reglage SSAO absent : " + path); return; }
+            set(p);
+        }
+
+        /// <summary>Profil de post-traitement : ACES, couleurs chaudes un peu desaturees, ombres froides, bloom, vignette, grain.</summary>
+        static VolumeProfile CreatePostProfile()
+        {
+            AssetDatabase.DeleteAsset(PostProfilePath);
+            var profile = ScriptableObject.CreateInstance<VolumeProfile>();
+            AssetDatabase.CreateAsset(profile, PostProfilePath);
+
+            var tone = profile.Add<Tonemapping>(true);
+            tone.mode.Override(TonemappingMode.ACES);
+            var ca = profile.Add<ColorAdjustments>(true);
+            ca.postExposure.Override(0.35f);
+            ca.contrast.Override(10f);
+            ca.saturation.Override(-12f);
+            ca.colorFilter.Override(new Color(1f, 0.96f, 0.90f));
+            var smh = profile.Add<ShadowsMidtonesHighlights>(true);
+            smh.shadows.Override(new Vector4(0.90f, 0.96f, 1.10f, 0f));
+            smh.highlights.Override(new Vector4(1.05f, 1.0f, 0.93f, 0f));
+            var bloom = profile.Add<Bloom>(true);
+            bloom.intensity.Override(0.35f);
+            bloom.threshold.Override(1.0f);
+            bloom.scatter.Override(0.6f);
+            var vig = profile.Add<Vignette>(true);
+            vig.intensity.Override(0.24f);
+            vig.smoothness.Override(0.45f);
+            var grain = profile.Add<FilmGrain>(true);
+            grain.type.Override(FilmGrainLookup.Thin1);
+            grain.intensity.Override(0.12f);
+            grain.response.Override(0.8f);
+
+            foreach (var comp in profile.components) AssetDatabase.AddObjectToAsset(comp, profile);
+            EditorUtility.SetDirty(profile);
+            AssetDatabase.SaveAssets();
+            return profile;
+        }
+
         /// <summary>Ancien Input Manager + Input System (0 = ancien, 1 = nouveau, 2 = les deux).</summary>
         static void SetInputHandlerBoth()
         {
@@ -90,7 +172,8 @@ namespace AfterCity.EditorTools
         public static void BuildScene()
         {
             var terrainMat = EnsureTerrainMaterial();
-            var villager = EnsureVillager();
+            var villager = EnsureCharacter("Villager");
+            var zombie = EnsureCharacter("Zombie");
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -124,7 +207,18 @@ namespace AfterCity.EditorTools
             cam.fieldOfView = 40f;
             camGo.AddComponent<AudioListener>();
             var camData = camGo.AddComponent<UniversalAdditionalCameraData>();
-            camData.renderPostProcessing = false;
+            camData.renderPostProcessing = true;
+            camData.antialiasing = AntialiasingMode.None;
+
+            var postGo = new GameObject("PostFX");
+            var volume = postGo.AddComponent<Volume>();
+            volume.isGlobal = true;
+            volume.sharedProfile = CreatePostProfile();
+            var toggle = camGo.AddComponent<PostFxToggle>();
+            toggle.volume = volume;
+            toggle.cameraData = camData;
+            toggle.ssao = AssetDatabase.LoadAssetAtPath<UniversalRendererData>(RendererPath)?.rendererFeatures
+                .FirstOrDefault(f => f != null && f.GetType().Name == "ScreenSpaceAmbientOcclusion");
             var freeCam = camGo.AddComponent<FreeCamera>();
             freeCam.boundsMax = new Vector2(128 * 2f, 128 * 2f);
 
@@ -135,6 +229,7 @@ namespace AfterCity.EditorTools
             boot.seed = 1337;
             boot.terrainMaterial = terrainMat;
             boot.villagerPrefab = villager;
+            boot.zombiePrefab = zombie;
             boot.freeCamera = freeCam;
             boot.sun = light;
 
@@ -160,9 +255,11 @@ namespace AfterCity.EditorTools
             return mat;
         }
 
-        /// <summary>Importe le FBX en Generic avec clips en boucle et lui associe un Animator (clip de marche).</summary>
-        static GameObject EnsureVillager()
+        /// <summary>Importe SK_{name}_Test.fbx en Generic avec clips en boucle, cree son Animator et un prefab PF_{name}_Test.</summary>
+        static GameObject EnsureCharacter(string name)
         {
+            string VillagerFbx = $"Assets/Art/Characters/SK_{name}_Test.fbx";
+            string VillagerController = $"Assets/Art/Characters/AC_{name}_Test.controller";
             var importer = AssetImporter.GetAtPath(VillagerFbx) as ModelImporter;
             if (importer == null) throw new Exception("FBX introuvable : " + VillagerFbx);
             importer.animationType = ModelImporterAnimationType.Generic;
@@ -179,7 +276,7 @@ namespace AfterCity.EditorTools
 
             var all = AssetDatabase.LoadAllAssetsAtPath(VillagerFbx).OfType<AnimationClip>()
                 .Where(c => !c.name.StartsWith("__preview__")).ToArray();
-            Debug.Log("[AfterCity] Clips du villageois : " + string.Join(", ", all.Select(c => c.name)));
+            Debug.Log($"[AfterCity] Clips de {name} : " + string.Join(", ", all.Select(c => c.name)));
             var walk = all.FirstOrDefault(c => c.name.Contains("Walk")) ?? all.FirstOrDefault();
 
             AssetDatabase.DeleteAsset(VillagerController);
@@ -193,10 +290,11 @@ namespace AfterCity.EditorTools
 
             var model = AssetDatabase.LoadAssetAtPath<GameObject>(VillagerFbx);
             var instance = (GameObject)PrefabUtility.InstantiatePrefab(model);
-            var animator = instance.GetComponent<Animator>() ?? instance.AddComponent<Animator>();
+            var animator = instance.GetComponent<Animator>();
+            if (animator == null) animator = instance.AddComponent<Animator>();
             animator.runtimeAnimatorController = controller;
             animator.applyRootMotion = false;
-            const string prefabPath = "Assets/Art/Characters/PF_Villager_Test.prefab";
+            string prefabPath = $"Assets/Art/Characters/PF_{name}_Test.prefab";
             var prefab = PrefabUtility.SaveAsPrefabAsset(instance, prefabPath);
             UnityEngine.Object.DestroyImmediate(instance);
             return prefab;

@@ -92,9 +92,9 @@ namespace AfterCity.Game.World
         {
             switch (b)
             {
-                case Biome.Plains: return new Color(0.53f, 0.62f, 0.33f);
-                case Biome.Meadow: return new Color(0.62f, 0.66f, 0.38f);
-                case Biome.DenseForest: return new Color(0.30f, 0.40f, 0.24f);
+                case Biome.Plains: return new Color(0.45f, 0.53f, 0.30f);
+                case Biome.Meadow: return new Color(0.54f, 0.56f, 0.34f);
+                case Biome.DenseForest: return new Color(0.27f, 0.35f, 0.22f);
                 case Biome.Rock: return new Color(0.52f, 0.50f, 0.47f);
                 case Biome.Water: return new Color(0.22f, 0.40f, 0.48f);
                 case Biome.Marsh: return new Color(0.38f, 0.42f, 0.30f);
@@ -143,7 +143,7 @@ namespace AfterCity.Game.World
                         : (dx & 1) == 0 ? new Color(0.48f, 0.38f, 0.24f)       // sillons
                                         : new Color(0.62f, 0.58f, 0.30f);      // ble sec
                 }
-                float shade = 0.82f + level * 0.05f + (Hash(x, y, 1) - 0.5f) * 0.08f;
+                float shade = 0.70f + level * 0.07f + (Hash(x, y, 1) - 0.5f) * 0.06f;
                 if (biome == Biome.Water) { top -= 0.15f; shade = 1f + (Hash(x, y, 2) - 0.5f) * 0.05f; }
                 var topCol = Lin(col * shade);
                 md.Quad(new Vector3(x0, top, z0), new Vector3(x0, top, z1), new Vector3(x1, top, z1), new Vector3(x1, top, z0), Vector3.up, topCol);

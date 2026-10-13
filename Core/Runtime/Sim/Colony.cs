@@ -95,6 +95,13 @@ namespace AfterCity.Core.Sim
         /// <summary>Un survivant est mort (deja retire de la liste).</summary>
         public event Action<Villager> VillagerDied;
 
+        /// <summary>Avance l'horloge jusqu'a l'heure donnee (jour courant ou suivant), sans simuler l'intervalle.</summary>
+        public void SkipToHour(double hour)
+        {
+            double delta = (hour - Hour + 24.0) % 24.0;
+            Time += delta / 24.0 * DayLength;
+        }
+
         /// <summary>Une case a change (relief, decor ou mur) : l'affichage doit la redessiner.</summary>
         public event Action<GridPos> CellChanged;
 
