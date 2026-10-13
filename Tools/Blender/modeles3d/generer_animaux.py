@@ -271,6 +271,77 @@ def creer_animal(nom, a, mat, collection, x=0.0):
                 equip={})
 
 
+# ---------------------------------------------------------------------------
+# Poule (fiche 01 § 8, fiche 04) : petit squelette à part, 3 couleurs
+# ---------------------------------------------------------------------------
+OS_P = ["Hips", "Head", "Queue", "Aile_L", "Aile_R", "Jambe_L", "Jambe_R"]
+POULES = {"Poule_Blanche": "liste_blanche", "Poule_Rousse": "poule_rousse", "Poule_Noire": "crin_noir"}
+
+
+def creer_poule(nom, plumage, mat, collection, x=0.0):
+    col = bpy.data.collections.new(nom)
+    collection.children.link(col)
+    c = gp.Constructeur(hauteur=.28, salete=.2, os_liste=OS_P)
+    zc = .14
+    c.boite((0, .01, zc), (.13, .2, .12), plumage, "Hips", biseau=.03, effile=(.9, .8), effile_bas=(.7, .8))
+    c.boite((0, .1, zc + .07), (.08, .07, .1), plumage, "Queue", biseau=0, rot=(-25, 0, 0), effile=(.7, 1))
+    c.boite((0, -.09, zc + .08), (.07, .07, .11), plumage, "Head", biseau=.015)
+    c.boite((0, -.135, zc + .1), (.025, .04, .02), "orange_hv", "Head", biseau=0, effile=(.4, .3))
+    c.boite((0, -.09, zc + .145), (.015, .06, .035), "crete", "Head", biseau=0)
+    c.boite((0, -.12, zc + .06), (.015, .015, .03), "crete", "Head", biseau=0)
+    for cote, sx in (("L", 1), ("R", -1)):
+        c.boite((sx * .036, -.11, zc + .11), (.012, .012, .012), "yeux", "Head", biseau=0)
+        c.boite((sx * .07, .02, zc + .01), (.025, .13, .07), plumage, "Aile_" + cote, biseau=0, effile=(1, .8))
+        c.boite((sx * .03, 0, .045), (.014, .014, .09), "orange_hv", "Jambe_" + cote, biseau=0)
+        c.boite((sx * .03, -.015, .005), (.04, .05, .01), "orange_hv", "Jambe_" + cote, biseau=0)
+    arm_data = bpy.data.armatures.new("RIG_" + nom + "_Rig")
+    arm = bpy.data.objects.new("RIG_" + nom, arm_data)
+    col.objects.link(arm)
+    bpy.context.view_layer.objects.active = arm
+    bpy.ops.object.mode_set(mode="EDIT")
+    eb = arm_data.edit_bones
+    haut, avant = Vector((0, 0, 1)), Vector((0, -1, 0))
+
+    def os_(n, t, q, parent=None, roll=haut):
+        b = eb.new(n)
+        b.head, b.tail = Vector(t), Vector(q)
+        if parent:
+            b.parent = eb[parent]
+        b.align_roll(roll)
+
+    os_("Hips", (0, .06, zc), (0, -.04, zc))
+    os_("Head", (0, -.06, zc + .03), (0, -.1, zc + .12), "Hips")
+    os_("Queue", (0, .08, zc + .03), (0, .12, zc + .12), "Hips")
+    for cote, sx in (("L", 1), ("R", -1)):
+        os_("Aile_" + cote, (sx * .07, .07, zc + .03), (sx * .07, -.04, zc + .03), "Hips")
+        os_("Jambe_" + cote, (sx * .03, 0, .09), (sx * .03, 0, 0), "Hips", roll=avant)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    for pb in arm.pose.bones:
+        pb.rotation_mode = "XYZ"
+    ob = c.vers_objet("SK_%s_LOD0" % nom, mat)
+    col.objects.link(ob)
+    ob.parent = arm
+    m = ob.modifiers.new("Armature", "ARMATURE")
+    m.object = arm
+    lods = gp.faire_lods(ob, arm, col)
+
+    def repos(t):  # picore deux fois
+        pic = max(0.0, S(t, 2)) ** 3
+        return {"Head": (55 * pic, 0, 4 * S(t, 1, .3)), "Hips": (10 * pic, 0, 0), "Queue": (6 * S(t, 2), 0, 0)}
+
+    def marche(t, k=1.0, ailes=0.0):
+        return {"Jambe_L": (30 * k * S(t), 0, 0), "Jambe_R": (-30 * k * S(t), 0, 0),
+                "Head": (12 * S(t, 2), 0, 0), "Hips": ("loc", .006 * abs(S(t)), 0),
+                "Aile_L": (0, -ailes * (.5 + .5 * S(t, 4)), 0), "Aile_R": (0, ailes * (.5 + .5 * S(t, 4)), 0)}
+
+    acts = [gp._keys(arm, "ANIM_Poule_Repos", 40, repos),
+            gp._keys(arm, "ANIM_Poule_Marche", 16, marche),
+            gp._keys(arm, "ANIM_Poule_Fuite", 10, lambda t: marche(t, 1.4, 45))]
+    arm.location.x = x
+    return dict(nom=nom, arm=arm, objets=[arm] + lods, actions=acts, lods=lods,
+                tri=[gp.nb_triangles(lo) for lo in lods], hauteur=.28, equip={})
+
+
 def principal(sortie=None, rendu=True):
     for o in list(bpy.data.objects):
         bpy.data.objects.remove(o, do_unlink=True)
@@ -284,6 +355,10 @@ def principal(sortie=None, rendu=True):
     for nom, a in ANIMAUX.items():
         animaux.append(creer_animal(nom, a, mat, col, x=x))
         x += a["corps_l"] + .75
+    for nom, plumage in POULES.items():
+        animaux.append(creer_poule(nom, plumage, mat, col, x=x - .2))
+        x += .3
+    x += .35
     # un survivant pour l'échelle
     ech = gp.creer_personnage("Survivant_Echelle", gp.SURVIVANTS["Ouvrier"], mat, col, x=x - .2)
     bilan = ["%-10s triangles LOD0/1/2 = %s  animations = %s" % (
@@ -302,7 +377,9 @@ def principal(sortie=None, rendu=True):
     if sortie and rendu:
         gp.masquer_lods(animaux + [ech])
         poses = {"Cerf": ("ANIM_Animal_Repos", 20), "Sanglier": ("ANIM_Animal_Charge", 4),
-                 "Cheval": ("ANIM_Animal_Marche", 10), "Vache": ("ANIM_Animal_Brouter", 30)}
+                 "Cheval": ("ANIM_Animal_Marche", 10), "Vache": ("ANIM_Animal_Brouter", 30),
+                 "Poule_Blanche": ("ANIM_Poule_Repos", 10), "Poule_Rousse": ("ANIM_Poule_Marche", 4),
+                 "Poule_Noire": ("ANIM_Poule_Repos", 30)}
         for p in animaux:
             anim, image = poses[p["nom"]]
             act = next(ac for ac in p["actions"] if ac.name.split(".")[0] == anim)
@@ -310,7 +387,7 @@ def principal(sortie=None, rendu=True):
             p["image"] = image
         gp.assigner_action(ech["arm"], ech["actions"][0], 20)
         cx = (animaux[0]["arm"].location.x + ech["arm"].location.x) / 2
-        sc = gp.scene_rendu(1800, 760, cx, 4.4, cam_y=-3, cam_z=2.2, cible_z=.4)
+        sc = gp.scene_rendu(1800, 760, cx, 5.4, cam_y=-3, cam_z=2.2, cible_z=.4)
         cam = sc.camera
         cam.location = (cx - 2.6, -4.6, 2.3)
         d = Vector((cx, 0, .4)) - cam.location
