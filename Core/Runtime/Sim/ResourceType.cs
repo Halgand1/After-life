@@ -17,6 +17,7 @@ namespace AfterCity.Core.Sim
         Ceramic,
         Metal,
         Steel,
-        Medicine
+        Medicine,
+        Pebble
     }
 }

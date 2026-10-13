@@ -16,6 +16,9 @@ namespace AfterCity.Core.Sim
         Raise,      // remblayer d'un niveau : consomme de la terre
         Barricade,  // barricade de bois sur la case
         Road,       // tracer un chemin de terre
+        Gather,     // ramasser des cailloux (4 cailloux = 1 pierre)
+        Pick,       // cueillir des baies : vivres
+        Search,     // fouiller une epave : petit butin rapide (sans la demonter)
         Asphalt,    // goudronner (technologie Asphalte, 1 pierre par case)
         Construct   // chantier d'un batiment (donne par PlaceBuilding)
     }
@@ -149,6 +152,22 @@ namespace AfterCity.Core.Sim
         public event Action<GridPos, Dictionary<ResourceType, int>> Salvaged;
         /// <summary>Un arbre vient d'etre abattu sur cette case.</summary>
         public event Action<GridPos> TreeFelled;
+        /// <summary>Une epave a ete fouillee (case, trouvailles).</summary>
+        public event Action<GridPos, Dictionary<ResourceType, int>> Searched;
+
+        public const int PebblesPerStone = 4;
+        public const int BerryFood = 3;
+
+        /// <summary>Ajoute des cailloux ; chaque tas de 4 devient automatiquement 1 pierre.</summary>
+        public void AddPebbles(int n)
+        {
+            Stock.Add(ResourceType.Pebble, n);
+            while (Stock.Get(ResourceType.Pebble) >= PebblesPerStone)
+            {
+                Stock.TrySpend(ResourceType.Pebble, PebblesPerStone);
+                Stock.Add(ResourceType.Stone, 1);
+            }
+        }
 
         /// <summary>Recolte de la ferme de depart et de chaque champ, chaque soir a 18 h.</summary>
         public const int FarmYield = 4;
@@ -278,7 +297,10 @@ namespace AfterCity.Core.Sim
             {
                 case JobType.Chop: return feature == CellFeature.Tree;
                 case JobType.Mine: return feature == CellFeature.Rock;
-                case JobType.Salvage: return feature == CellFeature.Wreck;
+                case JobType.Salvage: return feature == CellFeature.Wreck || feature == CellFeature.WreckSearched;
+                case JobType.Gather: return feature == CellFeature.Pebbles;
+                case JobType.Pick: return feature == CellFeature.Berries;
+                case JobType.Search: return feature == CellFeature.Wreck;
                 case JobType.Dig: return feature == CellFeature.None && Terraformer.CanDig(p);
                 case JobType.Raise:
                     return feature == CellFeature.None && Grid.GetBiome(p) != Biome.Water && !Grid.HasWall(p)
@@ -507,6 +529,9 @@ namespace AfterCity.Core.Sim
                 case JobType.Barricade: return 4.0;
                 case JobType.Road: return 1.5;
                 case JobType.Asphalt: return 2.5;
+                case JobType.Gather: return 1.6;
+                case JobType.Pick: return 2.0;
+                case JobType.Search: return 2.5;
                 default: return 3.0;
             }
         }
@@ -613,7 +638,8 @@ namespace AfterCity.Core.Sim
                 }
                 return spots;
             }
-            bool onCell = job.Type == JobType.Chop || job.Type == JobType.Mine || job.Type == JobType.Salvage || job.Type == JobType.Road || job.Type == JobType.Asphalt;
+            bool onCell = job.Type == JobType.Chop || job.Type == JobType.Mine || job.Type == JobType.Salvage || job.Type == JobType.Road || job.Type == JobType.Asphalt
+                          || job.Type == JobType.Gather || job.Type == JobType.Pick || job.Type == JobType.Search;
             if (onCell && Grid.GetBiome(job.Cell) != Biome.Water) spots.Add(job.Cell);
             foreach (var d in GridPos.Neighbours4)
             {
@@ -696,9 +722,34 @@ namespace AfterCity.Core.Sim
                     Grid.SetFeature(p, CellFeature.None);
                     Stock.Add(ResourceType.Stone, 3);
                     return true;
-                case JobType.Salvage:
+                case JobType.Gather:
+                    if (Grid.GetFeature(p) != CellFeature.Pebbles) return false;
+                    Grid.SetFeature(p, CellFeature.None);
+                    AddPebbles(2 + Random.Range(0, 2));
+                    return true;
+                case JobType.Pick:
+                    if (Grid.GetFeature(p) != CellFeature.Berries) return false;
+                    Grid.SetFeature(p, CellFeature.None);
+                    Stock.Add(ResourceType.Food, BerryFood);
+                    return true;
+                case JobType.Search:
                 {
                     if (Grid.GetFeature(p) != CellFeature.Wreck) return false;
+                    Grid.SetFeature(p, CellFeature.WreckSearched);
+                    var found = new Dictionary<ResourceType, int>();
+                    double roll = Random.NextDouble();
+                    if (roll < 0.45) found[ResourceType.Food] = 1 + Random.Range(0, 2);
+                    else if (roll < 0.85) { var part = AfterCity.Core.Sim.Salvage.Roll(Random); found[part] = 1; }
+                    else found[ResourceType.Medicine] = 1;
+                    if (Random.NextDouble() < 0.4) found[ResourceType.Scrap] = 1;
+                    foreach (var kv in found) Stock.Add(kv.Key, kv.Value);
+                    Searched?.Invoke(p, found);
+                    return true;
+                }
+                case JobType.Salvage:
+                {
+                    var wf = Grid.GetFeature(p);
+                    if (wf != CellFeature.Wreck && wf != CellFeature.WreckSearched) return false;
                     Grid.SetFeature(p, CellFeature.None);
                     var loot = AfterCity.Core.Sim.Salvage.Wreck(Random);
                     foreach (var kv in loot) Stock.Add(kv.Key, kv.Value);

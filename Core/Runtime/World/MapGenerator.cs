@@ -122,14 +122,26 @@ namespace AfterCity.Core.World
             {
                 var p = new GridPos(x, y);
                 double r = rng.NextDouble();
-                if (Math.Abs(x - farm.X) <= clear && Math.Abs(y - farm.Y) <= clear) continue;
+                if (Math.Abs(x - farm.X) <= clear && Math.Abs(y - farm.Y) <= clear)
+                {
+                    // Autour de la ferme : quelques cailloux et buissons de baies pour bien demarrer
+                    if (Math.Abs(x - farm.X) > FarmRadius || Math.Abs(y - farm.Y) > FarmRadius)
+                        grid.SetFeature(p, r < 0.08 ? CellFeature.Pebbles : r < 0.12 ? CellFeature.Berries : CellFeature.None);
+                    continue;
+                }
                 CellFeature f = CellFeature.None;
                 switch (grid.GetBiome(p))
                 {
-                    case Biome.DenseForest: if (r < 0.75) f = CellFeature.Tree; break;
-                    case Biome.Meadow: if (r < 0.08) f = CellFeature.Tree; else if (r < 0.085) f = CellFeature.Wreck; break;
-                    case Biome.Plains: if (r < 0.025) f = CellFeature.Tree; else if (r < 0.03) f = CellFeature.Wreck; break;
-                    case Biome.Rock: if (r < 0.4) f = CellFeature.Rock; break;
+                    case Biome.DenseForest: if (r < 0.75) f = CellFeature.Tree; else if (r < 0.78) f = CellFeature.Berries; break;
+                    case Biome.Meadow:
+                        if (r < 0.08) f = CellFeature.Tree; else if (r < 0.088) f = CellFeature.Wreck;
+                        else if (r < 0.11) f = CellFeature.Berries; else if (r < 0.14) f = CellFeature.Pebbles;
+                        break;
+                    case Biome.Plains:
+                        if (r < 0.025) f = CellFeature.Tree; else if (r < 0.035) f = CellFeature.Wreck;
+                        else if (r < 0.065) f = CellFeature.Pebbles; else if (r < 0.075) f = CellFeature.Berries;
+                        break;
+                    case Biome.Rock: if (r < 0.4) f = CellFeature.Rock; else if (r < 0.6) f = CellFeature.Pebbles; break;
                     case Biome.Marsh: if (r < 0.04) f = CellFeature.Tree; break;
                 }
                 grid.SetFeature(p, f);

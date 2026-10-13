@@ -37,7 +37,7 @@ namespace AfterCity.Core.Tests
         public void FirstNightBringsAWaveThatDiesAtDawn()
         {
             var c = FlatColony();
-            var h = new Horde(c, Farm, 1);
+            var h = new Horde(c, Farm, 1) { FirstHordeDay = 1 };
             int waves = 0;
             h.WaveStarted += n => waves = n;
             Run(c, h, Colony.DayLength * (20.6 - Colony.StartHour) / 24.0);
@@ -47,6 +47,19 @@ namespace AfterCity.Core.Tests
 
             while (c.IsNight) { c.Tick(0.5); h.Tick(0.5); }
             Assert.That(h.Zombies, Is.Empty);
+        }
+
+        [Test]
+        public void TwoQuietNightsBeforeTheFirstHorde()
+        {
+            var c = FlatColony();
+            var h = new Horde(c, Farm, 1);
+            Assert.That(h.NextHordeDay, Is.EqualTo(3));
+            int waves = 0;
+            h.WaveStarted += n => waves++;
+            while (c.Day < 3 || c.Hour < 20.6) { c.Tick(0.5); h.Tick(0.5); if (c.Day < 3) Assert.That(waves, Is.EqualTo(0)); }
+            Assert.That(waves, Is.EqualTo(1));
+            Assert.That(h.Zombies.Count, Is.EqualTo(Horde.WaveSize(1)));
         }
 
         [Test]

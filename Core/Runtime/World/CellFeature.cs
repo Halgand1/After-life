@@ -6,6 +6,9 @@ namespace AfterCity.Core.World
         None,
         Tree,   // bois
         Rock,   // pierre
-        Wreck   // epave de voiture : ferraille
+        Wreck,          // epave de voiture : ferraille
+        Pebbles,        // cailloux au sol : a ramasser (4 cailloux = 1 pierre)
+        Berries,        // buisson de baies : vivres
+        WreckSearched   // epave deja fouillee (on peut encore la demonter)
     }
 }

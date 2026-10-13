@@ -52,6 +52,10 @@ namespace AfterCity.Core.Sim
         public IReadOnlyDictionary<Building, Zombie> TowerTargets => _towerTargets;
         readonly Dictionary<Building, Zombie> _towerTargets = new Dictionary<Building, Zombie>();
         public int WavesSpawned { get; private set; }
+        /// <summary>Jour de la premiere horde : on laisse deux nuits calmes pour se preparer.</summary>
+        public int FirstHordeDay { get; set; } = 3;
+        /// <summary>Numero du jour ou la prochaine horde arrivera (a 20h30).</summary>
+        public int NextHordeDay => Math.Max(FirstHordeDay, _colony.Hour >= 20.5 ? _colony.Day + 1 : _colony.Day);
         /// <summary>Une vague arrive (nombre de rodeurs).</summary>
         public event Action<int> WaveStarted;
 
@@ -87,7 +91,7 @@ namespace AfterCity.Core.Sim
         public void Tick(double dt)
         {
             bool night = _colony.IsNight;
-            if (night && !_wasNight) SpawnWave(WaveSize(WavesSpawned + 1));
+            if (night && !_wasNight && _colony.Hour >= 20.5 && _colony.Day >= FirstHordeDay) SpawnWave(WaveSize(WavesSpawned + 1));
             if (!night && _wasNight) _zombies.Clear(); // le soleil se leve : la horde s'effondre
             _wasNight = night;
             if (_zombies.Count == 0) return;
