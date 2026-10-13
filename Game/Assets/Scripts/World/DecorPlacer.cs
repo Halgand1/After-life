@@ -39,8 +39,13 @@ namespace AfterCity.Game.World
         {
             public bool[,] Ruin;
             public bool[,] Covered;
+            public string[,] Zone;
+            public bool[,] ForestCore;
             public readonly List<Prop> Props = new List<Prop>();
         }
+
+        /// <summary>Table de peuplement (peuplement.json). Null = regles codees en dur (ancien placement).</summary>
+        public static Peuplement Table { get; set; }
 
         static GeneratedMap _layoutMap;
         static Layout _layout;
@@ -71,6 +76,8 @@ namespace AfterCity.Game.World
                 }
             }
 
+            l.Zone = Peuplement.ZoneMap(map, l.Ruin, out l.ForestCore);
+
             var farm = map.FarmCenter;
             int clear = MapGenerator.FarmRadius + 3;
             // Ferme abandonnee : corps de ferme en ruine a l'ouest, silo au sud-est
@@ -89,6 +96,21 @@ namespace AfterCity.Game.World
             TryProp(map, l, "Prop_BoiteAuxLettres", new GridPos(farm.X, farm.Y - 6), 0, 180f, 1f, true);
             TryProp(map, l, "Prop_PanneauAVendre", new GridPos(farm.X + 2, farm.Y - 6), 0, 170f, 1f, true);
             TryProp(map, l, "Ferme_Poulailler_Fini", new GridPos(farm.X + 5, farm.Y + 5), 0, 220f, 0.8f, true);
+            if (Table != null)
+            {
+                // peuplement.json > Ferme > posesFixes : vieille cloture en bois autour de la ferme (30 % de troncons manquants),
+                // quelques pneus, bidons et palettes
+                for (int k = -8; k <= 8; k++)
+                {
+                    if ((k & 1) != 0) continue;
+                    foreach (var (p, yaw) in new[] { (new GridPos(farm.X + k, farm.Y + 8), 0f), (new GridPos(farm.X + k, farm.Y - 8), 0f),
+                                                     (new GridPos(farm.X + 8, farm.Y + k), 90f), (new GridPos(farm.X - 8, farm.Y + k), 90f) })
+                        if (Hash(p.X, p.Y, 220) >= 0.3f) TryProp(map, l, "Cloture_Bois_Cassee", p, 0, yaw + (Hash(p.X, p.Y, 221) - 0.5f) * 14f, 1f, false);
+                }
+                TryProp(map, l, "Debris_Pneus", new GridPos(farm.X + 7, farm.Y - 3), 0, 40f, 1f, false);
+                TryProp(map, l, "Debris_Bidons", new GridPos(farm.X - 7, farm.Y + 4), 0, 160f, 1f, false);
+                TryProp(map, l, "Debris_Palettes", new GridPos(farm.X + 3, farm.Y - 7), 0, 75f, 1f, false);
+            }
 
             // Maisons en ruine et debris dans les zones de ruines
             string[] houses = { "Maison_Pavillon_Ruine", "Maison_Etage_Ruine", "Cabane_Jardin_Ruine", "Maison_Pavillon_Ruine", "StationService_Ruine", "Barrage_Militaire_Ruine" };
@@ -108,7 +130,7 @@ namespace AfterCity.Game.World
                 if (farmDist < 18 && r >= 0.05f && Hash(x, y, 207) < 0.75f) continue;
                 if (r < 0.05f)
                     TryProp(map, l, Pick(Hash(x, y, 201), houses), p, 1, Mathf.Round(Hash(x, y, 202) * 4f) * 90f + (Hash(x, y, 203) - 0.5f) * 10f, 1f, false);
-                else if (r < 0.16f)
+                else if (Table == null && r < 0.16f) // avec la table : mobilier et debris par case (zone RuinesBordDeRoute)
                     TryProp(map, l, Pick(Hash(x, y, 204), debris), p, 0, Hash(x, y, 205) * 360f, 0.9f + Hash(x, y, 206) * 0.25f, false);
             }
             // Quelques ruines isolees en plaine (lisibles de loin)
@@ -171,6 +193,7 @@ namespace AfterCity.Game.World
         /// <summary>Nom du modele d'arbre pour cette case (le meme pour l'arbre qui tombe).</summary>
         public static string TreeName(GeneratedMap map, GridPos p)
         {
+            if (Table != null) return TreeNameJson(map, p);
             var biome = map.Grid.GetBiome(p);
             float h = Hash(p.X, p.Y, 300);
             bool ruin = Get(map).Ruin[p.X, p.Y];
@@ -190,7 +213,9 @@ namespace AfterCity.Game.World
             }
         }
 
-        public static float TreeScale(GridPos p) => 1.05f + Hash(p.X, p.Y, 310) * 0.35f;
+        public static float TreeScale(GridPos p) => Table != null
+            ? Mathf.Lerp(Table.TreeScale.x, Table.TreeScale.y, Hash(p.X, p.Y, 310)) * 1.2f // un peu plus grands : gabarit K&C
+            : 1.05f + Hash(p.X, p.Y, 310) * 0.35f;
         public static float TreeYaw(GridPos p) => Hash(p.X, p.Y, 311) * 360f;
 
         /// <summary>Arbre seul a l'origine (chute) ; null si le kit n'a pas le modele.</summary>
@@ -205,6 +230,7 @@ namespace AfterCity.Game.World
 
         public static bool Feature(DecorKit.Builder kd, GeneratedMap map, GridPos p, CellFeature f, Vector3 c, Vector3 jitter)
         {
+            if (Table != null) return FeatureJson(kd, map, p, f, c);
             int x = p.X, y = p.Y;
             var biome = map.Grid.GetBiome(p);
             switch (f)
@@ -250,6 +276,7 @@ namespace AfterCity.Game.World
         /// <summary>Herbes, fleurs, fougeres, souches et debris sur les cases libres.</summary>
         public static void Ground(DecorKit.Builder kd, GeneratedMap map, GridPos p, Biome biome, Vector3 c, bool road, bool farm)
         {
+            if (Table != null) { if (!road && !farm && !Covered(map, p)) GroundJson(kd, map, p, c, true); return; }
             if (road || farm || Covered(map, p)) return;
             int x = p.X, y = p.Y;
             SoilDetail(kd, map, p, biome, c);
@@ -292,6 +319,7 @@ namespace AfterCity.Game.World
         /// <summary>Details plats au sol (feuilles, branches, flaques, boue, ossements) : texture du sol, se cumulent avec le reste.</summary>
         public static void SoilDetail(DecorKit.Builder kd, GeneratedMap map, GridPos p, Biome biome, Vector3 c)
         {
+            if (Table != null) return; // la table gere les details au sol (groupes « sol »)
             int x = p.X, y = p.Y;
             float r = Hash(x, y, 700);
             var o = new Vector3(Hash(x, y, 701) - 0.5f, 0, Hash(x, y, 702) - 0.5f) * 1.2f;
@@ -315,6 +343,146 @@ namespace AfterCity.Game.World
                     else if (r < 0.11f && Hash(x, y, 710) < 0.5f) kd.Add("Tapis_Feuilles_Automne", c + o, yaw, s);
                     break;
             }
+        }
+
+        // ---------------------------------------------------------------- placement par la table de peuplement
+
+        static string ZoneOf(GeneratedMap map, GridPos p) => Get(map).Zone[p.X, p.Y];
+
+        /// <summary>Modele d'une ressource : d'abord la zone de la case, sinon une zone ou ce modele est courant.</summary>
+        static string Resource(GeneratedMap map, GridPos p, Peuplement.Kind kind, string fallbackZone, int salt)
+        {
+            float r = Hash(p.X, p.Y, salt);
+            return Table.PickIn(ZoneOf(map, p), kind, r) ?? Table.PickIn(fallbackZone, kind, r);
+        }
+
+        static string TreeNameJson(GeneratedMap map, GridPos p)
+        {
+            var l = Get(map);
+            if (l.Ruin[p.X, p.Y] && Hash(p.X, p.Y, 300) < 0.5f) return Pick(Hash(p.X, p.Y, 301), "Arbre_Mort_A", "Arbre_Mort_B");
+            string zone = l.Zone[p.X, p.Y];
+            // Ferme : feuillus et bouleaux (garanties de depart) ; roche : pins
+            string fallback = zone == Peuplement.Roche ? Peuplement.ForetDense : Peuplement.Lisiere;
+            return Resource(map, p, Peuplement.Kind.Tree, fallback, 302) ?? "Pin_A";
+        }
+
+        /// <summary>Bloc de foret dense (2 x 2 cases, 8 a 10 arbres) dont la case fait partie, ou null.</summary>
+        static string ForestBlock(GeneratedMap map, GridPos p, out GridPos anchor)
+        {
+            anchor = new GridPos(p.X & ~1, p.Y & ~1);
+            var l = Get(map);
+            var g = map.Grid;
+            if (l.Zone[p.X, p.Y] != Peuplement.ForetDense) return null;
+            var blocks = Table.Groups(Peuplement.ForetDense)?.Find(gr => gr.IsForestBlock);
+            if (blocks == null || Hash(anchor.X, anchor.Y, 800) >= blocks.Density) return null;
+            for (int dy = 0; dy < 2; dy++)
+            for (int dx = 0; dx < 2; dx++)
+            {
+                var c = new GridPos(anchor.X + dx, anchor.Y + dy);
+                // Bloc entier seulement si ses 4 cases sont des arbres du coeur de la foret : abattre un arbre le defait
+                if (!g.InBounds(c) || !l.ForestCore[c.X, c.Y] || g.GetFeature(c) != CellFeature.Tree) return null;
+                if (g.GetLevel(c) != g.GetLevel(anchor)) return null;
+            }
+            return blocks.Pick(Hash(anchor.X, anchor.Y, 801), Peuplement.Kind.Tree);
+        }
+
+        static Vector3 JsonJitter(GridPos p, int salt) =>
+            new Vector3(Hash(p.X, p.Y, salt) - 0.5f, 0, Hash(p.X, p.Y, salt + 1) - 0.5f) * (2f * Table.Jitter);
+
+        static bool FeatureJson(DecorKit.Builder kd, GeneratedMap map, GridPos p, CellFeature f, Vector3 c)
+        {
+            int x = p.X, y = p.Y;
+            float yaw = Hash(x, y, 311) * 360f;
+            bool ok;
+            switch (f)
+            {
+                case CellFeature.Tree:
+                    {
+                        var block = ForestBlock(map, p, out var anchor);
+                        if (block != null)
+                        {
+                            // Le bloc est pose une fois, sur sa premiere case ; les 3 autres cases sont deja couvertes
+                            ok = !p.Equals(anchor) || kd.Add(block, TerrainMeshBuilder.CellCenter(map.Grid, anchor) + new Vector3(Cell * 0.5f, 0, Cell * 0.5f),
+                                Mathf.Round(Hash(anchor.X, anchor.Y, 802) * 4f) * 90f, 1.1f);
+                            break;
+                        }
+                        ok = kd.Add(TreeName(map, p), c + JsonJitter(p, 312), TreeYaw(p), TreeScale(p));
+                        break;
+                    }
+                case CellFeature.Rock:
+                    {
+                        var m = Resource(map, p, Peuplement.Kind.Rock, Peuplement.Roche, 401) ?? "Rocher_A";
+                        float s = Mathf.Lerp(Table.RockScale.x, Table.RockScale.y, Hash(x, y, 402)) * 1.7f; // rocher a tailler : bien visible
+                        ok = kd.Add(m, c + JsonJitter(p, 403) * 0.5f, yaw, s);
+                        break;
+                    }
+                case CellFeature.Pebbles:
+                    {
+                        var m = Resource(map, p, Peuplement.Kind.Pebbles, Peuplement.Roche, 410) ?? "Cailloux_A";
+                        ok = kd.Add(m, c + JsonJitter(p, 411) * 0.5f, yaw, 1.8f);
+                        if (ok) kd.Add(m == "Cailloux_A" ? "Cailloux_B" : "Cailloux_A", c - JsonJitter(p, 411) * 0.6f, yaw + 130f, 1.4f);
+                        break;
+                    }
+                case CellFeature.Berries:
+                    {
+                        var m = Resource(map, p, Peuplement.Kind.Berries, Peuplement.Lisiere, 420) ?? "Buisson_Baies_Rouges";
+                        ok = kd.Add(m, c + JsonJitter(p, 421) * 0.5f, yaw, 1.6f);
+                        break;
+                    }
+                case CellFeature.Wreck:
+                    ok = kd.Add(Resource(map, p, Peuplement.Kind.Wreck, Peuplement.Ruines, 430) ?? "Epave_Berline_A", c, Hash(x, y, 431) * 360f, 0.75f);
+                    break;
+                case CellFeature.WreckSearched:
+                    ok = kd.Add(Pick(Hash(x, y, 430), "Epave_Berline_Brulee", "Epave_Pickup_Brule", "Epave_4x4_Brule"), c, Hash(x, y, 431) * 360f, 0.75f);
+                    break;
+                default:
+                    return false;
+            }
+            if (ok) GroundJson(kd, map, p, c, false);
+            return ok;
+        }
+
+        /// <summary>
+        /// Groupes decoratifs de la zone : une seule grosse piece par case (buisson, sous-bois, mobilier, debris, cloture),
+        /// et les details au sol (groupe « sol ») qui se cumulent. Les modeles de jeu des groupes sont ignores ici.
+        /// </summary>
+        static void GroundJson(DecorKit.Builder kd, GeneratedMap map, GridPos p, Vector3 c, bool allowBigPiece)
+        {
+            var groups = Table.Groups(ZoneOf(map, p));
+            if (groups == null) return;
+            int x = p.X, y = p.Y;
+            var g = map.Grid;
+            bool farFromFarm = FarmStart.Distance(map, p) >= 18;
+            bool big = !allowBigPiece || Steep(g, p);
+            for (int i = 0; i < groups.Count; i++)
+            {
+                var grp = groups[i];
+                if (grp.IsForestBlock) continue;
+                float density = grp.Density;
+                // Pres de la ferme, peu de debris et de mobilier : on y voit les survivants et les rodeurs de loin
+                if (!grp.IsGround && !farFromFarm && ZoneOf(map, p) == Peuplement.Ruines) density *= 0.25f;
+                if (Hash(x, y, 900 + i * 7) >= density) continue;
+                if (!grp.IsGround && big) continue;
+                var m = grp.Pick(Hash(x, y, 901 + i * 7), Peuplement.Kind.Decor);
+                if (m == null) continue;
+                bool nature = kd.Has(m) && !m.StartsWith("Debris") && !m.StartsWith("Panneau") && !m.StartsWith("Poteau") && !m.StartsWith("Lampadaire")
+                    && !m.StartsWith("Cloture") && !m.StartsWith("Barricade");
+                float s = nature ? Mathf.Lerp(Table.GroundScale.x, Table.GroundScale.y, Hash(x, y, 902 + i * 7)) * 1.2f : 0.9f + Hash(x, y, 902 + i * 7) * 0.2f;
+                if (m.StartsWith("Flaque") || m.StartsWith("Boue")) s *= 0.5f; // vues de haut, de grandes flaques font des trous
+                if (kd.Add(m, c + JsonJitter(p, 903 + i * 7), Hash(x, y, 905 + i * 7) * 360f, s) && !grp.IsGround) big = true;
+            }
+        }
+
+        /// <summary>Pente : ecart de 2 niveaux ou plus avec une voisine (pas de grosse piece).</summary>
+        static bool Steep(WorldGrid g, GridPos p)
+        {
+            int l = g.GetLevel(p);
+            foreach (var d in GridPos.Neighbours4)
+            {
+                var q = p + d;
+                if (g.InBounds(q) && Mathf.Abs(g.GetLevel(q) - l) >= 2) return true;
+            }
+            return false;
         }
 
         // ---------------------------------------------------------------- constructions

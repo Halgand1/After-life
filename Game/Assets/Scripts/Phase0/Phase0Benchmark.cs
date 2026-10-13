@@ -300,7 +300,9 @@ namespace AfterCity.Game.Phase0
                     ScreenCapture.CaptureScreenshot(Path.Combine(dir, "screenshot_survivants.png"));
                     yield return Wait(0.3f);
                 }
-                var animal = FindAnyObjectByType<AnimalView>();
+                // Un cerf ou un sanglier du moteur (pas une poule de la ferme)
+                Component animal = FindAnyObjectByType<WildlifeView>();
+                if (animal == null) animal = FindAnyObjectByType<AnimalView>();
                 if (animal != null)
                 {
                     freeCamera.Distance = 14f;

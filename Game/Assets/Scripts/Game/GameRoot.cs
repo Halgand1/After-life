@@ -47,6 +47,8 @@ namespace AfterCity.Game
         public GameObject[] chickenPrefabs;
         /// <summary>Particules d'ambiance (fumee du feu de camp, brume en foret).</summary>
         public Material smokeMaterial;
+        /// <summary>Table de peuplement de l'equipe 3D (Assets/Art/Decor/peuplement.json).</summary>
+        public TextAsset peuplement;
         public Material mistMaterial;
         public Light sun;
 
@@ -76,6 +78,9 @@ namespace AfterCity.Game
         void Awake()
         {
             Map = MapGenerator.Generate(width, height, seed);
+            // Garanties de depart autour de la ferme (baies, cailloux, arbres, rochers), avant tout le reste
+            FarmStart.Ensure(Map, new Rng(seed ^ 0xFA4D57A47ul));
+            DecorPlacer.Table = peuplement != null ? Peuplement.Load(peuplement.text) : null;
             Colony = Colony.StartAtFarm(Map, survivors);
             Horde = new Horde(Colony, Map.FarmCenter, seed);
             DecorKit.Current = decorKit;

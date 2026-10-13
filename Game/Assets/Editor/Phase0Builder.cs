@@ -237,6 +237,8 @@ namespace AfterCity.EditorTools
             boot.zombiePrefabs = zombieModels;
             boot.freeCamera = freeCam;
             boot.decorKit = DecorKitBuilder.Build();
+            boot.peuplement = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Art/Decor/peuplement.json");
+            Debug.Log("[AfterCity] Peuplement : " + (boot.peuplement != null ? "peuplement.json" : "ABSENT, placement code en dur"));
             boot.animalPrefabs = EnsureAnimals("SK_Cerf", "SK_Sanglier");
             boot.chickenPrefabs = EnsureAnimals("SK_Poule_Blanche", "SK_Poule_Rousse", "SK_Poule_Noire");
             boot.smokeMaterial = EnsureParticleMaterial("Assets/Materials/MAT_Fumee.mat");
