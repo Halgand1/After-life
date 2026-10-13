@@ -125,13 +125,14 @@ namespace AfterCity.Game
         void TopBar(float w)
         {
             var colony = _game.Colony;
-            var r = Panel(new Rect(w / 2 - 800, 12, 1600, 52));
+            var r = Panel(new Rect(w / 2 - 885, 12, 1770, 52));
             float x = r.x + 18;
             float hour = _game.Hour;
             int hh = (int)hour, mm = (int)((hour - hh) * 60) / 10 * 10;
             bool night = hour < 6 || hour > 20;
-            GUI.Label(new Rect(x, r.y, 170, r.height), $"<b>Jour {_game.Day}</b>  {hh:00}:{mm:00}" + (night ? " <color=#8fa8ff>nuit</color>" : ""), _label);
-            x += 175;
+            var cal = _game.Colony;
+            GUI.Label(new Rect(x, r.y, 340, r.height), $"<b>Jour {_game.Day}</b> · {Seasons.Name(cal.Season)} (an {cal.Year})  {hh:00}:{mm:00}" + (night ? " <color=#8fa8ff>nuit</color>" : ""), _label);
+            x += 345;
 
             string[] speeds = { "II", ">", ">>", ">>>" };
             for (int i = 0; i < 4; i++)
