@@ -38,7 +38,7 @@ namespace AfterCity.Core.Tests
             Assert.That(b.Built, Is.True);
             Assert.That(c.Grid.HasStructure(new GridPos(9, 9)), Is.True);
             Assert.That(c.Grid.CanStep(new GridPos(7, 8), new GridPos(8, 8), 1), Is.False);
-            Assert.That(c.Capacity, Is.EqualTo(Colony.BaseCapacity + 2));
+            Assert.That(c.Capacity, Is.EqualTo(Colony.BaseCapacity + HomeSpec.Of(BuildingType.Shelter).Places));
         }
 
         [Test]

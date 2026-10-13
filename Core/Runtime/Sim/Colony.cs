@@ -69,6 +69,8 @@ namespace AfterCity.Core.Sim
         public bool IsDead => Health <= 0;
         /// <summary>Parti en expedition : absent de la carte.</summary>
         public bool Away { get; internal set; }
+        /// <summary>Logement ou il dort et mange (null : il campe a la ferme).</summary>
+        public Building House { get; internal set; }
         /// <summary>Role de depart : il fixe le modele 3D et la dotation d'equipement.</summary>
         public SurvivorRole Role { get; internal set; }
         /// <summary>Ce qu'il porte (GDD 5.5) : rempli a l'arrivee selon son role.</summary>
@@ -142,7 +144,7 @@ namespace AfterCity.Core.Sim
             get
             {
                 int c = BaseCapacity;
-                foreach (var b in _buildings) if (b.Built && b.Type == BuildingType.Shelter) c += 2;
+                foreach (var b in _buildings) if (b.Built && b.Home != null) c += b.Home.Places;
                 return c;
             }
         }
@@ -225,6 +227,8 @@ namespace AfterCity.Core.Sim
             }
         }
 
+        /// <summary>Habitant d'une maison confortable : travail 10 % plus rapide.</summary>
+        public const double ComfortWorkBonus = 0.1;
         public const int MilkPerCow = 1;
         public const int PenStartCows = 2;
         public const int PenStartHorses = 1;
@@ -274,20 +278,159 @@ namespace AfterCity.Core.Sim
                 Stock.Add(ResourceType.Food, n);
                 Harvested?.Invoke(n);
             }
+            if (Crossed(_lastHour, h, 14.0)) RefillShelves();
             if (Crossed(_lastHour, h, 6.0))
             {
+                AssignHomes();
+                RefillShelves();
+                var before = SnapshotWants();
                 int eaters = PresentCount, eaten = 0, hungry = 0;
                 var list = new List<Villager>(_villagers);
                 foreach (var v in list)
                 {
                     if (v.Away) continue;
-                    if (Stock.TrySpend(ResourceType.Food, 1)) { eaten++; Heal(v, 5); }
+                    if (EatOne(v)) { eaten++; Heal(v, 5); }
                     else { hungry++; Hurt(v, StarvationDamage); }
                 }
                 Ate?.Invoke(eaten, hungry);
+                ConsumeHomeNeeds(before);
             }
             _lastHour = h;
         }
+
+        /// <summary>L'etat de confort d'une maison a change (devenue confortable, ou plus).</summary>
+        public event Action<Building> HomeComfortChanged;
+
+        /// <summary>Loge les survivants sans toit dans les logements qui ont de la place.</summary>
+        public void AssignHomes()
+        {
+            foreach (var v in _villagers)
+            {
+                if (v.House != null && (!v.House.Built || !_buildings.Contains(v.House))) v.House = null;
+                if (v.House != null) continue;
+                foreach (var b in _buildings)
+                {
+                    if (!b.Built || b.Home == null || b.ResidentList.Count >= b.Home.Places) continue;
+                    b.ResidentList.Add(v);
+                    v.House = b;
+                    break;
+                }
+            }
+        }
+
+        /// <summary>Les porteurs remplissent les etageres depuis le stock (matin et apres-midi).</summary>
+        public void RefillShelves()
+        {
+            foreach (var b in _buildings)
+            {
+                if (!b.Built || b.Home == null || b.ResidentList.Count == 0) continue;
+                foreach (var r in b.Home.Wants)
+                {
+                    int cap = b.Home.ShelfPerResource;
+                    // Pas plus de deux jours de vivres par habitant : le reste sert aux survivants sans toit
+                    if (r == ResourceType.Food) cap = Math.Min(cap, 2 * b.ResidentList.Count * (int)Math.Ceiling(b.Home.FoodPerResident));
+                    int room = cap - b.Shelf(r);
+                    int take = Math.Min(room, Stock.Get(r));
+                    if (take <= 0 || !Stock.TrySpend(r, take)) continue;
+                    b.SetShelf(r, b.Shelf(r) + take);
+                }
+            }
+        }
+
+        /// <summary>Repas du matin : dans l'etagere de sa maison, sinon au stock general.</summary>
+        bool EatOne(Villager v)
+        {
+            var b = v.House;
+            if (b != null && b.Shelf(ResourceType.Food) > 0)
+            {
+                b.SetShelf(ResourceType.Food, b.Shelf(ResourceType.Food) - 1);
+                return true;
+            }
+            return Stock.TrySpend(ResourceType.Food, 1);
+        }
+
+        Dictionary<Building, List<ResourceType>> SnapshotWants()
+        {
+            // Ce qui manque est releve avant le repas : une etagere pleine le matin compte comme bien tenue
+            var missing = new Dictionary<Building, List<ResourceType>>();
+            foreach (var b in _buildings)
+            {
+                if (!b.Built || b.Home == null || b.ResidentList.Count == 0) continue;
+                var list = new List<ResourceType>();
+                foreach (var r in b.Home.Wants) if (b.Shelf(r) <= 0) list.Add(r);
+                missing[b] = list;
+            }
+            return missing;
+        }
+
+        /// <summary>Bois, eau, medicaments et vivres en plus selon le logement ; confort sur plusieurs jours.</summary>
+        void ConsumeHomeNeeds(Dictionary<Building, List<ResourceType>> missing)
+        {
+            foreach (var kv in missing)
+            {
+                var b = kv.Key;
+                var spec = b.Home;
+                int residents = 0;
+                foreach (var v in b.ResidentList) if (!v.Away) residents++;
+                b.ExtraFood += (spec.FoodPerResident - 1) * residents;
+                b.Wood += spec.WoodPerDay;
+                b.Water += spec.WaterPerResident * residents;
+                b.Medicine += spec.MedicinePerDay;
+                b.ExtraFood = TakeFromShelf(b, ResourceType.Food, b.ExtraFood);
+                b.Wood = TakeFromShelf(b, ResourceType.Wood, b.Wood);
+                b.Water = TakeFromShelf(b, ResourceType.Water, b.Water);
+                b.Medicine = TakeFromShelf(b, ResourceType.Medicine, b.Medicine);
+
+                bool wasComfortable = b.Comfortable;
+                b.Missing = kv.Value;
+                b.ComfortDays = kv.Value.Count == 0 ? b.ComfortDays + 1 : 0;
+                if (wasComfortable != b.Comfortable) HomeComfortChanged?.Invoke(b);
+            }
+        }
+
+        /// <summary>Retire les unites entieres dues de l'etagere ; rend ce qui reste du (sans dette au-dela d'un jour).</summary>
+        static double TakeFromShelf(Building b, ResourceType r, double due)
+        {
+            while (due >= 1 && b.Shelf(r) > 0)
+            {
+                b.SetShelf(r, b.Shelf(r) - 1);
+                due -= 1;
+            }
+            return Math.Min(due, 1);
+        }
+
+        public bool CanUpgrade(Building b)
+        {
+            var next = b?.Home?.UpgradeTo;
+            if (next == null || !b.Built || !b.Comfortable || !IsUnlocked(next.Value)) return false;
+            var spec = BuildingSpec.Of(next.Value);
+            return spec.Size == b.Size && Stock.Get(ResourceType.Wood) >= spec.Wood && Stock.Get(ResourceType.Stone) >= spec.Stone;
+        }
+
+        /// <summary>Ameliore une maison confortable (Abri, puis Maison en bois, puis Maison en briques) ; les habitants restent.</summary>
+        public bool Upgrade(Building b)
+        {
+            if (!CanUpgrade(b)) return false;
+            var next = b.Home.UpgradeTo.Value;
+            var spec = BuildingSpec.Of(next);
+            Stock.TrySpend(ResourceType.Wood, spec.Wood);
+            Stock.TrySpend(ResourceType.Stone, spec.Stone);
+            b.Type = next;
+            b.ComfortDays = 0;
+            for (int y = 0; y < b.Size; y++)
+            for (int x = 0; x < b.Size; x++)
+            {
+                var c = new GridPos(b.Origin.X + x, b.Origin.Y + y);
+                Grid.SetStructure(c, Building.StructureCode(next, x == 0 && y == 0));
+                CellChanged?.Invoke(c);
+            }
+            AssignHomes();
+            HomeUpgraded?.Invoke(b);
+            return true;
+        }
+
+        /// <summary>Une maison vient d'etre amelioree.</summary>
+        public event Action<Building> HomeUpgraded;
 
         /// <summary>Atelier : demonte 5 ferrailles en 3 pieces tirees selon leur rarete. Null si impossible.</summary>
         public Dictionary<ResourceType, int> RefineScrap()
@@ -415,6 +558,8 @@ namespace AfterCity.Core.Sim
             }
             v.Health -= damage;
             if (!v.IsDead) return damage;
+            v.House?.ResidentList.Remove(v);
+            v.House = null;
             if (v.Job != null) Release(v.Job);
             _villagers.Remove(v);
             VillagerDied?.Invoke(v);
@@ -719,7 +864,8 @@ namespace AfterCity.Core.Sim
         double JobDuration(Job job, Villager v)
         {
             double d = job.Type == JobType.Construct && job.Building != null ? BuildingSpec.Of(job.Building.Type).BuildTime : WorkDuration(job.Type);
-            return d / (1 + v.Equipment.WorkBonus(job.Type));
+            double bonus = v.Equipment.WorkBonus(job.Type) + (v.House != null && v.House.Comfortable ? ComfortWorkBonus : 0);
+            return d / (1 + bonus);
         }
 
         public void Tick(double dt)
@@ -997,6 +1143,7 @@ namespace AfterCity.Core.Sim
                     if (b.Type == BuildingType.LivestockPen) b.Animals = PenStartCows;
                     if (b.Type == BuildingType.HorsePen) b.Animals = PenStartHorses;
                     if (b.Animals > 0) PenChanged?.Invoke(b);
+                    if (b.Home != null) AssignHomes();
                     return true;
                 }
                 case JobType.Barricade:
