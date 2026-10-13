@@ -15,3 +15,6 @@
 *.asset text eol=lf
 *.meta text eol=lf
 *.cs text eol=lf
+
+# Captures lisibles directement sur GitHub (hors LFS)
+Docs/captures/** -filter -diff -merge binary

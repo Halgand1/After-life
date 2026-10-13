@@ -40,3 +40,7 @@ Thumbs.db
 Builds/
 
 Game/*.slnx
+
+# Genere par phase0 (DecorBuilder) a chaque build
+Game/Assets/Art/Baked/DecorKit.asset
+Game/Assets/Art/Baked/DecorKit.asset.meta
