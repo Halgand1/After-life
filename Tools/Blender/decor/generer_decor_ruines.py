@@ -893,6 +893,237 @@ def poteau_electrique(nom, rnd):
 
 
 # ---------------------------------------------------------------------------
+# Deuxième vague : station-service, barrage militaire, gros véhicules, conteneurs
+# ---------------------------------------------------------------------------
+def station_service(nom, rnd):
+    """Station-service 3 x 2 cases : auvent sur poteaux, deux pompes, boutique pillée."""
+    o = Objet(nom, (3, 2), "station-service abandonnée : carburant résiduel et conserves")
+    # dalle et îlot
+    o.boite((0, 0, .03), (5.8, 3.8, .06), "beton", sale=.5)
+    o.boite((-.9, -.6, .1), (2.2, .5, .12), "beton", lod=1)
+    # auvent
+    for x in (-2.1, .3):
+        o.boite((x, -.6, .95), (.16, .16, 1.8), "panneau_blanc", lod=2, sale=.4)
+    o.boite((-.9, -.6, 1.93), (3.4, 1.9, .16), "panneau_blanc", lod=2, sale=.5)
+    o.boite((-.9, -1.56, 1.93), (3.42, .03, .1), "panneau_rouge", lod=1)
+    o.boite((-.9, .36, 1.93), (3.42, .03, .1), "panneau_rouge", lod=1)
+    o.boite((-1.6, -.9, 1.84), (.9, .7, .02), "interieur_sombre", lod=0)   # plaque arrachée
+    o.boite((-1.5, -1.3, .05), (.8, .6, .03), "panneau_blanc", rot=(0, 0, 20), lod=1)
+    # pompes
+    for i, x in enumerate((-1.6, -.2)):
+        tomb = i == 1
+        rot = (0, 0, 0) if not tomb else (78, 0, 10)
+        z = .5 if not tomb else .25
+        y = -.6 if not tomb else -.95
+        o.boite((x, y, z), (.36, .26, .8), "panneau_rouge", rot=rot, lod=2, sale=.5)
+        o.boite((x, y - .135, z + .18), (.22, .02, .16), "vitre_sale" if not tomb else "interieur_sombre", rot=rot, lod=0)
+        o.boite((x + .2, -.6, .35), (.04, .04, .4), "pneu", lod=0)   # tuyau
+    # boutique
+    bx, by = 1.7, .6
+    mur(o, "x", (bx, by - 1.1), 2.2, 1.6, .1, "blanc_ecaille", [(-.4, .7, 0, 1.3), (.5, 1.0, .4, 1.3)], z0=.06)
+    mur(o, "x", (bx, by + 1.1), 2.2, 1.6, .1, "blanc_ecaille", [], z0=.06)
+    mur(o, "y", (bx - 1.1, by), 2.2, 1.6, .1, "blanc_ecaille", [], z0=.06)
+    mur(o, "y", (bx + 1.1, by), 2.2, 1.6, .1, "blanc_ecaille", [(.2, .8, .5, 1.2)], z0=.06)
+    o.boite((bx, by - 1.08, .9), (2.0, .02, 1.6), "interieur_sombre", lod=1)
+    o.boite((bx, by, 1.72), (2.4, 2.4, .12), "bardeaux", lod=2, sale=.5)
+    o.boite((bx, by - 1.2, 1.55), (2.3, .06, .25), "panneau_rouge", lod=1)
+    o.boite((bx + .5, by - 1.12, .85), (.95, .02, .85), "vitre_sale", lod=0)
+    o.boite((bx + .3, by - 1.4, .08), (.6, .5, .04), "vitre_sale", rot=(0, 0, 30), lod=0)   # vitrine brisée
+    for i in range(3):
+        o.boite((bx - .3 + i * .3, by + .7, .5), (.25, .5, .9), "acier_sombre", lod=0)   # rayonnages
+    # totem de prix
+    o.boite((-2.6, 1.4, 1.2), (.12, .12, 2.4), "acier", lod=2)
+    o.boite((-2.6, 1.4, 2.3), (.9, .1, .6), "panneau_jaune", rot=(0, 8, 0), lod=2, sale=.5)
+    o.boite((-2.6, 1.34, 2.3), (.7, .01, .12), "panneau_rouge", rot=(0, 8, 0), lod=0)
+    pile_gravats(o, rnd, .9, -1.4, .4, 6, ("pneu", "plastique_noir", "bidon_bleu"), hmax=.2)
+    o.cyl((2.6, -1.4, .25), .2, .5, "panneau_rouge", seg=8, lod=1)   # bidon d'essence
+    o.socket("SOCKET_Porte", (bx - .4, by - 1.8, 0))
+    o.socket("SOCKET_Travail_01", (-1.6, -1.4, 0))
+    o.socket("SOCKET_Travail_02", (-.2, -.0, 0))
+    o.socket("SOCKET_Stock_01", (bx, by, .06))
+    return o
+
+
+def checkpoint(nom, rnd):
+    """Barrage militaire 2 x 1 cases : guérite, barrière levée, sacs, herses."""
+    o = Objet(nom, (2, 1), "barrage militaire tombé : munitions et équipement militaire")
+    o.boite((0, 0, .02), (3.9, 1.9, .04), "beton", lod=1, sale=.4)
+    # guérite
+    gx = -1.4
+    for sx in (-1, 1):
+        o.boite((gx + sx * .45, 0, .7), (.06, .9, 1.3), "olive", lod=2)
+    o.boite((gx, .43, .7), (.9, .06, 1.3), "olive", lod=2)
+    o.boite((gx - .2, -.43, .7), (.5, .06, 1.3), "olive", lod=2)
+    o.boite((gx, 0, 1.42), (1.1, 1.1, .1), "olive", lod=2, sale=.5)
+    o.boite((gx, -.44, 1.0), (.5, .02, .3), "vitre_sale", lod=0)
+    # barrière
+    o.boite((-.7, -.4, .45), (.2, .2, .9), "panneau_blanc", lod=2)
+    o.boite((-.7 + .9, -.4, 1.3), (1.9, .07, .07), "panneau_rouge", rot=(0, -38, 0), lod=2)
+    for k in range(3):
+        o.boite((-.7 + .4 + k * .5, -.43, 1.0 + k * .3), (.2, .075, .075), "panneau_blanc", rot=(0, -38, 0), lod=0)
+    # sacs de sable en arc
+    for i in range(7):
+        a = math.radians(-60 + i * 20)
+        for rang in range(2):
+            o.boite((1.2 + math.sin(a) * .65, .1 - math.cos(a) * .65, .1 + rang * .18), (.36, .26, .18), "sac_sable",
+                    rot=(0, 0, math.degrees(a)), effile=(.86, .84), lod=2 if rang == 0 else 1, sale=.35)
+    # herses (chevaux de frise métalliques)
+    for x in (.2, 1.5):
+        for a in (45, -45):
+            o.boite((x, -.8, .25), (.05, .05, .7), "acier_sombre", rot=(a, 0, 0), lod=1)
+            o.boite((x, -.8, .25), (.7, .05, .05), "acier_sombre", rot=(0, a, 0), lod=0)
+    o.boite((1.2, -.85, .3), (1.5, .01, .01), "acier_sombre", lod=0)
+    # caisses de munitions et panneau
+    o.boite((-.9, .55, .12), (.4, .25, .22), "olive", lod=1)
+    o.boite((-.5, .6, .1), (.35, .22, .18), "camo", rot=(0, 0, 15), lod=0)
+    o.boite((1.7, .7, .45), (.06, .06, .9), "bois_vieilli", lod=1)
+    o.boite((1.7, .66, .8), (.6, .03, .35), "panneau_blanc", rot=(0, 6, 0), lod=1)
+    o.boite((1.7, .645, .8), (.45, .01, .07), "peinture_rouge", rot=(0, 6, 0), lod=0)
+    o.socket("SOCKET_Travail_01", (-1.4, -.9, 0))
+    o.socket("SOCKET_Stock_01", (-.7, .55, 0))
+    return o
+
+
+def camion_militaire(nom, rnd):
+    """Camion militaire 1 x 3 cases, bâche déchirée, roue avant arrachée."""
+    o = Objet(nom, (1, 3), "camion militaire : pièces rares, carburant, munitions")
+    W, L, zc = 1.3, 4.2, .3
+    o.boite((0, 0, zc + .05), (W - .2, L, .14), "acier_sombre", lod=2)   # châssis
+    # cabine
+    o.boite((0, -L / 2 + .55, zc + .55), (W, 1.0, .9), "olive", sale=.6)
+    o.boite((0, -L / 2 + .05, zc + .75), (W - .1, .03, .35), "vitre_sale", lod=1)
+    o.boite((.25, -L / 2 + .04, zc + .78), (.3, .02, .2), "interieur_sombre", lod=0)
+    o.boite((0, -L / 2 - .05, zc + .25), (W + .05, .12, .25), "acier_sombre", lod=1)
+    o.boite((0, -L / 2 - .02, zc + .45), (.8, .02, .2), "acier_sombre", lod=0)   # calandre
+    # plateau et bâche (arceaux visibles à l'arrière)
+    o.boite((0, .55, zc + .3), (W, 2.9, .1), "olive", lod=2, sale=.6)
+    o.boite((0, .2, zc + .95), (W + .04, 2.2, 1.2), "toile_tente", effile=(.92, 1.0), lod=2, sale=.6)
+    o.boite((0, .2, zc + 1.56), (W - .1, 2.2, .06), "toile_tente", lod=1, sale=.6)
+    for y in (1.45, 1.95):
+        o.boite((W / 2 - .02, y, zc + .95), (.05, .05, 1.2), "acier_sombre", lod=1)
+        o.boite((-W / 2 + .02, y, zc + .95), (.05, .05, 1.2), "acier_sombre", lod=1)
+        o.boite((0, y, zc + 1.55), (W, .05, .05), "acier_sombre", lod=1)
+    o.boite((W / 2 + .01, .2, zc + .9), (.02, .9, .5), "interieur_sombre", lod=0)   # déchirure
+    o.boite((.2, 1.6, zc + .5), (.5, .4, .3), "olive", lod=0)   # caisse dans le plateau
+    o.boite((-.25, 1.75, zc + .45), (.35, .3, .2), "camo", lod=0)
+    o.boite((W / 2 + .004, -L / 2 + .55, zc + .6), (.01, .3, .3), "panneau_blanc", lod=0)   # étoile simplifiée
+    # roues jumelées
+    for sy in (-L / 2 + .6, .9, 1.55):
+        for sx in (-1, 1):
+            if sy < 0 and sx < 0:
+                o.boite((sx * (W / 2 - .05), sy, .15), (.18, .5, .3), "beton", lod=1)   # sur cales
+                o.boite((sx * (W / 2 + .5), sy - .2, .1), (.2, .3, .3), "pneu", rot=(0, 90, 30), lod=0)
+                continue
+            o.cyl((sx * (W / 2 - .05), sy, .29), .29, .22, "pneu", rot=(0, 90, 0), seg=10)
+            o.cyl((sx * (W / 2 + .065), sy, .29), .13, .01, "olive", rot=(0, 90, 0), seg=6, lod=0)
+    o.cyl((-W / 2 - .05, -.2, zc + .2), .15, .5, "olive", rot=(90, 0, 0), seg=8, lod=1)   # réservoir
+    o.socket("SOCKET_Travail_01", (W / 2 + .5, -.8, 0))
+    o.socket("SOCKET_Travail_02", (0, L / 2 + .6, 0))
+    o.socket("SOCKET_Stock_01", (0, 1.2, zc + .35))
+    o.socket("SOCKET_Fumee", (0, -L / 2 + .55, 1.2))
+    return o
+
+
+def bus(nom, rnd):
+    """Bus scolaire 1 x 3 cases, couché sur le flanc droit à moitié : ici simplement échoué, vitres brisées."""
+    o = Objet(nom, (1, 3), "bus scolaire échoué : abri de fortune, sièges et tôle")
+    W, L, zc = 1.3, 5.0, .25
+    o.boite((0, .2, zc + .65), (W, L - .4, 1.15), "panneau_jaune", sale=.6)
+    o.boite((0, -L / 2 + .2, zc + .35), (W - .04, .4, .6), "panneau_jaune", effile=(1, .7), sale=.6)
+    o.boite((0, .2, zc + 1.24), (W - .1, L - .5, .04), "panneau_jaune", lod=1, sale=.6)
+    o.boite((0, .2, zc + .1), (W + .02, L - .3, .1), "plastique_noir", lod=1)   # bande basse
+    for sx in (-1, 1):
+        for i in range(7):
+            y = -1.5 + i * .6
+            etat = rnd.random()
+            c = "vitre_sale" if etat > .45 else "interieur_sombre"
+            o.boite((sx * (W / 2 + .003), y, zc + .95), (.01, .48, .32), c, lod=1 if i % 2 == 0 else 0)
+        o.boite((sx * (W / 2 + .004), .2, zc + .5), (.01, L - .6, .04), "plastique_noir", lod=0)
+    o.boite((0, -L / 2 + .38, zc + .95), (W - .1, .02, .36), "vitre_sale", lod=1)
+    o.boite((.3, -L / 2 + .37, zc + .95), (.4, .02, .2), "interieur_sombre", lod=0)
+    o.boite((0, -L / 2 - .02, zc + .1), (W + .04, .08, .12), "plastique_noir", lod=1)
+    o.boite((0, L / 2 - .2, zc + .95), (W - .2, .02, .3), "interieur_sombre", lod=1)
+    o.boite((-.2, .4, zc + 1.27), (.6, .9, .02), "rouille", lod=0)
+    o.boite((W / 2 + .4, -.3, .03), (.5, .4, .05), "vitre_sale", rot=(0, 0, 20), lod=0)   # éclats
+    o.boite((W / 2 + .5, 1.0, .2), (.4, .35, .4), "bleu_police", rot=(0, 0, 25), lod=0)   # siège jeté
+    for sy in (-L / 2 + .8, L / 2 - 1.0):
+        for sx in (-1, 1):
+            roue(o, sx * (W / 2 - .05), sy, rayon=.24, crevee=(sx > 0 and sy > 0))
+    o.socket("SOCKET_Porte", (W / 2 + .5, -L / 2 + .8, 0))
+    o.socket("SOCKET_Travail_01", (-W / 2 - .5, 0, 0))
+    o.socket("SOCKET_Travail_02", (0, L / 2 + .5, 0))
+    return o
+
+
+def conteneur(nom, couleur, ouvert, rnd):
+    """Conteneur maritime 1 x 2 cases (échelle jeu), portes ouvertes ou fermées."""
+    o = Objet(nom, (1, 2), "conteneur abandonné : caisses à fouiller, peut servir d'entrepôt")
+    W, L, H = 1.25, 3.4, 1.35
+    o.boite((0, 0, H / 2), (W, L, H), couleur, sale=.6)
+    for k in range(9):   # nervures
+        y = -L / 2 + .2 + k * (L - .4) / 8
+        for sx in (-1, 1):
+            o.boite((sx * (W / 2 + .01), y, H / 2), (.02, .06, H - .1), couleur, lod=0 if k % 2 else 1, sale=.6)
+    o.boite((.15, -.5, H + .005), (W * .55, L * .3, .01), "rouille", lod=0)
+    o.boite((W / 2 + .025, .5, .45), (.01, .8, .5), "rouille", lod=0)
+    if ouvert:
+        o.boite((0, L / 2 - .01, H / 2), (W - .1, .02, H - .1), "interieur_sombre", lod=2)
+        o.boite((W / 2 + .3, L / 2 + .3, H / 2), (.04, .62, H - .05), couleur, rot=(0, 0, -15), lod=1)
+        o.boite((-W / 2 - .3, L / 2 + .3, H / 2), (.04, .62, H - .05), couleur, rot=(0, 0, 15), lod=1)
+        o.boite((.1, L / 2 - .5, .2), (.5, .5, .4), "contreplaque", lod=0)
+        o.boite((-.25, L / 2 + .3, .15), (.4, .35, .3), "contreplaque", rot=(0, 0, 25), lod=0)
+    else:
+        o.boite((0, L / 2 + .01, H / 2), (W - .02, .02, H - .05), couleur, lod=1, sale=.6)
+        for x in (-.2, .2):
+            o.boite((x, L / 2 + .03, H / 2), (.03, .02, H - .1), "acier_sombre", lod=0)
+    o.socket("SOCKET_Travail_01", (0, L / 2 + .7, 0))
+    o.socket("SOCKET_Stock_01", (0, 0, 0))
+    return o
+
+
+def caisses(nom, rnd):
+    o = Objet(nom, (1, 1), "caisses et cartons à fouiller")
+    tas = [(-.35, -.2, 0, .55, "contreplaque"), (.3, -.25, 0, .5, "contreplaque"), (-.3, .3, 0, .5, "bois_vieilli"),
+           (-.32, -.2, .55, .45, "olive"), (.35, .35, 0, .35, "toile_beige"), (.3, -.25, .5, .3, "toile_beige")]
+    for i, (x, y, z, t, c) in enumerate(tas):
+        r = rnd.uniform(-15, 15)
+        o.boite((x, y, z + t / 2), (t, t * .85, t), c, rot=(0, 0, r), lod=2 if i < 3 else 1, sale=.4)
+        if c in ("contreplaque", "bois_vieilli"):
+            o.boite((x, y, z + t / 2), (t + .01, t * .85 + .01, .06), "bois_sombre", rot=(0, 0, r), lod=0)
+    o.boite((.6, .65, .03), (.4, .3, .05), "toile_beige", rot=(0, 0, 40), lod=0)   # carton écrasé
+    o.socket("SOCKET_Travail_01", (0, -.9, 0))
+    return o
+
+
+def suv_brule(nom, rnd):
+    """Deuxième carcasse calcinée, plus haute (4x4), retournée sur le toit."""
+    o = Objet(nom, (1, 2), "4x4 calciné sur le toit : ferraille uniquement")
+    W, L = 1.15, 2.75
+    o.boite((0, 0, .2), (W - .12, 1.4, .4), "suie", effile=(1.2, 1.15), sale=.8)   # toit écrasé au sol
+    o.boite((0, 0, .62), (W, L, .42), "suie", sale=.8)
+    o.boite((0, 0, .84), (W - .2, L - .4, .03), "rouille", lod=1)   # plancher visible
+    o.boite((0, -.4, .86), (.12, 1.6, .1), "acier_sombre", lod=1)   # arbre de transmission
+    for sx, sy in ((-1, -1), (1, -1), (-1, 1), (1, 1)):
+        o.cyl((sx * (W / 2 - .07), sy * (L / 2 - .5), .95), .17, .14, "acier_sombre", rot=(0, 90, 0), seg=8)
+    o.boite((0, -L / 2 - .02, .55), (W, .06, .12), "acier_sombre", lod=1)
+    o.boite((.5, .9, .02), (.9, .7, .02), "suie", lod=0)   # trace de brûlé au sol
+    o.boite((-W / 2 - .3, -.5, .04), (.35, .5, .04), "vitre_sale", rot=(0, 0, 30), lod=0)
+    o.socket("SOCKET_Travail_01", (W / 2 + .45, 0, 0))
+    return o
+
+
+def pickup_brule(nom, rnd):
+    o = pickup(nom, "suie", rnd)
+    o.note = "pick-up calciné : ferraille et pièces"
+    for p in o.pieces:
+        if p.couleur in ("vitre_sale", "chrome", "voiture_rouge"):
+            p.couleur = "interieur_sombre" if p.couleur == "vitre_sale" else "acier_sombre"
+        p.sale = max(p.sale, .75)
+    o.boite((.3, 1.3, .02), (.8, .9, .02), "suie", lod=0)
+    return o
+
+
+# ---------------------------------------------------------------------------
 # Catalogue
 # ---------------------------------------------------------------------------
 def catalogue():
@@ -938,6 +1169,19 @@ def catalogue():
             panneau_aide("SM_Panneau_Aide", rnd),
             lampadaire("SM_Lampadaire_Casse", rnd),
             poteau_electrique("SM_Poteau_Electrique", rnd),
+        ]),
+        ("Lieux", [
+            station_service("SM_StationService_Ruine", rnd),
+            checkpoint("SM_Barrage_Militaire_Ruine", rnd),
+            camion_militaire("SM_Epave_Camion_Militaire", rnd),
+            bus("SM_Epave_Bus", rnd),
+        ]),
+        ("Fouille", [
+            conteneur("SM_Conteneur_Ouvert", "voiture_bleue", True, rnd),
+            conteneur("SM_Conteneur_Ferme", "voiture_rouge", False, rnd),
+            caisses("SM_Caisses_Fouille", rnd),
+            suv_brule("SM_Epave_4x4_Brule", rnd),
+            pickup_brule("SM_Epave_Pickup_Brule", rnd),
         ]),
     ]
 
@@ -1028,7 +1272,7 @@ def apercu(groupes, mat, dossier):
     # caméra orthographique en vue de jeu
     cam = bpy.data.objects.new("Cam", bpy.data.cameras.new("Cam"))
     cam.data.type = "ORTHO"
-    cam.data.ortho_scale = max(xmax * 1.05, y * 1.15)
+    cam.data.ortho_scale = max(xmax * 1.05, y * .95 * 1800 / 1500) * 1.02
     sc.collection.objects.link(cam)
     cible = Vector((xmax / 2, -y / 2 + 1.5, 0))
     direction = Vector((0, 1, 0)).normalized()
@@ -1046,7 +1290,7 @@ def apercu(groupes, mat, dossier):
     w = bpy.data.worlds.new("Ciel")
     w.color = (0.55, 0.56, 0.6)
     sc.world = w
-    sc.render.resolution_x, sc.render.resolution_y = 1800, 1100
+    sc.render.resolution_x, sc.render.resolution_y = 1500, 1800
     sc.render.film_transparent = False
     sc.render.filepath = os.path.join(dossier, "apercu_decor_ruines.png")
     bpy.ops.render.render(write_still=True)

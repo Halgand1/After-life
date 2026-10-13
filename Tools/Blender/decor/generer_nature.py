@@ -53,6 +53,9 @@ PALETTE = {
     "champignon": (14, 9, "B8A890"), "champignon_rouge": (14, 10, "A33A2A"),
     # Ligne 5 : neige
     "neige": (15, 0, "E8ECEE"), "neige_ombre": (15, 1, "C4CCD4"),
+    # Cases déjà présentes dans la palette commune (palette.md), réutilisées pour les détails au sol
+    "eau_flaque": (8, 14, "4E5A57"), "eau_sombre": (9, 7, "3E4C47"), "boue": (9, 4, "5E4730"),
+    "boue_noire": (9, 2, "2B2622"), "os": (8, 1, "BDB6A3"),
 }
 CASE = 16
 
@@ -87,10 +90,7 @@ def creer_palette(dossier=None):
                 i = (y * taille + col * CASE + xx) * 4
                 px[i:i + 3] = rgb
     img.pixels[:] = px
-    if dossier:
-        img.filepath_raw = os.path.join(dossier, "T_Batiments_1024.png")
-        img.file_format = "PNG"
-        img.save()
+    # Pas d'écriture : la texture de référence est modeles3d/sorties/T_Batiments_1024.png
     return img
 
 
@@ -200,6 +200,30 @@ class Nature:
         self.bm.faces.new((p1, p2, p3))
         self.bm.faces.new((q2, q1, q3))
         return self._finir(avant, couleur, Matrix.Identity(4), vent=lambda co: (co.z - z) / max(h, .01))
+
+    def disque(self, centre, rayon, couleur, seg=9, irregularite=.25, echelle=(1, 1), couleurs=None):
+        """Plaque plate irrégulière (un seul polygone tourné vers le haut) : flaques, boue, tapis de feuilles."""
+        avant = set(self.bm.faces)
+        x, y, z = centre
+        pts = []
+        for k in range(seg):
+            a = 2 * math.pi * k / seg
+            r = rayon * (1 + self.rng.uniform(-irregularite, irregularite))
+            pts.append(self.bm.verts.new((x + math.cos(a) * r * echelle[0], y + math.sin(a) * r * echelle[1], z)))
+        self.bm.faces.new(pts)
+        return self._finir(avant, couleur, Matrix.Identity(4), vent=lambda co: 0, couleurs=couleurs)
+
+    def plaquette(self, centre, taille, couleur, angle=0.0):
+        """Petit triangle posé à plat (feuille morte, éclat)."""
+        avant = set(self.bm.faces)
+        x, y, z = centre
+        a = math.radians(angle)
+        pts = []
+        for k, (l, d) in enumerate(((taille, 0), (taille * .5, 2.3), (taille * .5, -2.3))):
+            pts.append(self.bm.verts.new((x + math.cos(a + d) * l, y + math.sin(a + d) * l,
+                                          z + self.rng.uniform(0, .006))))
+        self.bm.faces.new(pts)
+        return self._finir(avant, couleur, Matrix.Identity(4), vent=lambda co: 0)
 
     def vers_objet(self, nom, mat):
         bmesh.ops.remove_doubles(self.bm, verts=self.bm.verts, dist=1e-5)
@@ -422,6 +446,87 @@ def tronc_couche(graine, l=1.4, r=.12):
     return n
 
 
+# ---------------------------------------------------------------------------
+# Détails au sol (emprise 0, ne bloquent rien, posés par centaines)
+# ---------------------------------------------------------------------------
+def tapis_feuilles(graine, rayon=.55, nb=26, couleurs=("feuille_morte", "auto_brun", "auto_jaune", "auto_orange")):
+    n = Nature(graine, .05)
+    n.disque((0, 0, .004), rayon * .8, "feuille_morte", seg=9, irregularite=.3,
+             couleurs=["feuille_morte", "terre"])
+    for k in range(nb):
+        a = n.rng.uniform(0, 2 * math.pi)
+        d = rayon * math.sqrt(n.rng.random())
+        n.plaquette((math.cos(a) * d, math.sin(a) * d, .008), n.rng.uniform(.04, .07), n.rng.choice(couleurs),
+                    n.rng.uniform(0, 360))
+    return n
+
+
+def branches_mortes(graine, nb=4, longueur=.7):
+    n = Nature(graine, .08)
+    for k in range(nb):
+        a = n.rng.uniform(0, 360)
+        l = longueur * n.rng.uniform(.5, 1.1)
+        r = n.rng.uniform(.015, .03)
+        x, y = n.rng.uniform(-.2, .2), n.rng.uniform(-.2, .2)
+        n.cone((x, y, r), r, r * .5, l, "bois_mort", seg=4, rot=(0, 90, a), vent=lambda co: 0,
+               couleurs=["bois_mort", "ecorce_fonce", "ecorce"])
+        if n.rng.random() < .7:  # rameau
+            b = a + n.rng.choice((-35, 35))
+            mx, my = x + math.cos(math.radians(a)) * l * .5, y + math.sin(math.radians(a)) * l * .5
+            n.cone((mx, my, r), r * .6, r * .2, l * .35, "bois_mort", seg=3, rot=(0, 85, b), vent=lambda co: 0)
+    for k in range(5):  # quelques feuilles sèches dessous
+        n.plaquette((n.rng.uniform(-.3, .3), n.rng.uniform(-.3, .3), .006), .05, "feuille_morte", n.rng.uniform(0, 360))
+    return n
+
+
+def flaque(graine, rayon=.55, echelle=(1.3, .8)):
+    n = Nature(graine, .03)
+    n.disque((0, 0, .004), rayon * 1.18, "boue", seg=10, irregularite=.2, echelle=echelle,
+             couleurs=["boue", "terre"])
+    n.disque((0, 0, .012), rayon, "eau_flaque", seg=10, irregularite=.22, echelle=echelle)
+    for k in range(n.rng.randint(1, 2)):  # petite flaque satellite
+        a = n.rng.uniform(0, 2 * math.pi)
+        c = (math.cos(a) * rayon * 1.5 * echelle[0], math.sin(a) * rayon * 1.3 * echelle[1])
+        n.disque((c[0], c[1], .004), rayon * .32, "boue", seg=7, irregularite=.2)
+        n.disque((c[0], c[1], .012), rayon * .24, "eau_sombre", seg=7, irregularite=.2)
+    return n
+
+
+def plaque_boue(graine, rayon=.6, echelle=(1.4, .9)):
+    n = Nature(graine, .04)
+    n.disque((0, 0, .004), rayon, "boue", seg=11, irregularite=.28, echelle=echelle, couleurs=["boue", "terre"])
+    for k in range(3):  # zones plus sombres et humides
+        a = n.rng.uniform(0, 2 * math.pi)
+        d = rayon * .5 * n.rng.random()
+        n.disque((math.cos(a) * d * echelle[0], math.sin(a) * d * echelle[1], .009), rayon * n.rng.uniform(.18, .3),
+                 "boue_noire", seg=6, irregularite=.25)
+    for k in range(2):  # ornières
+        y = (k - .5) * rayon * .7
+        n.disque((0, y, .014), rayon * .9, "boue_noire", seg=8, irregularite=.08, echelle=(echelle[0], .09))
+    for k in range(4):  # mottes
+        a = n.rng.uniform(0, 2 * math.pi)
+        d = rayon * n.rng.uniform(.5, 1.0)
+        n.boule((math.cos(a) * d * echelle[0], math.sin(a) * d * echelle[1], .01), .05, "terre", echelle=(1.3, 1, .45),
+                subdiv=0, vent=lambda co: 0, couleurs=["terre", "boue", "herbe_fonce"])
+    return n
+
+
+def ossements(graine):
+    n = Nature(graine, .12)
+    n.disque((0, 0, .004), .4, "terre", seg=8, irregularite=.3, couleurs=["terre", "herbe_seche"])
+    n.boule((.08, .05, .06), .07, "os", echelle=(1.25, 1, .9), subdiv=1, vent=lambda co: 0)  # crâne
+    n.boule((.16, .07, .035), .025, "boue_noire", echelle=(1, 1, .6), subdiv=0, vent=lambda co: 0)
+    for k in range(4):  # os longs
+        a = n.rng.uniform(0, 360)
+        x, y = n.rng.uniform(-.25, .1), n.rng.uniform(-.2, .2)
+        l = n.rng.uniform(.18, .32)
+        n.cone((x, y, .02), .016, .013, l, "os", seg=4, rot=(0, 90, a), vent=lambda co: 0)
+        n.boule((x, y, .02), .026, "os", subdiv=0, vent=lambda co: 0)
+    for k in range(3):  # côtes
+        n.cone((-.05 + k * .05, -.12, .01), .01, .004, .16, "os", seg=3, rot=(0, 70, 100 + k * 8), vent=lambda co: 0)
+    return n
+
+
 # Bloc de forêt dense : plusieurs arbres serrés + sous‑bois, sur une emprise de 2 x 2 cases (4 x 4 m)
 def bloc_foret(graine, emprise=4.0, nb_arbres=9, part_pins=.6):
     rng = random.Random(graine)
@@ -505,6 +610,18 @@ CATALOGUE = {
     "Souche_A": (lambda: souche(101, .14, .18), 1, None, "Souche"),
     "Souche_B": (lambda: souche(102, .18, .12), 1, None, "Souche"),
     "Tronc_Couche": (lambda: tronc_couche(103), 1, "Wood", "Souche"),
+    "Tapis_Feuilles_A": (lambda: tapis_feuilles(111), 0, None, "Sol_Detail"),
+    "Tapis_Feuilles_B": (lambda: tapis_feuilles(112, .45, 20, ("feuille_morte", "auto_brun", "feuille_jaune",
+                                                                 "herbe_seche")), 0, None, "Sol_Detail"),
+    "Tapis_Feuilles_Automne": (lambda: tapis_feuilles(113, .6, 32, ("auto_rouge", "auto_orange", "auto_jaune",
+                                                                       "auto_brun")), 0, None, "Sol_Detail"),
+    "Branches_Mortes_A": (lambda: branches_mortes(121, 4, .7), 0, "Wood", "Sol_Detail"),
+    "Branches_Mortes_B": (lambda: branches_mortes(122, 6, .9), 0, "Wood", "Sol_Detail"),
+    "Flaque_A": (lambda: flaque(131, .5), 0, None, "Sol_Detail"),
+    "Flaque_B": (lambda: flaque(132, .75, (1.5, .7)), 0, None, "Sol_Detail"),
+    "Boue_A": (lambda: plaque_boue(141, .6), 0, None, "Sol_Detail"),
+    "Boue_B": (lambda: plaque_boue(142, .45, (1.1, 1.0)), 0, None, "Sol_Detail"),
+    "Ossements": (lambda: ossements(151), 0, None, "Sol_Detail"),
 }
 
 
@@ -514,7 +631,7 @@ def nb_triangles(ob):
 
 def faire_lods(ob, collection, cat):
     res = [ob]
-    ratios = {"Herbe": (.6, .3), "Foret": (.4, .15)}.get(cat, (.5, .22))
+    ratios = {"Herbe": (.6, .3), "Sol_Detail": (.6, .3), "Foret": (.4, .15)}.get(cat, (.5, .22))
     for i, ratio in zip((1, 2), ratios):
         lod = bpy.data.objects.new(ob.name.replace("_LOD0", "_LOD%d" % i), ob.data.copy())
         collection.objects.link(lod)
@@ -597,7 +714,9 @@ def rendus(sortie, objets):
                ["Foret_Dense_A", "Foret_Dense_B", "Foret_Dense_C"],
                ["Rocher_A", "Rocher_B", "Rocher_C", "Rocher_Mousse", "Rocher_Ocre", "Souche_A", "Souche_B", "Tronc_Couche"],
                ["Buisson_A", "Buisson_B", "Buisson_Baies_Rouges", "Buisson_Baies_Bleues", "Buisson_Baies_Vide",
-                "Cailloux_A", "Cailloux_B", "Herbe_A", "Herbe_B", "Herbe_Haute", "Fleurs", "Fougere", "Champignons"]]
+                "Cailloux_A", "Cailloux_B", "Herbe_A", "Herbe_B", "Herbe_Haute", "Fleurs", "Fougere", "Champignons"],
+               ["Tapis_Feuilles_A", "Tapis_Feuilles_B", "Tapis_Feuilles_Automne", "Branches_Mortes_A",
+                "Branches_Mortes_B", "Flaque_A", "Flaque_B", "Boue_A", "Boue_B", "Ossements"]]
     pas = [2.0, 2.2, 5.0, 1.9, .9]
     y = 0.0
     for ligne, p in zip(rangees, pas):
