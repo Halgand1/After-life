@@ -46,6 +46,16 @@
 - Le shader palette utilise maintenant l'ambiance du jeu (`_AC_AmbientSky/Ground`), comme le terrain : personnages et decor s'assombrissent la nuit.
 - Mesure : le benchmark ajoute `screenshot_ensemble.png`, `screenshot_survivants.png`, `screenshot_foret.png`.
 
+## Ajouts du 13/10 au soir (faune, peuplement, logements, enclos, equipement)
+
+- **Chasse** : `WildlifeView` affiche les animaux de `Core.Wildlife` ; outil « Chasser » (Recolte, 7e) ; anneau rouge ; essai `-aftercity-hunt <dossier>`.
+- **Peuplement** : `Scripts/World/Peuplement.cs` lit `Assets/Art/Decor/peuplement.json` (zones, densites, tirages ponderes) ; les modeles de jeu (arbres, rochers, cailloux, baies, epaves) ne sont poses que sur les ressources de Core. `Core/Runtime/World/FarmStart.cs` garantit baies, cailloux, arbres et rochers autour de la ferme (tests `FarmStartTests`).
+- **Logements** : `HomeView` (modele meuble, toits `_Toit_` masques a la selection ou avec I, etagere garnie depuis `Shelf/ShelfCapacity`, maison tournee pour que l'etagere fasse face a la camera) ; panneau `Hud.HomePanel` ; essai `-aftercity-homes <dossier>` (logements, confort, amelioration, enclos).
+- **Enclos** : `PenView` (vaches, chevaux selon `Building.Animals`) ; duree d'expedition reduite affichee.
+- **Equipement** : `GameRoot.SurvivorPrefab` choisit le modele du role ; `VillagerView.ApplyEquipment` pose les `SM_Equip_*` de `Villager.Equipment` sur les `SOCKET_*` et masque l'equipement fige du FBX.
+- **Build a cote** : `phase0.ps1 -OutDir Builds/Phase0_new` quand le jeu est ouvert dans `Builds/Phase0`.
+- A verifier : orientation des objets d'etagere et d'equipement sur leurs accroches (corrects a l'oeil sur les captures, non mesures) ; pas d'animation de chantier pour les logements.
+
 ## À faire ensuite
 
 1. Déposer les vrais FBX, relancer `phase0.ps1`, lire dans `Builds/Logs/03_scene.log` les lignes `[AfterCity] AC_Humain …`, `avatar valide=…` et `materiau …`.
