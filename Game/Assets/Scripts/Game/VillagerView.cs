@@ -60,6 +60,8 @@ namespace AfterCity.Game
         void Sync(float dt)
         {
             var v = Villager;
+            if (_model != null && _model.gameObject.activeSelf == v.Away) _model.gameObject.SetActive(!v.Away);
+            if (v.Away) return;
             float targetY = TerrainMeshBuilder.TopY(_grid.GetLevel(v.Cell));
             _y = Mathf.MoveTowards(_y, targetY, dt * 4f);
             transform.position = new Vector3((float)v.X * TerrainMeshBuilder.CellSize, _y, (float)v.Y * TerrainMeshBuilder.CellSize);

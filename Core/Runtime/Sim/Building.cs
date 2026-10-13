@@ -6,7 +6,8 @@ namespace AfterCity.Core.Sim
     public enum BuildingType : byte
     {
         Shelter,     // abri : +2 places, un survivant de passage rejoint la colonie a l'aube s'il y a de la place
-        Watchtower   // tour de guet : tire sur les rodeurs proches la nuit
+        Watchtower,  // tour de guet : tire sur les rodeurs proches la nuit
+        ExpeditionPost // poste d'expedition : envoie des survivants fouiller la ville
     }
 
     /// <summary>Caracteristiques d'un type de batiment.</summary>
@@ -33,6 +34,7 @@ namespace AfterCity.Core.Sim
             {
                 case BuildingType.Shelter: return new BuildingSpec("Abri", 2, 10, 0, 8);
                 case BuildingType.Watchtower: return new BuildingSpec("Tour de guet", 1, 6, 4, 10);
+                case BuildingType.ExpeditionPost: return new BuildingSpec("Poste d'expedition", 2, 15, 0, 10);
                 default: return new BuildingSpec(type.ToString(), 1, 0, 0, 5);
             }
         }

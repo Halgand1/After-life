@@ -55,6 +55,13 @@ namespace AfterCity.Game
             Terrain = TerrainView.Create(Map, terrainMaterial, transform);
             Colony.CellChanged += Terrain.MarkDirty;
             Colony.VillagerDied += OnVillagerDied;
+            Colony.ExpeditionReturned += e =>
+            {
+                var loot = new System.Text.StringBuilder();
+                foreach (var kv in e.Gains) loot.Append($" +{kv.Value} {ResourceName(kv.Key)}");
+                string hurt = e.DamageTaken < 10 ? "sans blessure" : e.DamageTaken < 25 ? "blessures legeres" : "blesses";
+                Say($"Retour de {e.Target.Name} : {(e.Succeeded ? "reussite" : "echec")} ({(int)(e.Outcome * 100)} %),{loot}, {hurt}");
+            };
             Colony.SurvivorArrived += v =>
             {
                 _villagerViews[v] = VillagerView.Create(v, villagerPrefab, Map.Grid, transform);
@@ -77,6 +84,23 @@ namespace AfterCity.Game
             gameObject.AddComponent<OrderTool>().Init(this);
             gameObject.AddComponent<Hud>().Init(this);
             Debug.Log($"[AfterCity] Carte {width}x{height} graine {seed}, ferme en {Map.FarmCenter}, {Colony.Villagers.Count} survivants");
+        }
+
+        public static string ResourceName(ResourceType t)
+        {
+            switch (t)
+            {
+                case ResourceType.Wood: return "bois";
+                case ResourceType.Stone: return "pierre";
+                case ResourceType.Food: return "vivres";
+                case ResourceType.Scrap: return "ferraille";
+                case ResourceType.Plastic: return "plastique";
+                case ResourceType.Rubber: return "caoutchouc";
+                case ResourceType.Electronics: return "electronique";
+                case ResourceType.Steel: return "acier";
+                case ResourceType.Medicine: return "medicaments";
+                default: return t.ToString().ToLowerInvariant();
+            }
         }
 
         public void Say(string alert)

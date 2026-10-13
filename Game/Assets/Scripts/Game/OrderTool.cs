@@ -16,7 +16,7 @@ namespace AfterCity.Game
         public static readonly JobType[] Tools =
             { JobType.Chop, JobType.Mine, JobType.Salvage, JobType.Dig, JobType.Raise, JobType.Barricade, JobType.Road };
 
-        public static readonly BuildingType[] Buildings = { BuildingType.Shelter, BuildingType.Watchtower };
+        public static readonly BuildingType[] Buildings = { BuildingType.Shelter, BuildingType.Watchtower, BuildingType.ExpeditionPost };
 
         JobType? _current;
         BuildingType? _building;
@@ -111,8 +111,10 @@ namespace AfterCity.Game
             for (int i = 0; i < Tools.Length; i++)
                 if (Input.GetKeyDown(KeyCode.Alpha1 + i) || Input.GetKeyDown(KeyCode.Keypad1 + i))
                     Current = Current == Tools[i] ? (JobType?)null : Tools[i];
+            KeyCode[] buildKeys = { KeyCode.Alpha8, KeyCode.Alpha9, KeyCode.Alpha0 };
+            KeyCode[] buildPad = { KeyCode.Keypad8, KeyCode.Keypad9, KeyCode.Keypad0 };
             for (int i = 0; i < Buildings.Length; i++)
-                if (Input.GetKeyDown(KeyCode.Alpha8 + i) || Input.GetKeyDown(KeyCode.Keypad8 + i))
+                if (Input.GetKeyDown(buildKeys[i]) || Input.GetKeyDown(buildPad[i]))
                     CurrentBuilding = CurrentBuilding == Buildings[i] ? (BuildingType?)null : Buildings[i];
             if (Input.GetKeyDown(KeyCode.Escape)) { Current = null; CurrentBuilding = null; _dragStart = null; }
 

@@ -100,6 +100,7 @@ namespace AfterCity.Game
             TopBar(w);
             Toolbar(w, h);
             Survivors();
+            ExpeditionPanel(w);
             Messages(w);
             AlertBanner(w);
             Welcome(w, h);
@@ -172,7 +173,7 @@ namespace AfterCity.Game
                 var b = builds[i];
                 var br = new Rect(r.x + 14 + 16 + (tools.Length + i) * (bw + gap), r.y + 12, bw, bh);
                 bool on = _tool.CurrentBuilding == b;
-                if (GUI.Button(br, $"<size=12><color=#9a9a96>{tools.Length + i + 1}</color></size>\n{OrderTool.BuildingLabel(b)}", on ? _buttonOn : _button))
+                if (GUI.Button(br, $"<size=12><color=#9a9a96>{(tools.Length + i + 1) % 10}</color></size>\n{OrderTool.BuildingLabel(b)}", on ? _buttonOn : _button))
                     _tool.CurrentBuilding = on ? (BuildingType?)null : b;
                 GUI.color = new Color(0.55f, 0.75f, 0.95f);
                 GUI.DrawTexture(new Rect(br.x + 10, br.y + 8, bw - 20, 5), _white);
@@ -201,7 +202,8 @@ namespace AfterCity.Game
             foreach (var v in colony.Villagers)
             {
                 string what;
-                switch (v.State)
+                if (v.Away) what = "<color=#8fc0ff>en expedition</color>";
+                else switch (v.State)
                 {
                     case VillagerState.Walking: what = v.Job != null ? $"va {Verb(v.Job.Type)}" : "marche"; break;
                     case VillagerState.Working: what = $"{Verb(v.Job.Type)} <color=#c8c8a0>{(int)(v.WorkProgress * 100)}%</color>"; break;
@@ -212,6 +214,63 @@ namespace AfterCity.Game
                 GUI.Label(new Rect(r.x + 120, y, 180, rowH), what, _small);
                 y += rowH;
             }
+        }
+
+        int _expeditionSize = 2;
+
+        static readonly (ResourceType type, string name)[] Parts =
+        {
+            (ResourceType.Plastic, "Plastique"), (ResourceType.Rubber, "Caoutchouc"), (ResourceType.Electronics, "Electronique"),
+            (ResourceType.Steel, "Acier"), (ResourceType.Medicine, "Medicaments"),
+        };
+
+        /// <summary>Panneau des expeditions en ville (visible des que le poste est construit).</summary>
+        void ExpeditionPanel(float w)
+        {
+            var colony = _game.Colony;
+            if (!colony.HasBuilt(BuildingType.ExpeditionPost) && colony.Expeditions.Count == 0) return;
+            var targets = ExpeditionTarget.All;
+            float rowH = 44;
+            float height = 96 + targets.Length * rowH + colony.Expeditions.Count * 24 + 30;
+            var r = Panel(new Rect(w - 392, 80, 380, height));
+            GUI.Label(new Rect(r.x + 16, r.y + 8, 200, 28), "Expeditions", _title);
+
+            // Taille de l'equipe
+            GUI.Label(new Rect(r.x + 170, r.y + 10, 90, 26), "Equipe", _small);
+            if (GUI.Button(new Rect(r.x + 230, r.y + 10, 30, 28), "-", _button)) _expeditionSize = Mathf.Max(1, _expeditionSize - 1);
+            GUI.Label(new Rect(r.x + 262, r.y + 10, 40, 28), $"<b>{_expeditionSize}</b>", _center);
+            if (GUI.Button(new Rect(r.x + 304, r.y + 10, 30, 28), "+", _button)) _expeditionSize = Mathf.Min(Expedition.MaxMembers, _expeditionSize + 1);
+
+            float y = r.y + 46;
+            bool canSend = colony.CanSendExpedition(_expeditionSize);
+            foreach (var t in targets)
+            {
+                int chance = colony.PreviewChance(t, _expeditionSize);
+                string danger = new string('!', t.Danger);
+                GUI.Label(new Rect(r.x + 16, y, 200, 22), $"<b>{t.Name}</b> <color=#ff7a66>{danger}</color>", _small);
+                GUI.Label(new Rect(r.x + 16, y + 20, 220, 20), $"{(int)t.Duration} s   reussite <b>{chance} %</b>", _small);
+                GUI.enabled = canSend;
+                if (GUI.Button(new Rect(r.x + 260, y + 4, 104, 34), "Envoyer", _button))
+                {
+                    var e = colony.SendExpedition(t, _expeditionSize);
+                    if (e != null) _game.Say($"{e.Members.Count} survivant(s) partent vers : {t.Name} ({e.SuccessChance} %)");
+                }
+                GUI.enabled = true;
+                y += rowH;
+            }
+            if (!canSend)
+            {
+                GUI.Label(new Rect(r.x + 16, y, 350, 22), "<color=#b0b0aa>Il faut garder au moins un survivant a la ferme.</color>", _small);
+            }
+            y += 24;
+            foreach (var e in colony.Expeditions)
+            {
+                GUI.Label(new Rect(r.x + 16, y, 350, 22), $"<color=#8fc0ff>{e.Target.Name}</color> : retour dans {Mathf.CeilToInt((float)e.Remaining)} s", _small);
+                y += 24;
+            }
+            var sb = new System.Text.StringBuilder();
+            foreach (var (type, name) in Parts) sb.Append($"{name} <b>{colony.Stock.Get(type)}</b>   ");
+            GUI.Label(new Rect(r.x + 16, r.y + r.height - 30, 360, 24), sb.ToString(), new GUIStyle(_small) { fontSize = 12 });
         }
 
         static string Verb(JobType t)
@@ -249,6 +308,7 @@ namespace AfterCity.Game
             if (cam == null) return;
             foreach (var v in _game.Colony.Villagers)
             {
+                if (v.Away) continue;
                 var world = new Vector3((float)v.X * 2f, 0, (float)v.Y * 2f);
                 world.y = AfterCity.Game.World.TerrainMeshBuilder.TopY(_game.Map.Grid.GetLevel(v.Cell)) + 1.9f;
                 if (v.State == VillagerState.Working && v.Job != null)
@@ -304,9 +364,9 @@ namespace AfterCity.Game
             float age = Time.unscaledTime - _game.AlertTime;
             if (age > 6f) return;
             GUI.color = new Color(1, 1, 1, Mathf.Clamp01(6f - age));
-            var r = new Rect(w / 2 - 330, 126, 660, 54);
+            var r = new Rect(w / 2 - 420, 126, 840, 54);
             GUI.Box(r, GUIContent.none, _alertPanel);
-            GUI.Label(r, $"<b>{_game.Alert}</b>", new GUIStyle(_center) { fontSize = 22 });
+            GUI.Label(r, $"<b>{_game.Alert}</b>", new GUIStyle(_center) { fontSize = 20, wordWrap = true });
             GUI.color = Color.white;
         }
 

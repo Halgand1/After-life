@@ -179,7 +179,9 @@ namespace AfterCity.Game.World
                     if (Building.IsOrigin(structure))
                     {
                         var corner = new Vector3(x * CellSize, top, y * CellSize);
-                        if (Building.TypeOf(structure) == BuildingType.Shelter) AddShelter(md, corner, Hash(x, y, 10));
+                        var bt = Building.TypeOf(structure);
+                        if (bt == BuildingType.Shelter) AddShelter(md, corner, Hash(x, y, 10));
+                        else if (bt == BuildingType.ExpeditionPost) AddExpeditionPost(md, corner);
                         else AddWatchtower(md, corner);
                     }
                     continue;
@@ -239,6 +241,26 @@ namespace AfterCity.Game.World
             // Porte et fenetre
             md.Box(center + new Vector3(0, 0, -1.51f), new Vector3(0.7f, 1.2f, 0.04f), Lin(new Color(0.25f, 0.18f, 0.12f)));
             md.Box(center + new Vector3(1.0f, 0.9f, -1.51f), new Vector3(0.5f, 0.45f, 0.04f), Lin(new Color(0.85f, 0.70f, 0.40f)));
+        }
+
+        /// <summary>Poste d'expedition 2 x 2 : garage en tole, porte roulante, antenne radio, pick-up devant.</summary>
+        static void AddExpeditionPost(MeshData md, Vector3 corner)
+        {
+            var c = corner + new Vector3(CellSize, 0, CellSize);
+            var tole = Lin(new Color(0.42f, 0.50f, 0.55f));
+            var dark = Lin(new Color(0.22f, 0.24f, 0.26f));
+            md.Box(c + new Vector3(0, 0, 0.4f), new Vector3(3.4f, 2.3f, 2.8f), tole);
+            md.Box(c + new Vector3(0, 2.3f, 0.4f), new Vector3(3.6f, 0.15f, 3.0f), dark);
+            md.Box(c + new Vector3(0, 0, -1.01f), new Vector3(2.2f, 1.8f, 0.05f), Lin(new Color(0.60f, 0.55f, 0.35f)));
+            for (int i = 0; i < 5; i++)
+                md.Box(c + new Vector3(0, 0.3f + i * 0.33f, -1.04f), new Vector3(2.2f, 0.04f, 0.03f), dark);
+            // Antenne
+            md.Box(c + new Vector3(1.4f, 2.45f, 1.4f), new Vector3(0.08f, 2.4f, 0.08f), dark);
+            md.Cone(c + new Vector3(1.4f, 4.6f, 1.4f), 0.25f, 0.25f, 6, Lin(new Color(0.85f, 0.25f, 0.2f)), 0);
+            // Pick-up gare devant
+            var truck = Lin(new Color(0.55f, 0.20f, 0.16f));
+            md.Box(c + new Vector3(-0.9f, 0.2f, -1.7f), new Vector3(1.0f, 0.55f, 1.0f), truck);
+            md.Box(c + new Vector3(-0.9f, 0.75f, -1.55f), new Vector3(0.9f, 0.45f, 0.5f), Lin(new Color(0.30f, 0.35f, 0.40f)));
         }
 
         /// <summary>Tour de guet 1 case : quatre poteaux, plateforme, garde-corps, petit toit.</summary>

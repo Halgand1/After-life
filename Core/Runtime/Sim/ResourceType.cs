@@ -9,6 +9,14 @@ namespace AfterCity.Core.Sim
         Water,
         Food,
         Planks,
-        Scrap
+        Scrap,
+        // Pieces detachees (expeditions, raffinerie)
+        Plastic,
+        Rubber,
+        Electronics,
+        Ceramic,
+        Metal,
+        Steel,
+        Medicine
     }
 }

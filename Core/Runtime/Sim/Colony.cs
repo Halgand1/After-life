@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using AfterCity.Core.Agents;
+using AfterCity.Core.Util;
 using AfterCity.Core.World;
 
 namespace AfterCity.Core.Sim
@@ -55,6 +56,8 @@ namespace AfterCity.Core.Sim
         public double Health { get; internal set; } = MaxHealth;
         public const double MaxHealth = 100;
         public bool IsDead => Health <= 0;
+        /// <summary>Parti en expedition : absent de la carte.</summary>
+        public bool Away { get; internal set; }
 
         internal readonly Queue<GridPos> Path = new Queue<GridPos>();
 
@@ -132,6 +135,11 @@ namespace AfterCity.Core.Sim
         public GridPos Home { get; set; }
 
         readonly List<Building> _buildings = new List<Building>();
+        readonly List<Expedition> _expeditions = new List<Expedition>();
+        public IReadOnlyList<Expedition> Expeditions => _expeditions;
+        /// <summary>Une expedition est rentree (resultat dans l'objet).</summary>
+        public event Action<Expedition> ExpeditionReturned;
+        public Rng Random { get; set; } = new Rng(0xC0105EED);
         bool _wasNight;
         int _nextVillagerId;
         readonly List<Villager> _villagers = new List<Villager>();
@@ -148,7 +156,7 @@ namespace AfterCity.Core.Sim
         /// <summary>Colonie de depart sur la ferme : survivants et vivres du camion (GDD 4.2).</summary>
         public static Colony StartAtFarm(GeneratedMap map, int survivors = 5)
         {
-            var c = new Colony(map.Grid) { Home = map.FarmCenter };
+            var c = new Colony(map.Grid) { Home = map.FarmCenter, Random = new Rng(map.Seed ^ 0xE4BED17105UL) };
             for (int i = 0; i < survivors; i++)
             {
                 var p = new GridPos(map.FarmCenter.X - 1 + i % 3, map.FarmCenter.Y - 1 + i / 3);
@@ -176,6 +184,13 @@ namespace AfterCity.Core.Sim
             if (v.Job != null) Release(v.Job);
             _villagers.Remove(v);
             VillagerDied?.Invoke(v);
+        }
+
+        /// <summary>Soigne un survivant (sans depasser sa sante maximale).</summary>
+        public void Heal(Villager v, double amount = Villager.MaxHealth)
+        {
+            if (v.IsDead) return;
+            v.Health = Math.Min(Villager.MaxHealth, v.Health + amount);
         }
 
         /// <summary>Signale un changement de case fait hors de la colonie (ex. barricade detruite par la horde).</summary>
@@ -287,8 +302,76 @@ namespace AfterCity.Core.Sim
 
         bool IsOccupied(GridPos p)
         {
-            foreach (var v in _villagers) if (v.Cell.Equals(p)) return true;
+            foreach (var v in _villagers) if (!v.Away && v.Cell.Equals(p)) return true;
             return false;
+        }
+
+        public bool HasBuilt(BuildingType type)
+        {
+            foreach (var b in _buildings) if (b.Built && b.Type == type) return true;
+            return false;
+        }
+
+        /// <summary>Survivants presents (pas en expedition).</summary>
+        public int PresentCount
+        {
+            get { int n = 0; foreach (var v in _villagers) if (!v.Away) n++; return n; }
+        }
+
+        /// <summary>Chances de reussite si on envoyait <paramref name="count"/> survivants maintenant.</summary>
+        public int PreviewChance(ExpeditionTarget target, int count) => Expedition.ComputeChance(target, PickMembers(count));
+
+        public bool CanSendExpedition(int count) =>
+            HasBuilt(BuildingType.ExpeditionPost) && count >= 1 && count <= Expedition.MaxMembers && PresentCount - count >= 1;
+
+        /// <summary>Envoie les survivants les plus en forme (on en garde toujours un a la ferme).</summary>
+        public Expedition SendExpedition(ExpeditionTarget target, int count)
+        {
+            if (!CanSendExpedition(count)) return null;
+            var members = PickMembers(count);
+            foreach (var m in members)
+            {
+                if (m.Job != null) Release(m.Job);
+                m.Path.Clear();
+                m.State = VillagerState.Idle;
+                m.Away = true;
+            }
+            var e = new Expedition(target, members);
+            _expeditions.Add(e);
+            return e;
+        }
+
+        List<Villager> PickMembers(int count)
+        {
+            var list = new List<Villager>();
+            foreach (var v in _villagers) if (!v.Away) list.Add(v);
+            list.Sort((a, b) => b.Health.CompareTo(a.Health));
+            if (list.Count > count) list.RemoveRange(count, list.Count - count);
+            return list;
+        }
+
+        void TickExpeditions(double dt)
+        {
+            for (int i = _expeditions.Count - 1; i >= 0; i--)
+            {
+                var e = _expeditions[i];
+                e.Remaining -= dt;
+                if (!e.Done) continue;
+                e.Resolve(Random);
+                foreach (var kv in e.Gains) Stock.Add(kv.Key, kv.Value);
+                int k = 0;
+                foreach (var m in e.Members)
+                {
+                    if (m.IsDead) continue;
+                    m.Health = Math.Max(10, m.Health - e.DamageTaken * (0.6 + 0.8 * Random.NextDouble()));
+                    m.Away = false;
+                    m.X = Home.X + 0.5 + (k % 2);
+                    m.Y = Home.Y + 0.5 + (k / 2);
+                    k++;
+                }
+                _expeditions.RemoveAt(i);
+                ExpeditionReturned?.Invoke(e);
+            }
         }
 
         public static double WorkDuration(JobType type)
@@ -319,11 +402,13 @@ namespace AfterCity.Core.Sim
                 SurvivorArrived?.Invoke(v);
             }
             _wasNight = night;
+            TickExpeditions(dt);
             foreach (var j in _jobs.Values)
                 if (j.BlockedFor > 0) j.BlockedFor -= dt;
 
             foreach (var v in _villagers)
             {
+                if (v.Away) continue;
                 switch (v.State)
                 {
                     case VillagerState.Idle: TryAssign(v); break;

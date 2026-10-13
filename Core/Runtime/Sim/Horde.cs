@@ -125,6 +125,7 @@ namespace AfterCity.Core.Sim
 
             // Les survivants au contact rendent les coups
             foreach (var v in _colony.Villagers)
+                if (!v.Away)
                 foreach (var z in _zombies)
                     if (Distance(v.X, v.Y, z.X, z.Y) < ContactRange)
                     {
@@ -187,6 +188,7 @@ namespace AfterCity.Core.Sim
             double best = double.MaxValue;
             foreach (var v in _colony.Villagers)
             {
+                if (v.Away) continue;
                 double d = Distance(v.X, v.Y, z.X, z.Y);
                 if (d < best) { best = d; prey = v; }
             }
