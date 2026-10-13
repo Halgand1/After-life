@@ -468,11 +468,11 @@ namespace AfterCity.Core.Sim
             return c;
         }
 
-        /// <summary>Roles dans l'ordre d'arrivee : les cinq du camion, puis les renforts.</summary>
+        /// <summary>Roles dans l'ordre d'arrivee (le meme que les modeles du jeu jusqu'ici) : les cinq du camion, puis les renforts.</summary>
         public static readonly SurvivorRole[] RoleOrder =
         {
-            SurvivorRole.Worker, SurvivorRole.Quarrier, SurvivorRole.Militiaman, SurvivorRole.Medic,
-            SurvivorRole.Tracker, SurvivorRole.Soldier, SurvivorRole.Cleaner
+            SurvivorRole.Worker, SurvivorRole.Quarrier, SurvivorRole.Militiaman, SurvivorRole.Tracker,
+            SurvivorRole.Medic, SurvivorRole.Cleaner, SurvivorRole.Soldier
         };
 
         public Villager AddVillager(GridPos cell) => AddVillager(cell, RoleOrder[_nextVillagerId % RoleOrder.Length]);
