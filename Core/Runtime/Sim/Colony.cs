@@ -48,6 +48,9 @@ namespace AfterCity.Core.Sim
         /// <summary>Direction du dernier deplacement (pour orienter le modele).</summary>
         public double FacingX { get; internal set; }
         public double FacingY { get; internal set; } = 1;
+        public double Health { get; internal set; } = MaxHealth;
+        public const double MaxHealth = 100;
+        public bool IsDead => Health <= 0;
 
         internal readonly Queue<GridPos> Path = new Queue<GridPos>();
 
@@ -68,6 +71,9 @@ namespace AfterCity.Core.Sim
     {
         public const double WalkSpeed = 1.6;   // cases par seconde (3,2 m/s)
         public const int BarricadeWoodCost = 2;
+        /// <summary>Duree d'une journee complete en secondes de jeu.</summary>
+        public const double DayLength = 240;
+        public const double StartHour = 8;
 
         static readonly string[] Names =
             { "Marc", "Lea", "Yanis", "Ines", "Hugo", "Nora", "Tom", "Sarah", "Malik", "Jade", "Paul", "Lina" };
@@ -79,6 +85,15 @@ namespace AfterCity.Core.Sim
         public IReadOnlyCollection<Job> Jobs => _jobs.Values;
         /// <summary>Temps de jeu ecoule en secondes.</summary>
         public double Time { get; private set; }
+
+        /// <summary>Heure du jour (0 a 24). La partie commence a 8 h.</summary>
+        public double Hour => (Time / DayLength * 24.0 + StartHour) % 24.0;
+        /// <summary>Numero du jour, a partir de 1.</summary>
+        public int Day => 1 + (int)((Time / DayLength * 24.0 + StartHour) / 24.0);
+        public bool IsNight => Hour >= 20.5 || Hour < 6.0;
+
+        /// <summary>Un survivant est mort (deja retire de la liste).</summary>
+        public event Action<Villager> VillagerDied;
 
         /// <summary>Une case a change (relief, decor ou mur) : l'affichage doit la redessiner.</summary>
         public event Action<GridPos> CellChanged;
@@ -114,6 +129,20 @@ namespace AfterCity.Core.Sim
             _villagers.Add(v);
             return v;
         }
+
+/// <summary>Blesse un survivant ; a 0 il meurt et quitte la colonie.</summary>
+        public void Hurt(Villager v, double damage)
+        {
+            if (v.IsDead) return;
+            v.Health -= damage;
+            if (!v.IsDead) return;
+            if (v.Job != null) Release(v.Job);
+            _villagers.Remove(v);
+            VillagerDied?.Invoke(v);
+        }
+
+        /// <summary>Signale un changement de case fait hors de la colonie (ex. barricade detruite par la horde).</summary>
+        public void NotifyCellChanged(GridPos p) => CellChanged?.Invoke(p);
 
         public Job JobAt(GridPos p) => _jobs.TryGetValue(p, out var j) ? j : null;
 
