@@ -99,6 +99,7 @@ namespace AfterCity.Game
             WorldBars();
             TopBar(w);
             Toolbar(w, h);
+            TutorialPanel(w, h);
             Survivors();
             MinimapPanel(h);
             float bottom = ExpeditionPanel(w);
@@ -154,54 +155,58 @@ namespace AfterCity.Game
             x += 140;
             int z = _game.Horde.Zombies.Count;
             if (z > 0) GUI.Label(new Rect(x, r.y, 140, r.height), $"<color=#ff7a66>Rodeurs <b>{z}</b></color>", _label);
-            else GUI.Label(new Rect(x, r.y, 160, r.height), $"<color=#9a9a96>Nuit {(_game.Horde.WavesSpawned + 1)} a 20h30</color>", _small);
+            else
+            {
+                double hours = (_game.Horde.NextHordeDay - _game.Day) * 24.0 + (20.5 - _game.Hour);
+                if (hours < 0) hours += 24;
+                int d = (int)(hours / 24), hh = (int)(hours % 24);
+                string when = d > 0 ? $"{d} j {hh} h" : $"{hh} h {(int)((hours - (int)hours) * 60):00}";
+                string col = hours < 6 ? "#ff9a7a" : "#c8c8b8";
+                GUI.Label(new Rect(x, r.y, 220, r.height), $"<color={col}>Horde dans <b>{when}</b></color>", _label);
+            }
         }
 
         void Toolbar(float w, float h)
         {
-            var tools = OrderTool.Tools;
-            float bw = 96, bh = 78, gap = 5;
-            var builds = OrderTool.Buildings;
-            int count = tools.Length + builds.Length;
-            float total = count * (bw + gap) - gap + 28 + 16;
-            var r = Panel(new Rect(w / 2 - total / 2, h - bh - 40, total, bh + 26));
-            for (int i = 0; i < tools.Length; i++)
+            var cats = OrderTool.Categories;
+            float bw = 112, bh = 74, gap = 6, tabH = 30;
+            var items = cats[_tool.Category].items;
+            float total = Mathf.Max(6, items.Length) * (bw + gap) - gap + 28;
+            var r = Panel(new Rect(w / 2 - total / 2, h - bh - tabH - 44, total, bh + tabH + 30));
+
+            // Onglets de categories (Tab pour passer au suivant)
+            float tw = (total - 28 - gap * (cats.Length - 1)) / cats.Length;
+            for (int i = 0; i < cats.Length; i++)
             {
-                var t = tools[i];
-                var br = new Rect(r.x + 14 + i * (bw + gap), r.y + 12, bw, bh);
-                bool on = _tool.Current == t;
-                bool locked = t == JobType.Asphalt && !_game.Colony.HasTech(TechType.Asphalt);
-                GUI.enabled = !locked;
-                string key = i < 7 ? (i + 1).ToString() : " ";
-                string label = locked ? "Asphalte\n<size=11><color=#f0b49c>recherche a l'atelier</color></size>" : OrderTool.ToolName(t);
-                if (GUI.Button(br, $"<size=12><color=#9a9a96>{key}</color></size>\n{label}", on ? _buttonOn : _button))
-                    _tool.Current = on ? (JobType?)null : t;
-                GUI.enabled = true;
-                GUI.color = OrderTool.ToolColor(t);
-                GUI.DrawTexture(new Rect(br.x + 10, br.y + 8, bw - 20, 5), _white);
-                GUI.color = Color.white;
-            }
-            for (int i = 0; i < builds.Length; i++)
-            {
-                var b = builds[i];
-                var br = new Rect(r.x + 14 + 16 + (tools.Length + i) * (bw + gap), r.y + 12, bw, bh);
-                bool on = _tool.CurrentBuilding == b;
-                var req = BuildingSpec.Of(b).Requires;
-                bool bLocked = !_game.Colony.IsUnlocked(b);
-                GUI.enabled = !bLocked;
-                if (bLocked)
+                var tr = new Rect(r.x + 14 + i * (tw + gap), r.y + 10, tw, tabH);
+                if (GUI.Button(tr, $"<b>{cats[i].name}</b>", _tool.Category == i ? _buttonOn : _button))
                 {
-                    GUI.Button(br, $"<size=12> </size>\n{BuildingSpec.Of(b).Name}\n<size=11><color=#f0b49c>requiert : {BuildingSpec.Of(req.Value).Name}</color></size>", _button);
-                    GUI.enabled = true;
-                    GUI.color = new Color(0.55f, 0.75f, 0.95f, 0.4f);
-                    GUI.DrawTexture(new Rect(br.x + 10, br.y + 8, bw - 20, 5), _white);
-                    GUI.color = Color.white;
-                    continue;
+                    _tool.Category = i;
+                    _tool.Current = null;
+                    _tool.CurrentBuilding = null;
                 }
+            }
+
+            for (int i = 0; i < items.Length; i++)
+            {
+                var it = items[i];
+                var br = new Rect(r.x + 14 + i * (bw + gap), r.y + 16 + tabH, bw, bh);
+                bool on = _tool.IsSelected(it);
+                bool available = _tool.IsAvailable(it);
+                string name = it.Job.HasValue ? OrderTool.ToolName(it.Job.Value) : OrderTool.BuildingLabel(it.Building.Value);
+                string lockText = "";
+                if (!available)
+                {
+                    if (it.Building.HasValue) lockText = $"\n<size=11><color=#f0b49c>requiert : {BuildingSpec.Of(BuildingSpec.Of(it.Building.Value).Requires.Value).Name}</color></size>";
+                    else lockText = "\n<size=11><color=#f0b49c>recherche a l'atelier</color></size>";
+                    name = it.Building.HasValue ? BuildingSpec.Of(it.Building.Value).Name : "Asphalte";
+                }
+                GUI.enabled = available;
+                if (GUI.Button(br, $"<size=12><color=#9a9a96>{i + 1}</color></size>\n{name}{lockText}", on ? _buttonOn : _button))
+                    _tool.Toggle(it);
                 GUI.enabled = true;
-                if (GUI.Button(br, $"<size=12><color=#9a9a96>{(i < 3 ? new[] { "8", "9", "0" }[i] : " ")}</color></size>\n{OrderTool.BuildingLabel(b)}", on ? _buttonOn : _button))
-                    _tool.CurrentBuilding = on ? (BuildingType?)null : b;
-                GUI.color = new Color(0.55f, 0.75f, 0.95f);
+                GUI.color = it.Job.HasValue ? OrderTool.ToolColor(it.Job.Value) : new Color(0.55f, 0.75f, 0.95f);
+                if (!available) GUI.color = new Color(GUI.color.r, GUI.color.g, GUI.color.b, 0.35f);
                 GUI.DrawTexture(new Rect(br.x + 10, br.y + 8, bw - 20, 5), _white);
                 GUI.color = Color.white;
             }
@@ -210,12 +215,11 @@ namespace AfterCity.Game
                 ? "Clic : poser le chantier (terrain plat et degage)    Clic droit : annuler    Echap : deselectionner"
                 : _tool.Current.HasValue
                 ? "Clic ou glisser : donner l'ordre    Clic droit : annuler    Echap : deselectionner"
-                : "Choisis un ordre (1 a 7) ou un batiment (8, 9, 0). Clic droit / glisser droit pour annuler.";
-            var hr = new Rect(r.x + 40, r.y - 34, r.width - 80, 28);
+                : "Tab : changer de categorie    1 a 6 : choisir    Clic droit / glisser droit : annuler des ordres";
+            var hr = new Rect(w / 2 - 330, r.y - 34, 660, 28);
             GUI.Box(hr, GUIContent.none, _panel);
             GUI.Label(hr, hint, hintStyle);
         }
-
         void Survivors()
         {
             var colony = _game.Colony;
@@ -350,6 +354,9 @@ namespace AfterCity.Game
                 case JobType.Barricade: return "barricader";
                 case JobType.Construct: return "construire";
                 case JobType.Road: return "tracer un chemin";
+                case JobType.Gather: return "ramasser des cailloux";
+                case JobType.Pick: return "cueillir";
+                case JobType.Search: return "fouiller";
                 case JobType.Asphalt: return "goudronner";
                 default: return t.ToString();
             }
@@ -405,25 +412,47 @@ namespace AfterCity.Game
 
         bool _welcomeClosed;
         public void CloseWelcome() => _welcomeClosed = true;
+        Tutorial _tutorial;
+
+        void TutorialPanel(float w, float h)
+        {
+            if (_tutorial == null) _tutorial = GetComponent<Tutorial>();
+            if (_tutorial == null || !_welcomeClosed) return;
+            var text = new GUIStyle(_small) { fontSize = 15, wordWrap = true, alignment = TextAnchor.UpperLeft, normal = { textColor = new Color(0.95f, 0.95f, 0.92f) } };
+            var rect = _tutorial.Draw(w, h - 290, _panel, _title, text, _button);
+            if (rect.HasValue) _uiRects.Add(rect.Value);
+        }
+
+        void CloseWelcomeAndStart()
+        {
+            _welcomeClosed = true;
+            if (_tutorial == null) _tutorial = GetComponent<Tutorial>();
+            _tutorial?.StartIfNeeded();
+        }
 
         void Welcome(float w, float h)
         {
-            if (Input.GetKeyDown(KeyCode.H)) _welcomeClosed = !_welcomeClosed;
+            if (Input.GetKeyDown(KeyCode.H) && Event.current.type == EventType.Layout) { if (_welcomeClosed) _welcomeClosed = false; else CloseWelcomeAndStart(); }
             if (_welcomeClosed) return;
-            if (Input.GetKeyDown(KeyCode.Return)) { _welcomeClosed = true; return; }
+            if (Input.GetKeyDown(KeyCode.Return)) { CloseWelcomeAndStart(); return; }
             var r = Panel(new Rect(w / 2 - 340, h / 2 - 180, 680, 340));
             GUI.Label(new Rect(r.x + 24, r.y + 16, 552, 34), "After City : premiers pas", _title);
             GUI.Label(new Rect(r.x + 24, r.y + 54, 632, 230),
-                "Tes 5 survivants viennent d'arriver a la ferme.\n" +
-                "1. Coupe du bois (touche 1, glisse sur la foret).\n" +
-                "2. Avant <b>20h30</b>, protege la ferme : barricades (6) ou douve de 2 niveaux (4, deux fois) ou les deux !\n" +
-                "3. La nuit, les rodeurs sortent de la foret. Ils cassent les barricades mais restent coinces dans les fosses.\n" +
-                "4. Nourris la colonie : chacun mange 1 vivre a l'aube, la ferme recolte 4 vivres a 18 h, un champ en ajoute 4.\n" +
-                "5. Grandis : abri (8, +1 survivant a l'aube) > poste d'expedition (0, fouiller la ville) > atelier (pieces, recherche de l'asphalte) > tour de guet.\n" +
-                "Astuce : <b>N</b> fait tomber la nuit tout de suite, <b>F2</b> compare les effets visuels, <b>H</b> rouvre cette aide.",
+                "Tes 5 survivants viennent d'arriver a la ferme. Tu as <b>deux nuits de calme</b> avant la premiere horde.\n" +
+                "1. <b>Recolte</b> : coupe du bois, ramasse des cailloux (4 = 1 pierre), cueille des baies, fouille les epaves.\n" +
+                "2. <b>Defense</b> : barricades, ou douve de 2 niveaux (Terrain > Creuser, deux fois) ou les rodeurs restent coinces.\n" +
+                "3. <b>Nourriture</b> : chacun mange 1 vivre a l'aube ; la ferme recolte 4 vivres a 18 h, un champ en ajoute 4.\n" +
+                "4. <b>Grandis</b> : abri (+1 survivant a l'aube) > poste d'expedition > atelier (pieces, asphalte) > tour de guet.\n" +
+                "<b>Tab</b> : categories, <b>1-6</b> : outils, <b>N</b> : nuit tout de suite, <b>F2</b> : effets, <b>M</b> : son, <b>H</b> : cette aide.",
                 new GUIStyle(_small) { fontSize = 16, wordWrap = true, alignment = TextAnchor.UpperLeft, normal = { textColor = new Color(0.92f, 0.92f, 0.9f) } });
             if (GUI.Button(new Rect(r.x + r.width / 2 - 70, r.y + r.height - 48, 140, 36), "C'est parti", _buttonOn))
+                CloseWelcomeAndStart();
+            if (Tutorial.AlreadyDone && GUI.Button(new Rect(r.xMax - 210, r.y + r.height - 48, 190, 36), "Rejouer le tutoriel", _button))
+            {
                 _welcomeClosed = true;
+                if (_tutorial == null) _tutorial = GetComponent<Tutorial>();
+                _tutorial?.StartIfNeeded(force: true);
+            }
         }
 
         Minimap _minimap;

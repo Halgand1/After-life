@@ -4,7 +4,7 @@ namespace AfterCity.Game
 {
     /// <summary>
     /// Sons provisoires generes par le code (pas de fichiers audio) : hache, marteau, pelle, grognements,
-    /// sirene de horde, vent le jour et grillons la nuit. Seront remplaces par de vrais sons plus tard.
+    /// sirene de horde, vent tres leger, oiseaux le jour et gemissements lointains la nuit (M : couper le son). Seront remplaces par de vrais sons plus tard.
     /// </summary>
     public sealed class GameAudio : MonoBehaviour
     {
@@ -16,11 +16,16 @@ namespace AfterCity.Game
         public AudioClip Groan { get; private set; }
         public AudioClip Horn { get; private set; }
         public AudioClip Fall { get; private set; }
+        public AudioClip Bird { get; private set; }
+
+        const float WindDay = 0.05f, WindNight = 0.035f;
+        float _ambientTimer = 2f;
+        bool _muted;
 
         const int Rate = 44100;
         AudioSource[] _pool;
         int _next;
-        AudioSource _wind, _crickets, _ui;
+        AudioSource _wind, _ui;
         GameRoot _game;
         System.Random _rng = new System.Random(7);
 
@@ -60,8 +65,15 @@ namespace AfterCity.Game
                 s.maxDistance = 140f;
                 _pool[i] = s;
             }
-            _wind = Loop("Wind", 6f, BrownNoise(6f, 0.02f), 0.18f);
-            _crickets = Loop("Crickets", 3f, CricketData(3f), 0f);
+            Bird = Make("Bird", 0.5f, (t, n) =>
+            {
+                // Trois petits gazouillis montants
+                float local = t % 0.16f;
+                if (t > 0.48f || local > 0.09f) return 0f;
+                float f = 2600f + local * 18000f;
+                return Mathf.Sin(t * 2 * Mathf.PI * f) * Mathf.Sin(local / 0.09f * Mathf.PI) * 0.5f;
+            });
+            _wind = Loop("Wind", 6f, BrownNoise(6f, 0.01f), WindDay);
             _ui = gameObject.AddComponent<AudioSource>();
             _ui.playOnAwake = false;
             _ui.spatialBlend = 0f;
@@ -102,19 +114,6 @@ namespace AfterCity.Game
             return d;
         }
 
-        static float[] CricketData(float seconds)
-        {
-            int n = (int)(seconds * Rate);
-            var d = new float[n];
-            for (int i = 0; i < n; i++)
-            {
-                float t = i / (float)Rate;
-                float chirp = (t % 0.6f) < 0.12f && ((t * 40f) % 1f) < 0.5f ? 1f : 0f;
-                d[i] = Mathf.Sin(t * 2 * Mathf.PI * 4400f) * chirp * 0.25f;
-            }
-            return d;
-        }
-
         AudioSource Loop(string name, float seconds, float[] data, float volume)
         {
             var clip = AudioClip.Create(name, data.Length, 1, Rate, false);
@@ -142,15 +141,40 @@ namespace AfterCity.Game
         /// <summary>Son d'interface (sans position).</summary>
         public void PlayUi(AudioClip clip, float volume = 1f)
         {
-            if (clip != null) _ui.PlayOneShot(clip, volume);
+            if (clip == null) return;
+            _ui.pitch = 1f;
+            _ui.PlayOneShot(clip, volume);
         }
 
         void Update()
         {
             if (_game == null) return;
+            if (Input.GetKeyDown(KeyCode.M))
+            {
+                _muted = !_muted;
+                AudioListener.volume = _muted ? 0f : 1f;
+                _game.Say(_muted ? "Son coupe (M pour le remettre)" : "Son active");
+            }
             bool night = _game.Colony.IsNight;
-            _crickets.volume = Mathf.MoveTowards(_crickets.volume, night ? 0.12f : 0f, Time.deltaTime * 0.05f);
-            _wind.volume = Mathf.MoveTowards(_wind.volume, night ? 0.10f : 0.18f, Time.deltaTime * 0.05f);
+            _wind.volume = Mathf.MoveTowards(_wind.volume, night ? WindNight : WindDay, Time.deltaTime * 0.02f);
+
+            // Ambiance : oiseaux le jour, gemissements lointains la nuit
+            _ambientTimer -= Time.deltaTime;
+            if (_ambientTimer <= 0)
+            {
+                if (night)
+                {
+                    _ui.pitch = 0.6f + (float)_rng.NextDouble() * 0.2f;
+                    _ui.PlayOneShot(Groan, 0.08f);
+                    _ambientTimer = 7f + (float)_rng.NextDouble() * 9f;
+                }
+                else
+                {
+                    _ui.pitch = 0.85f + (float)_rng.NextDouble() * 0.4f;
+                    _ui.PlayOneShot(Bird, 0.07f);
+                    _ambientTimer = 3f + (float)_rng.NextDouble() * 6f;
+                }
+            }
         }
     }
 }

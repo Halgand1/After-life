@@ -129,10 +129,10 @@ namespace AfterCity.EditorTools
             var tone = profile.Add<Tonemapping>(true);
             tone.mode.Override(TonemappingMode.ACES);
             var ca = profile.Add<ColorAdjustments>(true);
-            ca.postExposure.Override(0.35f);
-            ca.contrast.Override(10f);
-            ca.saturation.Override(-12f);
-            ca.colorFilter.Override(new Color(1f, 0.96f, 0.90f));
+            ca.postExposure.Override(0.25f);
+            ca.contrast.Override(14f);
+            ca.saturation.Override(-30f);
+            ca.colorFilter.Override(new Color(0.93f, 0.97f, 0.90f)); // gris-vert apocalyptique
             var smh = profile.Add<ShadowsMidtonesHighlights>(true);
             smh.shadows.Override(new Vector4(0.90f, 0.96f, 1.10f, 0f));
             smh.highlights.Override(new Vector4(1.05f, 1.0f, 0.93f, 0f));
@@ -141,7 +141,7 @@ namespace AfterCity.EditorTools
             bloom.threshold.Override(1.0f);
             bloom.scatter.Override(0.6f);
             var vig = profile.Add<Vignette>(true);
-            vig.intensity.Override(0.24f);
+            vig.intensity.Override(0.30f);
             vig.smoothness.Override(0.45f);
             var grain = profile.Add<FilmGrain>(true);
             grain.type.Override(FilmGrainLookup.Thin1);
@@ -186,8 +186,8 @@ namespace AfterCity.EditorTools
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.Linear;
             RenderSettings.fogColor = new Color(0.68f, 0.67f, 0.62f);
-            RenderSettings.fogStartDistance = 90f;
-            RenderSettings.fogEndDistance = 260f;
+            RenderSettings.fogStartDistance = 45f;
+            RenderSettings.fogEndDistance = 210f;
 
             var sun = new GameObject("Sun");
             var light = sun.AddComponent<Light>();

@@ -211,9 +211,15 @@ else:
     # Marche : petits sauts avec balancement gauche/droite, 0.66 s par cycle
     walk = make_action("ANIM_Villager_Walk", 21, [
         (1, 0.0, -6, 4), (6, 0.05, 0, 4), (11, 0.0, 6, 4), (16, 0.05, 0, 4), (21, 0.0, -6, 4)])
+    # Coup de pioche : on arme en se cambrant, on frappe vers l'avant et vers le bas (0,55 s)
+    mine = make_action("ANIM_Villager_Mine", 17, [
+        (1, 0.0, 0, -14), (7, 0.02, 0, -18), (10, -0.04, 0, 38), (13, -0.03, 0, 30), (17, 0.0, 0, -14)])
+    # Ramasser / cueillir : accroupi, penche en avant, petits gestes rapides
+    gather = make_action("ANIM_Villager_Gather", 13, [
+        (1, -0.14, -4, 34), (4, -0.16, 3, 40), (7, -0.14, -3, 34), (10, -0.16, 4, 40), (13, -0.14, -4, 34)])
 
 # Pistes NLA pour que l'export FBX garde chaque action comme clip separe
-for act in (idle, walk):
+for act in [idle, walk] + ([] if ZOMBIE else [mine, gather]):
     track = rig.animation_data.nla_tracks.new()
     track.name = act.name
     track.strips.new(act.name, 1, act)

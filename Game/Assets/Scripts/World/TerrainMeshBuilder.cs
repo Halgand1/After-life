@@ -212,7 +212,10 @@ namespace AfterCity.Game.World
                 {
                     case CellFeature.Tree: AddTree(md, c + jitter, Hash(x, y, 6)); break;
                     case CellFeature.Rock: AddRock(md, c + jitter, Hash(x, y, 7)); break;
-                    case CellFeature.Wreck: AddWreck(md, c, Hash(x, y, 9)); break;
+                    case CellFeature.Wreck: AddWreck(md, c, Hash(x, y, 9), false); break;
+                    case CellFeature.WreckSearched: AddWreck(md, c, Hash(x, y, 9), true); break;
+                    case CellFeature.Pebbles: AddPebbles(md, c, x, y); break;
+                    case CellFeature.Berries: AddBerryBush(md, c + jitter * 0.5f, Hash(x, y, 14)); break;
                     default:
                         if (biome == Biome.Marsh && r < 0.25f && !InFarm(map, p))
                             md.Box(c + jitter, new Vector3(0.12f, 0.6f + r, 0.12f), Lin(new Color(0.45f, 0.48f, 0.28f)));
@@ -228,8 +231,8 @@ namespace AfterCity.Game.World
         static void AddTree(MeshData md, Vector3 at, float r)
         {
             float kind = Hash((int)(at.x * 7f), (int)(at.z * 13f), 21);
-            if (kind < 0.22f) { AddRoundTree(md, at, r); return; }
-            if (kind < 0.30f) { AddDeadTree(md, at, r); return; }
+            if (kind < 0.20f) { AddRoundTree(md, at, r); return; }
+            if (kind < 0.36f) { AddDeadTree(md, at, r); return; }
             float s = 0.8f + r * 0.6f;
             md.Box(at, new Vector3(0.22f, 0.7f, 0.22f) * s, Lin(new Color(0.36f, 0.25f, 0.16f)));
             var leaf = Lin(Color.Lerp(new Color(0.20f, 0.36f, 0.20f), new Color(0.34f, 0.42f, 0.18f), r));
@@ -266,7 +269,15 @@ namespace AfterCity.Game.World
                 // Vieux pneu
                 md.Box(c + new Vector3(0.3f, 0, -0.2f), new Vector3(0.6f, 0.18f, 0.6f), Lin(new Color(0.12f, 0.12f, 0.12f)));
             }
-            else if (r < 0.442f)
+            else if (r < 0.46f)
+            {
+                // Bout de cloture casse
+                var wood = Lin(new Color(0.42f, 0.36f, 0.28f));
+                md.Box(c + new Vector3(-0.5f, 0, 0), new Vector3(0.1f, 0.7f, 0.1f), wood);
+                md.Box(c + new Vector3(0.4f, 0, 0.05f), new Vector3(0.1f, 0.45f, 0.1f), wood);
+                md.Box(c + new Vector3(-0.05f, 0.45f, 0), new Vector3(1.0f, 0.07f, 0.06f), wood);
+            }
+            else if (r < 0.47f)
             {
                 // Planches abandonnees
                 var plank = Lin(new Color(0.45f, 0.36f, 0.26f));
@@ -289,6 +300,33 @@ namespace AfterCity.Game.World
             md.Box(c + Vector3.up * 0.06f, new Vector3(0.14f, 0.12f, 0.8f), log);
             md.Cone(c + Vector3.up * 0.1f, 0.32f, 0.75f, 5, Emit(new Color(1f, 0.45f, 0.10f)), 0.3f);
             md.Cone(c + Vector3.up * 0.1f, 0.18f, 1.0f, 4, Emit(new Color(1f, 0.80f, 0.30f)), 1.1f);
+        }
+
+        /// <summary>Petit tas de cailloux a ramasser.</summary>
+        static void AddPebbles(MeshData md, Vector3 c, int x, int y)
+        {
+            for (int i = 0; i < 6; i++)
+            {
+                var o = new Vector3(Hash(x, y, 90 + i) - 0.5f, 0, Hash(x, y, 100 + i) - 0.5f) * 1.2f;
+                float s = 0.12f + Hash(x, y, 110 + i) * 0.14f;
+                var col = Lin(new Color(0.58f, 0.57f, 0.54f) * (0.8f + Hash(x, y, 120 + i) * 0.35f));
+                md.Cone(c + o, s, s * 0.9f, 4, col, i * 1.3f);
+            }
+        }
+
+        /// <summary>Buisson de baies : boule de feuillage sombre et baies rouges.</summary>
+        static void AddBerryBush(MeshData md, Vector3 c, float r)
+        {
+            var leaf = Lin(new Color(0.22f, 0.34f, 0.20f));
+            md.Cone(c + Vector3.up * 0.35f, 0.6f, 0.45f, 6, leaf, r * 4f);
+            md.Cone(c + Vector3.up * 0.35f, 0.6f, -0.35f, 6, leaf * 0.85f, r * 4f);
+            var berry = Lin(new Color(0.75f, 0.12f, 0.15f));
+            for (int i = 0; i < 7; i++)
+            {
+                float a = i * 0.9f + r * 6f;
+                var o = new Vector3(Mathf.Cos(a) * 0.45f, 0.3f + (i % 3) * 0.12f, Mathf.Sin(a) * 0.45f);
+                md.Box(c + o, new Vector3(0.09f, 0.09f, 0.09f), berry);
+            }
         }
 
         static void AddRoundTree(MeshData md, Vector3 at, float r)
@@ -427,8 +465,13 @@ namespace AfterCity.Game.World
             md.Box(at + new Vector3(0, 1.05f, 0.2f), new Vector3(2.0f, 0.18f, 0.12f), dark);
         }
 
-        static void AddWreck(MeshData md, Vector3 at, float r)
+        static void AddWreck(MeshData md, Vector3 at, float r, bool searched)
         {
+            if (searched)
+            {
+                // Portiere arrachee posee au sol : on voit qu'elle a ete fouillee
+                md.Box(at + new Vector3(0.9f, 0, 0.6f), new Vector3(0.5f, 0.06f, 0.8f), Lin(new Color(0.40f, 0.26f, 0.18f)));
+            }
             // Carcasse de voiture rouillee, posee de travers
             var paint = Lin(Color.Lerp(new Color(0.45f, 0.30f, 0.22f), new Color(0.35f, 0.40f, 0.45f), r));
             var rust = Lin(new Color(0.40f, 0.24f, 0.14f));

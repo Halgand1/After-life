@@ -13,8 +13,36 @@ namespace AfterCity.Game
     /// </summary>
     public sealed class OrderTool : MonoBehaviour
     {
-        public static readonly JobType[] Tools =
-            { JobType.Chop, JobType.Mine, JobType.Salvage, JobType.Dig, JobType.Raise, JobType.Barricade, JobType.Road, JobType.Asphalt };
+        /// <summary>Un bouton de la barre : un ordre ou un batiment.</summary>
+        public readonly struct ToolItem
+        {
+            public readonly JobType? Job;
+            public readonly BuildingType? Building;
+            public ToolItem(JobType job) { Job = job; Building = null; }
+            public ToolItem(BuildingType b) { Job = null; Building = b; }
+        }
+
+        /// <summary>Barre d'outils par categories, comme dans K&amp;C.</summary>
+        public static readonly (string name, ToolItem[] items)[] Categories =
+        {
+            ("Recolte", new[] { new ToolItem(JobType.Chop), new ToolItem(JobType.Mine), new ToolItem(JobType.Gather),
+                                new ToolItem(JobType.Pick), new ToolItem(JobType.Search), new ToolItem(JobType.Salvage) }),
+            ("Terrain", new[] { new ToolItem(JobType.Dig), new ToolItem(JobType.Raise), new ToolItem(JobType.Road), new ToolItem(JobType.Asphalt) }),
+            ("Defense", new[] { new ToolItem(JobType.Barricade), new ToolItem(BuildingType.Watchtower) }),
+            ("Batiments", new[] { new ToolItem(BuildingType.Shelter), new ToolItem(BuildingType.Field),
+                                  new ToolItem(BuildingType.ExpeditionPost), new ToolItem(BuildingType.Workshop) }),
+        };
+
+        public int Category { get; set; }
+
+        public bool IsSelected(ToolItem it) =>
+            it.Job.HasValue ? Current == it.Job : CurrentBuilding == it.Building;
+
+        public void Toggle(ToolItem it)
+        {
+            if (IsSelected(it)) { Current = null; CurrentBuilding = null; return; }
+            if (it.Job.HasValue) Current = it.Job; else CurrentBuilding = it.Building;
+        }
 
         public static readonly BuildingType[] Buildings = { BuildingType.Shelter, BuildingType.Watchtower, BuildingType.ExpeditionPost, BuildingType.Workshop, BuildingType.Field };
 
@@ -33,6 +61,14 @@ namespace AfterCity.Game
         {
             get => _building;
             set { _building = value; if (value.HasValue) _current = null; }
+        }
+
+        /// <summary>Le bouton est-il utilisable (technologie et batiments requis) ?</summary>
+        public bool IsAvailable(ToolItem it)
+        {
+            var c = _game.Colony;
+            if (it.Building.HasValue) return c.IsUnlocked(it.Building.Value);
+            return it.Job != JobType.Asphalt || c.HasTech(TechType.Asphalt);
         }
 
         public static string BuildingLabel(BuildingType t)
@@ -79,6 +115,9 @@ namespace AfterCity.Game
                 case JobType.Barricade: return new Color(0.90f, 0.35f, 0.25f);
                 case JobType.Construct: return new Color(0.55f, 0.75f, 0.95f);
                 case JobType.Road: return new Color(0.85f, 0.75f, 0.60f);
+                case JobType.Gather: return new Color(0.75f, 0.75f, 0.70f);
+                case JobType.Pick: return new Color(0.90f, 0.30f, 0.35f);
+                case JobType.Search: return new Color(0.95f, 0.85f, 0.35f);
                 case JobType.Asphalt: return new Color(0.55f, 0.55f, 0.60f);
                 default: return Color.white;
             }
@@ -90,12 +129,15 @@ namespace AfterCity.Game
             {
                 case JobType.Chop: return "Couper du bois";
                 case JobType.Mine: return "Tailler la pierre";
-                case JobType.Salvage: return "Demonter une epave";
+                case JobType.Salvage: return "Demonter une epave (pieces)";
                 case JobType.Dig: return "Creuser (douve, piege)";
                 case JobType.Raise: return "Remblayer";
                 case JobType.Barricade: return "Barricade (2 bois)";
                 case JobType.Construct: return "Construire";
                 case JobType.Road: return "Chemin de terre";
+                case JobType.Gather: return "Ramasser des cailloux";
+                case JobType.Pick: return "Cueillir des baies";
+                case JobType.Search: return "Fouiller une epave";
                 case JobType.Asphalt: return "Asphalte (1 pierre)";
                 default: return t.ToString();
             }
@@ -110,14 +152,11 @@ namespace AfterCity.Game
         void Update()
         {
             if (_hud == null) _hud = GetComponent<Hud>();
-            for (int i = 0; i < Tools.Length && i < 7; i++)
+            if (Input.GetKeyDown(KeyCode.Tab)) { Category = (Category + 1) % Categories.Length; Current = null; CurrentBuilding = null; }
+            var items = Categories[Category].items;
+            for (int i = 0; i < items.Length; i++)
                 if (Input.GetKeyDown(KeyCode.Alpha1 + i) || Input.GetKeyDown(KeyCode.Keypad1 + i))
-                    Current = Current == Tools[i] ? (JobType?)null : Tools[i];
-            KeyCode[] buildKeys = { KeyCode.Alpha8, KeyCode.Alpha9, KeyCode.Alpha0 };
-            KeyCode[] buildPad = { KeyCode.Keypad8, KeyCode.Keypad9, KeyCode.Keypad0 };
-            for (int i = 0; i < buildKeys.Length; i++)
-                if (Input.GetKeyDown(buildKeys[i]) || Input.GetKeyDown(buildPad[i]))
-                    CurrentBuilding = CurrentBuilding == Buildings[i] ? (BuildingType?)null : Buildings[i];
+                    if (IsAvailable(items[i])) Toggle(items[i]);
             if (Input.GetKeyDown(KeyCode.Escape)) { Current = null; CurrentBuilding = null; _dragStart = null; }
 
             var cam = Camera.main;

@@ -58,6 +58,14 @@ namespace AfterCity.Game.Phase0
                 if (Math.Max(Math.Abs(dx), Math.Abs(dy)) != r) continue;
                 if (colony.Order(JobType.Chop, new GridPos(farm.X + dx, farm.Y + dy))) trees++;
             }
+            int gathered = 0, picked = 0;
+            for (int dy = -8; dy <= 8; dy++)
+            for (int dx = -8; dx <= 8; dx++)
+            {
+                var p = new GridPos(farm.X + dx, farm.Y + dy);
+                if (gathered < 3 && colony.Order(JobType.Gather, p)) gathered++;
+                else if (picked < 2 && colony.Order(JobType.Pick, p)) picked++;
+            }
             for (int x = -2; x <= 2; x++)
                 colony.Order(JobType.Dig, new GridPos(farm.X + x, farm.Y - 7));
             for (int x = -2; x <= 2; x++)
@@ -79,6 +87,8 @@ namespace AfterCity.Game.Phase0
             game.Speed = 2;
             var hud = game.GetComponent<Hud>();
             if (hud != null) hud.CloseWelcome();
+            var tuto = game.GetComponent<Tutorial>();
+            if (tuto != null) tuto.Disable();
         }
 
         /// <summary>Test d'endurance : ordres de demo, vitesse x3, journal d'etat toutes les 10 s, puis on quitte.</summary>

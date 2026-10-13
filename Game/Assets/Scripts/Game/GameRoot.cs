@@ -77,7 +77,7 @@ namespace AfterCity.Game
             Colony.Salvaged += (p, loot) => Say("Epave demontee :" + Describe(loot));
             Colony.SurvivorArrived += v =>
             {
-                _villagerViews[v] = VillagerView.Create(v, villagerPrefab, Map.Grid, transform);
+                _villagerViews[v] = VillagerView.Create(v, villagerPrefab, Map.Grid, transform, terrainMaterial);
                 Say($"{v.Name} a trouve la colonie et rejoint les survivants !");
             };
             Horde.WaveStarted += n =>
@@ -87,7 +87,7 @@ namespace AfterCity.Game
             };
 
             foreach (var v in Colony.Villagers)
-                _villagerViews[v] = VillagerView.Create(v, villagerPrefab, Map.Grid, transform);
+                _villagerViews[v] = VillagerView.Create(v, villagerPrefab, Map.Grid, transform, terrainMaterial);
             _zombieRoot = new GameObject("Horde").transform;
             _zombieRoot.SetParent(transform, false);
 
@@ -101,6 +101,7 @@ namespace AfterCity.Game
             gameObject.AddComponent<OrderTool>().Init(this);
             gameObject.AddComponent<Minimap>().Init(this);
             gameObject.AddComponent<NightLights>().Init(this);
+            gameObject.AddComponent<Tutorial>().Init(this);
             gameObject.AddComponent<Hud>().Init(this);
             Debug.Log($"[AfterCity] Carte {width}x{height} graine {seed}, ferme en {Map.FarmCenter}, {Colony.Villagers.Count} survivants");
         }
@@ -205,15 +206,16 @@ namespace AfterCity.Game
             float elevation = isDay ? Mathf.Sin(dayT * Mathf.PI) * 60f + 8f : 35f;
             float azimuth = isDay ? Mathf.Lerp(-100f, 100f, dayT) : 140f;
             sun.transform.rotation = Quaternion.Euler(elevation, azimuth, 0);
-            var dayCol = Color.Lerp(new Color(1f, 0.62f, 0.38f), new Color(1f, 0.94f, 0.82f), Mathf.Sin(dayT * Mathf.PI));
-            var nightCol = new Color(0.45f, 0.55f, 0.85f);
+            // Ciel couvert : soleil voile, gris chaud ; nuits sombres et bleutees
+            var dayCol = Color.Lerp(new Color(0.95f, 0.66f, 0.45f), new Color(0.93f, 0.92f, 0.86f), Mathf.Sin(dayT * Mathf.PI));
+            var nightCol = new Color(0.40f, 0.48f, 0.72f);
             float k = isDay ? Mathf.Clamp01(Mathf.Min(h - 6f, 20f - h) / 1.0f) : 0f;
             sun.color = Color.Lerp(nightCol, dayCol, k);
-            sun.intensity = Mathf.Lerp(0.35f, 1.25f, k);
-            RenderSettings.ambientIntensity = Mathf.Lerp(0.55f, 1f, k);
-            Shader.SetGlobalColor(AmbientSkyId, Color.Lerp(new Color(0.30f, 0.36f, 0.55f), new Color(0.75f, 0.80f, 0.85f), k));
-            Shader.SetGlobalColor(AmbientGroundId, Color.Lerp(new Color(0.20f, 0.20f, 0.28f), new Color(0.55f, 0.52f, 0.48f), k));
-            var fog = Color.Lerp(new Color(0.16f, 0.18f, 0.24f), new Color(0.68f, 0.67f, 0.62f), k);
+            sun.intensity = Mathf.Lerp(0.16f, 1.05f, k);
+            RenderSettings.ambientIntensity = Mathf.Lerp(0.30f, 1f, k);
+            Shader.SetGlobalColor(AmbientSkyId, Color.Lerp(new Color(0.14f, 0.17f, 0.27f), new Color(0.72f, 0.75f, 0.74f), k));
+            Shader.SetGlobalColor(AmbientGroundId, Color.Lerp(new Color(0.09f, 0.09f, 0.13f), new Color(0.50f, 0.49f, 0.45f), k));
+            var fog = Color.Lerp(new Color(0.07f, 0.08f, 0.11f), new Color(0.58f, 0.60f, 0.56f), k);
             RenderSettings.fogColor = fog;
             if (Camera.main != null) Camera.main.backgroundColor = fog;
         }

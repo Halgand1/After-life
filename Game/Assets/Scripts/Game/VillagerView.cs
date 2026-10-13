@@ -10,6 +10,12 @@ namespace AfterCity.Game
     {
         const string IdleState = "ANIM_Villager_Idle";
         const string WalkState = "ANIM_Villager_Walk";
+        const string MineState = "ANIM_Villager_Mine";
+        const string GatherState = "ANIM_Villager_Gather";
+
+        Transform _tool;
+        MeshFilter _toolMesh;
+        ToolProps.Kind _toolKind;
 
         public Villager Villager { get; private set; }
 
@@ -19,7 +25,7 @@ namespace AfterCity.Game
         float _y;
         Transform _model;
 
-        public static VillagerView Create(Villager v, GameObject prefab, WorldGrid grid, Transform parent)
+        public static VillagerView Create(Villager v, GameObject prefab, WorldGrid grid, Transform parent, Material terrainMaterial = null)
         {
             var root = new GameObject($"Survivor_{v.Id}_{v.Name}");
             root.transform.SetParent(parent, false);
@@ -35,6 +41,7 @@ namespace AfterCity.Game
                 model.transform.localScale = Vector3.one * 1.3f; // lisible de loin, garde le gabarit K&C
                 Tint(model, Palette[v.Id % Palette.Length]);
                 view._animator = model.GetComponentInChildren<Animator>();
+                view.CreateTool(model.transform, terrainMaterial);
             }
             view._y = TerrainMeshBuilder.TopY(grid.GetLevel(v.Cell));
             view.Sync(1f);
@@ -96,15 +103,59 @@ namespace AfterCity.Game
             if (facing.sqrMagnitude > 0.01f)
                 transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(facing), Mathf.Clamp01(dt * 10f));
 
-            Play(v.State == VillagerState.Walking ? WalkState : IdleState);
+            string state = IdleState;
+            if (v.State == VillagerState.Walking) state = WalkState;
+            else if (v.State == VillagerState.Working && v.Job != null)
+            {
+                if (v.Job.Type == JobType.Mine) state = MineState;
+                else if (v.Job.Type == JobType.Gather || v.Job.Type == JobType.Pick || v.Job.Type == JobType.Search) state = GatherState;
+            }
+            Play(state);
+            UpdateTool(v);
             WorkSound(v, dt);
 
-            // Travail : petit mouvement de coups d'outil
+            // Travail : petit mouvement de coups d'outil (la pioche et la cueillette ont leur propre animation)
             if (_model != null)
             {
-                float swing = v.State == VillagerState.Working ? Mathf.Sin(Time.time * 9f) * 12f : 0f;
+                bool ownAnim = state == MineState || state == GatherState;
+                float swing = v.State == VillagerState.Working && !ownAnim ? Mathf.Sin(Time.time * 9f) * 12f : 0f;
                 _model.localRotation = Quaternion.Euler(Mathf.Max(0, swing), 0, 0);
             }
+        }
+
+        /// <summary>Outil en main, accroche a l'os du torse pour suivre l'animation.</summary>
+        void CreateTool(Transform model, Material material)
+        {
+            if (material == null) return;
+            Transform body = null;
+            foreach (var t in model.GetComponentsInChildren<Transform>())
+                if (t.name == "Body") { body = t; break; }
+            var go = new GameObject("Tool");
+            _tool = go.transform;
+            _tool.SetParent(model, false);
+            _tool.localPosition = new Vector3(0.24f, 0.40f, -0.06f);
+            _tool.localRotation = Quaternion.Euler(-30f, 0, 0);
+            if (body != null) _tool.SetParent(body, true);
+            _toolMesh = go.AddComponent<MeshFilter>();
+            go.AddComponent<MeshRenderer>().sharedMaterial = material;
+            go.SetActive(false);
+        }
+
+        void UpdateTool(Villager v)
+        {
+            if (_tool == null) return;
+            var kind = v.State == VillagerState.Working && v.Job != null ? ToolProps.For(v.Job.Type) : ToolProps.Kind.None;
+            if (kind != _toolKind)
+            {
+                _toolKind = kind;
+                _toolMesh.sharedMesh = ToolProps.MeshOf(kind);
+                _tool.gameObject.SetActive(kind != ToolProps.Kind.None);
+            }
+            if (kind == ToolProps.Kind.None) return;
+            // Coups d'outil : rythme de 0,55 s, synchronise avec le son
+            float phase = Mathf.Repeat(Time.time / 0.55f, 1f);
+            float swing = kind == ToolProps.Kind.Pickaxe ? 0f : (phase < 0.6f ? Mathf.Lerp(-60f, 10f, phase / 0.6f) : Mathf.Lerp(10f, -60f, (phase - 0.6f) / 0.4f));
+            _tool.localRotation = Quaternion.Euler(swing - 30f, 0, 0);
         }
 
         float _soundTimer;
