@@ -46,7 +46,7 @@ namespace AfterCity.Game
                 case BuildingType.Tent: return "SM_Logement_Tente";
                 case BuildingType.Shelter: return "SM_Logement_Abri";
                 case BuildingType.Hostel: return "SM_Logement_Foyer";
-                case BuildingType.WoodHouse: return "SM_Logement_MaisonBois";
+                case BuildingType.WoodHouse: return "SM_Logement_MaisonBois3x3"; // 3 x 3, origine au centre
                 case BuildingType.BrickHouse: return "SM_Logement_MaisonBriques";
                 default: return null;
             }
@@ -96,7 +96,7 @@ namespace AfterCity.Game
                 if (t.name.StartsWith("SOCKET_Etagere_")) _cases.Add(t);
             _cases.Sort((x, y) => string.CompareOrdinal(x.name, y.name));
 
-            if (b.Type == BuildingType.WoodHouse) FitWoodHouse(cell);
+            if (b.Type == BuildingType.WoodHouse && prefab.name == "SM_Logement_MaisonBois") FitWoodHouse(cell); // ancien modele 2 x 3
             FaceShelfToCamera();
             _roofOff = !RoofsVisible();
             SetRoofs(!_roofOff);
