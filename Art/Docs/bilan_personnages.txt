@@ -7,6 +7,7 @@ Survivant_Medecin      hauteur 1.00 m  triangles LOD0/1/2 = 1400/674/296  equipe
 Survivant_Nettoyeur    hauteur 1.00 m  triangles LOD0/1/2 = 1268/608/262  equipement = 176  animations = Humain_Repos, Humain_Marche, Humain_Course, Humain_MarcheChargee, Humain_Frapper, Humain_RamasserCailloux, Humain_Piocher, Humain_Cueillir, Humain_Fouiller
 Rodeur                 hauteur 0.99 m  triangles LOD0/1/2 = 1280/614/266  equipement = 0  animations = Zombie_Repos, Zombie_Marche, Zombie_Attaque
 Coureur                hauteur 1.00 m  triangles LOD0/1/2 = 1308/632/274  equipement = 0  animations = Zombie_Repos, Zombie_Marche, Zombie_Attaque, Zombie_Course
-Cogneur                hauteur 1.15 m  triangles LOD0/1/2 = 1294/618/273  equipement = 0  animations = Zombie_Repos, Zombie_Marche, Zombie_Attaque
+Cogneur                hauteur 1.15 m  triangles LOD0/1/2 = 1294/618/271  equipement = 0  animations = Zombie_Repos, Zombie_Marche, Zombie_Attaque
 Grimpeur               hauteur 1.03 m  triangles LOD0/1/2 = 1296/626/280  equipement = 0  animations = Zombie_Repos, Zombie_Marche, Zombie_Attaque
 Brute                  hauteur 1.61 m  triangles LOD0/1/2 = 1268/602/264  equipement = 0  animations = Zombie_Repos, Zombie_Marche, Zombie_Attaque
+Pose de repos des SK_ : en T (bras a l'horizontale), animations identiques.

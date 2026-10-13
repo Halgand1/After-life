@@ -1466,7 +1466,12 @@ def preparer_nla(perso):
         tr.name = propre
         st = tr.strips.new(propre, int(act.frame_range[0]), act)
         st.name = propre
-        tr.mute = True
+        # Blender 4.4+ (actions à emplacements) : sans emplacement, la bande n'anime rien et
+        # l'export FBX sort sans animation
+        if getattr(act, "slots", None) and hasattr(st, "action_slot") and st.action_slot is None:
+            st.action_slot = act.slots[0]
+        # piste active : l'exporteur FBX ignore les pistes muettes (il coupe lui-même les autres
+        # bandes pendant qu'il cuit chaque prise) ; principal() les remet muettes après l'export
 
 
 # ---------------------------------------------------------------------------
