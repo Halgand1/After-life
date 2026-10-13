@@ -13,13 +13,31 @@ Conception : voir `/mnt/project-files/conception/` (document de conception, cahi
 | `Art/` | Fichiers Blender sources (à créer en phase 0). |
 | `Tools/` | Outils de build et scripts. |
 
-## Ce qui existe déjà (avant la phase 0)
+## Ce qui existe
 
-- `Core/Runtime/World` : grille à hauteurs (0 à 8) et biomes, génération de carte par graine avec ferme de départ, terraformage (creuser, remblayer, aplanir) avec gestion de la terre.
-- `Core/Runtime/Agents/FlowField.cs` : champ de flux des hordes, avec la règle « une marche de 2 niveaux arrête un rôdeur », les murs à casser et l'eau infranchissable.
-- `Core/Runtime/Sim` : stocks de ressources.
-- 20 tests automatisés, tous verts.
+- `Core/` (moteur, C# pur, testé) : carte générée par graine (relief, biomes, rivière, ferme), décor récoltable (arbres, rochers, épaves), terraformage, survivants avec recherche de chemin A*, ordres (couper, tailler, démonter, creuser, remblayer, barricader), construction (abri, tour de guet), cycle jour/nuit, hordes nocturnes de rôdeurs (champ de flux, barricades cassées, fosses de 2 niveaux qui piègent, défense au corps à corps, tirs des tours), arrivée de nouveaux survivants à l'aube.
+- `Game/` (Unity 6000.6, URP) : terrain en blocs par morceaux, survivants et zombies animés (modèles Blender), outil d'ordres façon K&C (clic ou glisser), HUD, SSAO et post-traitement (F2 pour comparer).
+- 42 tests automatisés, tous verts.
 
+## Jouer
+
+Lancer `Builds/Phase0/AfterCity.exe` (raccourci « After City (test) » sur le bureau). Pour reconstruire : `.\Tools\Unity\phase0.ps1` (crée/configure le projet, construit la scène, fait le build Windows et mesure les FPS).
+
+| Touche | Action |
+|---|---|
+| 1 à 6 | Ordres : couper, tailler, démonter, creuser, remblayer, barricade |
+| 7, 8 | Bâtiments : abri, tour de guet |
+| Clic / glisser | Donner l'ordre sur une case ou une zone |
+| Clic droit / glisser droit | Annuler des ordres |
+| WASD, flèches, bords d'écran | Déplacer la caméra |
+| Molette, Q / E | Zoom, rotation |
+| Espace, + / - | Pause, vitesse |
+| N | Passer à la nuit (la horde arrive à 20h30) |
+| F2 | Effets visuels on/off |
+
+## Modèles 3D
+
+`Tools/Blender/make_villager_test.py` génère les personnages (`villager` ou `zombie`) : `.blend` dans `Art/Characters`, `.fbx` dans `Game/Assets/Art/Characters`.
 ## Lancer les tests
 
 ```bash
