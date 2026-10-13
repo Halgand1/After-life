@@ -1,0 +1,41 @@
+# Unity (projet dans Game/)
+Game/[Ll]ibrary/
+Game/[Tt]emp/
+Game/[Oo]bj/
+Game/[Bb]uild/
+Game/[Bb]uilds/
+Game/[Ll]ogs/
+Game/[Uu]ser[Ss]ettings/
+Game/[Mm]emoryCaptures/
+Game/*.csproj
+Game/*.sln
+Game/*.user
+Game/*.pidb
+Game/*.booproj
+Game/*.svd
+Game/*.pdb
+Game/*.mdb
+Game/*.opendb
+Game/*.VC.db
+Game/.vs/
+Game/.vscode/
+Game/.idea/
+Game/crashlytics-buildid.txt
+Game/sysinfo.txt
+
+# .NET (moteur et tests)
+bin/
+obj/
+TestResults/
+
+# Blender
+*.blend1
+*.blend2
+
+# Système
+.DS_Store
+Thumbs.db
+
+# Builds joueur (hors dépôt)
+Builds/
+

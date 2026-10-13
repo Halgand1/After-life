@@ -1,0 +1,7 @@
+{
+  "name": "com.aftercity.core",
+  "version": "0.1.0",
+  "displayName": "After City Core",
+  "description": "Moteur After City : logique de jeu en C# pur (monde, terraformage, simulation, agents), sans dépendance à Unity.",
+  "unity": "6000.0"
+}

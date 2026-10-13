@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Placé hors du dossier Core pour que Unity n'importe pas bin/obj. Vérifie que le moteur compile pour Unity (netstandard2.1, C# 9) en dehors de l'éditeur. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <RootNamespace>AfterCity.Core</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../Core/Runtime/**/*.cs" />
+  </ItemGroup>
+</Project>
