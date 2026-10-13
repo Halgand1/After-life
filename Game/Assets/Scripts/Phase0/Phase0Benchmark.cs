@@ -30,6 +30,12 @@ namespace AfterCity.Game.Phase0
                 StartCoroutine(Soak(soakSeconds));
                 return;
             }
+            int shotArg = Array.IndexOf(args, "-aftercity-shot");
+            if (shotArg >= 0 && shotArg + 1 < args.Length)
+            {
+                StartCoroutine(FirstLaunchShot(args[shotArg + 1]));
+                return;
+            }
             int i = Array.IndexOf(args, "-aftercity-benchmark");
             if (i < 0) return;
             string dir = i + 1 < args.Length ? args[i + 1] : Application.persistentDataPath;
@@ -92,6 +98,18 @@ namespace AfterCity.Game.Phase0
                 }
                 yield return null;
             }
+            Application.Quit(0);
+        }
+
+        /// <summary>Capture du premier lancement tel que le joueur le voit (aide affichee), puis on quitte.</summary>
+        IEnumerator FirstLaunchShot(string path)
+        {
+            if (freeCamera != null) freeCamera.edgePan = false;
+            float t0 = Time.realtimeSinceStartup;
+            while (Time.realtimeSinceStartup - t0 < 3f) yield return null;
+            ScreenCapture.CaptureScreenshot(path);
+            yield return null;
+            yield return null;
             Application.Quit(0);
         }
 

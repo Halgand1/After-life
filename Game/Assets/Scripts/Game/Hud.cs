@@ -173,7 +173,7 @@ namespace AfterCity.Game
                 bool locked = t == JobType.Asphalt && !_game.Colony.HasTech(TechType.Asphalt);
                 GUI.enabled = !locked;
                 string key = i < 7 ? (i + 1).ToString() : " ";
-                string label = locked ? "Asphalte\n<size=11><color=#c08a7a>recherche a l'atelier</color></size>" : OrderTool.ToolName(t);
+                string label = locked ? "Asphalte\n<size=11><color=#f0b49c>recherche a l'atelier</color></size>" : OrderTool.ToolName(t);
                 if (GUI.Button(br, $"<size=12><color=#9a9a96>{key}</color></size>\n{label}", on ? _buttonOn : _button))
                     _tool.Current = on ? (JobType?)null : t;
                 GUI.enabled = true;
@@ -191,7 +191,7 @@ namespace AfterCity.Game
                 GUI.enabled = !bLocked;
                 if (bLocked)
                 {
-                    GUI.Button(br, $"<size=12> </size>\n{BuildingSpec.Of(b).Name}\n<size=11><color=#c08a7a>requiert : {BuildingSpec.Of(req.Value).Name}</color></size>", _button);
+                    GUI.Button(br, $"<size=12> </size>\n{BuildingSpec.Of(b).Name}\n<size=11><color=#f0b49c>requiert : {BuildingSpec.Of(req.Value).Name}</color></size>", _button);
                     GUI.enabled = true;
                     GUI.color = new Color(0.55f, 0.75f, 0.95f, 0.4f);
                     GUI.DrawTexture(new Rect(br.x + 10, br.y + 8, bw - 20, 5), _white);
@@ -199,7 +199,7 @@ namespace AfterCity.Game
                     continue;
                 }
                 GUI.enabled = true;
-                if (GUI.Button(br, $"<size=12><color=#9a9a96>{(tools.Length + i + 1 <= 10 ? ((tools.Length + i + 1) % 10).ToString() : " ")}</color></size>\n{OrderTool.BuildingLabel(b)}", on ? _buttonOn : _button))
+                if (GUI.Button(br, $"<size=12><color=#9a9a96>{(i < 3 ? new[] { "8", "9", "0" }[i] : " ")}</color></size>\n{OrderTool.BuildingLabel(b)}", on ? _buttonOn : _button))
                     _tool.CurrentBuilding = on ? (BuildingType?)null : b;
                 GUI.color = new Color(0.55f, 0.75f, 0.95f);
                 GUI.DrawTexture(new Rect(br.x + 10, br.y + 8, bw - 20, 5), _white);
@@ -416,10 +416,10 @@ namespace AfterCity.Game
             GUI.Label(new Rect(r.x + 24, r.y + 54, 632, 230),
                 "Tes 5 survivants viennent d'arriver a la ferme.\n" +
                 "1. Coupe du bois (touche 1, glisse sur la foret).\n" +
-                "2. Avant <b>20h30</b>, protege la ferme : barricades (6), douve de 2 niveaux (4, deux fois) ou tour de guet (9).\n" +
+                "2. Avant <b>20h30</b>, protege la ferme : barricades (6) ou douve de 2 niveaux (4, deux fois) ou les deux !\n" +
+                "3. La nuit, les rodeurs sortent de la foret. Ils cassent les barricades mais restent coinces dans les fosses.\n" +
                 "4. Nourris la colonie : chacun mange 1 vivre a l'aube, la ferme recolte 4 vivres a 18 h, un champ en ajoute 4.\n" +
                 "5. Grandis : abri (8, +1 survivant a l'aube) > poste d'expedition (0, fouiller la ville) > atelier (pieces, recherche de l'asphalte) > tour de guet.\n" +
-                "3. La nuit, les rodeurs sortent de la foret. Ils cassent les barricades mais restent coinces dans les fosses.\n" +
                 "Astuce : <b>N</b> fait tomber la nuit tout de suite, <b>F2</b> compare les effets visuels, <b>H</b> rouvre cette aide.",
                 new GUIStyle(_small) { fontSize = 16, wordWrap = true, alignment = TextAnchor.UpperLeft, normal = { textColor = new Color(0.92f, 0.92f, 0.9f) } });
             if (GUI.Button(new Rect(r.x + r.width / 2 - 70, r.y + r.height - 48, 140, 36), "C'est parti", _buttonOn))
