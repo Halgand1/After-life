@@ -20,7 +20,8 @@ namespace AfterCity.Core.Sim
         Pick,       // cueillir des baies : vivres
         Search,     // fouiller une epave : petit butin rapide (sans la demonter)
         Asphalt,    // goudronner (technologie Asphalte, 1 pierre par case)
-        Construct   // chantier d'un batiment (donne par PlaceBuilding)
+        Construct,  // chantier d'un batiment (donne par PlaceBuilding)
+        Hunt        // chasser un animal (donne par OrderHunt) : vivres
     }
 
     public sealed class Job
@@ -30,6 +31,10 @@ namespace AfterCity.Core.Sim
         public Villager AssignedTo { get; internal set; }
         /// <summary>Batiment a construire (ordre Construct uniquement).</summary>
         public Building Building { get; internal set; }
+        /// <summary>Animal chasse (ordre Hunt uniquement).</summary>
+        public Animal Target { get; internal set; }
+        /// <summary>Case visee : celle de l'animal pour une chasse, sinon la case de l'ordre.</summary>
+        public GridPos TargetCell => Target != null ? Target.Cell : Cell;
         /// <summary>Temps (s) pendant lequel l'ordre est ignore apres un echec de chemin.</summary>
         internal double BlockedFor;
 
@@ -55,6 +60,7 @@ namespace AfterCity.Core.Sim
         /// <summary>Progression du travail en cours, de 0 a 1.</summary>
         public double WorkProgress { get; internal set; }
         internal double IdleTime;
+        internal double RepathIn;
         /// <summary>Direction du dernier deplacement (pour orienter le modele).</summary>
         public double FacingX { get; internal set; }
         public double FacingY { get; internal set; } = 1;
@@ -148,6 +154,21 @@ namespace AfterCity.Core.Sim
         /// <summary>Une expedition est rentree (resultat dans l'objet).</summary>
         public event Action<Expedition> ExpeditionReturned;
         public Rng Random { get; set; } = new Rng(0xC0105EED);
+        /// <summary>Cerfs et sangliers (null : pas de faune, par exemple dans les tests).</summary>
+        public Wildlife Wildlife { get; set; }
+        readonly List<Job> _hunts = new List<Job>();
+        public IReadOnlyList<Job> Hunts => _hunts;
+        /// <summary>Un chasseur a abattu un animal (animal, chasseur, vivres gagnes).</summary>
+        public event Action<Animal, Villager, int> Hunted;
+        /// <summary>Un chasseur a tire (chasseur, animal, touche ?).</summary>
+        public event Action<Villager, Animal, bool> Shot;
+
+        public const double ShootRange = 4.0;      // cases (8 m)
+        public const double AimTime = 1.2;         // secondes de visee par tir
+        public const double ShotHitChance = 0.55;
+        /// <summary>Un animal qui ne se mefie pas encore est plus facile a toucher.</summary>
+        public const double CalmHitBonus = 0.2;
+        public const double ShotDamage = 35;
         /// <summary>Une epave a ete demontee (case, pieces obtenues).</summary>
         public event Action<GridPos, Dictionary<ResourceType, int>> Salvaged;
         /// <summary>Un arbre vient d'etre abattu sur cette case.</summary>
@@ -406,6 +427,39 @@ namespace AfterCity.Core.Sim
             return true;
         }
 
+        public bool CanHunt(Animal a)
+        {
+            if (Wildlife == null || a == null || a.IsDead) return false;
+            foreach (var h in _hunts) if (h.Target == a) return false;
+            return true;
+        }
+
+        /// <summary>Envoie un survivant chasser cet animal (le plus proche des survivants libres).</summary>
+        public bool OrderHunt(Animal a)
+        {
+            if (!CanHunt(a)) return false;
+            _hunts.Add(new Job(JobType.Hunt, a.Cell) { Target = a });
+            return true;
+        }
+
+        public bool CancelHunt(Animal a)
+        {
+            for (int i = 0; i < _hunts.Count; i++)
+            {
+                if (_hunts[i].Target != a) continue;
+                Release(_hunts[i]);
+                _hunts.RemoveAt(i);
+                return true;
+            }
+            return false;
+        }
+
+        void EndHunt(Job hunt)
+        {
+            Release(hunt);
+            _hunts.Remove(hunt);
+        }
+
         int PendingCount(JobType type)
         {
             int n = 0;
@@ -553,6 +607,11 @@ namespace AfterCity.Core.Sim
             TickFood();
             foreach (var j in _jobs.Values)
                 if (j.BlockedFor > 0) j.BlockedFor -= dt;
+            for (int i = _hunts.Count - 1; i >= 0; i--)
+            {
+                if (_hunts[i].BlockedFor > 0) _hunts[i].BlockedFor -= dt;
+                if (_hunts[i].Target.IsDead) EndHunt(_hunts[i]);
+            }
 
             foreach (var v in _villagers)
             {
@@ -570,6 +629,7 @@ namespace AfterCity.Core.Sim
                     case VillagerState.Working: Work(v, dt); break;
                 }
             }
+            Wildlife?.Tick(dt, this);
         }
 
         void TryAssign(Villager v)
@@ -578,9 +638,11 @@ namespace AfterCity.Core.Sim
             var candidates = new List<Job>();
             foreach (var j in _jobs.Values)
                 if (j.AssignedTo == null && j.BlockedFor <= 0) candidates.Add(j);
+            foreach (var h in _hunts)
+                if (h.AssignedTo == null && h.BlockedFor <= 0 && !h.Target.IsDead) candidates.Add(h);
             if (candidates.Count == 0) return;
             var here = v.Cell;
-            candidates.Sort((a, b) => Dist(here, a.Cell).CompareTo(Dist(here, b.Cell)));
+            candidates.Sort((a, b) => Dist(here, a.TargetCell).CompareTo(Dist(here, b.TargetCell)));
 
             for (int k = 0; k < candidates.Count && k < 4; k++)
             {
@@ -597,6 +659,7 @@ namespace AfterCity.Core.Sim
                 foreach (var p in path) v.Path.Enqueue(p);
                 v.State = v.Path.Count > 0 ? VillagerState.Walking : VillagerState.Working;
                 v.WorkProgress = 0;
+                v.RepathIn = 1.5;
                 return;
             }
         }
@@ -624,6 +687,18 @@ namespace AfterCity.Core.Sim
         List<GridPos> WorkSpots(Job job)
         {
             var spots = new List<GridPos>(8);
+            if (job.Type == JobType.Hunt)
+            {
+                // Pres de l'animal : on s'arrete de toute facon des qu'il est a portee de tir
+                var t = job.TargetCell;
+                for (int y = -2; y <= 2; y++)
+                for (int x = -2; x <= 2; x++)
+                {
+                    var n = new GridPos(t.X + x, t.Y + y);
+                    if (Grid.InBounds(n) && Grid.GetBiome(n) != Biome.Water && !Grid.HasWall(n) && !Grid.HasStructure(n)) spots.Add(n);
+                }
+                return spots;
+            }
             if (job.Type == JobType.Construct && job.Building != null)
             {
                 // Autour de l'emprise du batiment
@@ -653,6 +728,7 @@ namespace AfterCity.Core.Sim
 
         void Walk(Villager v, double dt)
         {
+            if (v.Job != null && v.Job.Type == JobType.Hunt && !HuntWalk(v, dt)) return;
             double remaining = WalkSpeed * Roads.SpeedFactor(Grid.GetRoad(v.Cell)) * dt;
             while (remaining > 0 && v.Path.Count > 0)
             {
@@ -694,6 +770,7 @@ namespace AfterCity.Core.Sim
         void Work(Villager v, double dt)
         {
             var job = v.Job;
+            if (job != null && job.Type == JobType.Hunt) { HuntWork(v, dt); return; }
             if (job == null || !_jobs.ContainsKey(job.Cell)) { Abort(v); return; }
             v.WorkProgress += dt / JobDuration(job);
             if (v.WorkProgress < 1) return;
@@ -788,6 +865,74 @@ namespace AfterCity.Core.Sim
                 default:
                     return false;
             }
+        }
+
+        static double DistTo(Villager v, Animal a)
+        {
+            double dx = a.X - v.X, dy = a.Y - v.Y;
+            return Math.Sqrt(dx * dx + dy * dy);
+        }
+
+        void Face(Villager v, Animal a)
+        {
+            double fx = a.X - v.X, fy = a.Y - v.Y, fd = Math.Sqrt(fx * fx + fy * fy);
+            if (fd > 1e-6) { v.FacingX = fx / fd; v.FacingY = fy / fd; }
+        }
+
+        /// <summary>Approche d'un animal : on s'arrete a portee de tir, on recalcule le chemin s'il a bouge. Faux = ne plus marcher ce tour.</summary>
+        bool HuntWalk(Villager v, double dt)
+        {
+            var hunt = v.Job;
+            if (hunt.Target.IsDead) { EndHunt(hunt); return false; }
+            if (DistTo(v, hunt.Target) <= ShootRange)
+            {
+                v.Path.Clear();
+                v.State = VillagerState.Working;
+                v.WorkProgress = 0;
+                Face(v, hunt.Target);
+                return false;
+            }
+            v.RepathIn -= dt;
+            if (v.Path.Count == 0 || v.RepathIn <= 0)
+            {
+                v.RepathIn = 1.5;
+                // Recentrer sur la case avant de repartir (le chemin part du centre des cases)
+                v.X = v.Cell.X + 0.5;
+                v.Y = v.Cell.Y + 0.5;
+                var path = _pathfinder.FindPath(v.Cell, WorkSpots(hunt));
+                if (path == null) { hunt.BlockedFor = 5; Abort(v); return false; }
+                v.Path.Clear();
+                foreach (var p in path) v.Path.Enqueue(p);
+            }
+            return true;
+        }
+
+        /// <summary>Visee puis tir. Le cerf touche mais vivant s'enfuit, le sanglier charge.</summary>
+        void HuntWork(Villager v, double dt)
+        {
+            var hunt = v.Job;
+            var a = hunt.Target;
+            if (a.IsDead) { EndHunt(hunt); return; }
+            if (DistTo(v, a) > ShootRange + 1)
+            {
+                v.State = VillagerState.Walking;
+                v.WorkProgress = 0;
+                v.RepathIn = 0;
+                return;
+            }
+            Face(v, a);
+            v.WorkProgress += dt / AimTime;
+            if (v.WorkProgress < 1) return;
+            v.WorkProgress = 0;
+            double chance = ShotHitChance + (a.State == AnimalState.Idle || a.State == AnimalState.Walking ? CalmHitBonus : 0);
+            bool hit = Random.NextDouble() < chance;
+            Shot?.Invoke(v, a, hit);
+            if (!hit) { Wildlife?.Provoke(a, v); return; }
+            if (Wildlife == null || !Wildlife.Attack(a, v, ShotDamage)) return;
+            int food = a.Kind == AnimalKind.Deer ? AfterCity.Core.Sim.Wildlife.DeerMeat : AfterCity.Core.Sim.Wildlife.BoarMeat;
+            Stock.Add(ResourceType.Food, food);
+            Hunted?.Invoke(a, v, food);
+            EndHunt(hunt);
         }
 
         void Abort(Villager v)
