@@ -2,6 +2,7 @@ SM_Logement_Tente              emprise 1x1  hauteur 1.1 m  coque LOD0/1/2 = 192/
 SM_Logement_Abri               emprise 2x2  hauteur 2.0 m  coque LOD0/1/2 = 448/174/72 (budget 1300)  toit = 84/32/14 (budget 300)  couchages = 4  cases d'etagere = 6
 SM_Logement_Foyer              emprise 3x3  hauteur 3.1 m  coque LOD0/1/2 = 2236/918/384 (budget 3800)  toit = 112/48/18 (budget 400)  couchages = 10  cases d'etagere = 18
 SM_Logement_MaisonBois         emprise 2x3  hauteur 3.1 m  coque LOD0/1/2 = 1684/690/280 (budget 3000)  toit = 100/44/22 (budget 300)  couchages = 5  cases d'etagere = 12
+SM_Logement_MaisonBois3x3      emprise 3x3  hauteur 3.1 m  coque LOD0/1/2 = 3488/1568/566 (budget 3800)  toit = 100/42/20 (budget 300)  couchages = 5  cases d'etagere = 12
 SM_Logement_MaisonBriques      emprise 3x3  hauteur 3.8 m  coque LOD0/1/2 = 2176/900/370 (budget 3800)  toit = 84/34/14 (budget 400)  couchages = 6  cases d'etagere = 18
 SM_Interieur_Couchage          triangles LOD0/1/2 = 36/14/6  (budget 60)
 SM_Interieur_LitCamp           triangles LOD0/1/2 = 84/38/14  (budget 150)

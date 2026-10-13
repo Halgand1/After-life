@@ -1,6 +1,6 @@
 # Fiche 05 — Logements façon Kingdoms and Castles
 
-Référence : GDD v0.9 § 8.1 (demande de Sam : chaque logement montre son intérieur et une étagère de ressources). Conventions : [00_conventions.md](00_conventions.md). Script : `scripts/generer_logements.py`. Sorties : `sorties/SM_Logement_*`, `SM_Interieur_*`, `SM_Etagere_*`, `bilan_logements.txt`, aperçus `apercu_logements_coupe.png`, `apercu_logements.png`, `apercu_interieur.png`.
+Référence : GDD v0.9 § 8.1 (demande de Sam : chaque logement montre son intérieur et une étagère de ressources). Conventions : [00_conventions.md](00_conventions.md). Script : `scripts/generer_logements.py`. Sorties : `sorties/SM_Logement_*`, `SM_Interieur_*`, `SM_Etagere_*`, `bilan_logements.txt`, aperçus `apercu_logements_coupe.png`, `apercu_logements.png`, `apercu_interieur.png`, `apercu_maison_bois_3x3.png`.
 
 ## 1. Principe
 - Chaque FBX `SM_Logement_<Type>` contient la **coque meublée** (`SM_Logement_<Type>_LOD0/1/2` : sol, murs, couchages, étagères vides, poêle, table) et le **toit à part** (`SM_Logement_<Type>_Toit_LOD0/1/2`). Pour la vue en coupe, le jeu masque les objets dont le nom contient `_Toit_`. Les murs font un étage (1,6 m) : depuis la caméra du jeu, on voit tout l'intérieur sans toit, comme dans K&C.
@@ -8,12 +8,15 @@ Référence : GDD v0.9 § 8.1 (demande de Sam : chaque logement montre son inté
 - Autres accroches : `SOCKET_Porte`, `SOCKET_Couchage_NN` (un par place, pour l'animation de sommeil), `SOCKET_Lumiere_NN`, `SOCKET_Fumee` (poêle), `SOCKET_Travail_Poele` / `_Cuisine`.
 
 ## 2. Les cinq logements
+
+La grille du jeu n'a que des emprises carrées (Core : Tente 1 × 1, Abri 2 × 2, Foyer, Maison en bois et Maison en briques 3 × 3). Le jeu utilise donc `SM_Logement_MaisonBois3x3` ; la version 2 × 3 reste disponible. Mêmes accroches que la 2 × 3 (positions décalées de −1 m en X), plus `SOCKET_Travail_Billot` (devant le billot, tourné vers lui) pour l'animation de fendage.
 | Logement | Emprise | Places | Intérieur | Cases d'étagère | Murs | Toit |
 |---|---|---|---|---|---|---|
 | Tente | 1 × 1 | 2 | matelas double sur palettes, caisse, lanterne | 2 | — | toile beige + bâche bleue |
 | Abri | 2 × 2 | 4 | 4 sacs de couchage au sol, 1 étagère, caisse-tabouret | 6 | planches grises, tôles clouées | tôles dépareillées à une pente, bâche |
 | Foyer (dortoir) | 3 × 3 | 10 | 10 lits de camp, 3 étagères, poêle, grande table à bancs | 18 | planches grises | bardeaux, bâche, cheminée de poêle |
 | Maison en bois | 2 × 3 | 5 | séjour (poêle, table, 2 étagères) + chambre (lit double, 3 lits) | 12 | planches blanches | bardeaux |
+| Maison en bois 3 × 3 (`SM_Logement_MaisonBois3x3`) | 3 × 3 | 5 | la maison 2 × 3 ci-dessus, identique, décalée de 1 m vers −X ; sur la colonne libre (+X) : appentis-bûcher en tôles (bûches empilées, bouts coupés visibles), billot avec hache, bûches fendues, bidon de pluie | 12 | planches blanches (fenêtre arrière +X retirée, cachée par le bûcher) | bardeaux ; le toit de l'appentis reste dans la coque (dehors, il ne cache rien) |
 | Maison en briques | 3 × 3 | 6 | séjour‑cuisine (cuisinière, table 4 chaises, 3 étagères) + 2 chambres | 18 | briques et joints | bardeaux, cheminée en brique |
 
 Triangles (coque + toit) : voir `bilan_logements.txt` ; tous sous les budgets des bâtiments.
