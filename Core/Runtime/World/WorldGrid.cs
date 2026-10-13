@@ -18,6 +18,7 @@ namespace AfterCity.Core.World
         readonly bool[] _walls;
         readonly CellFeature[] _features;
         readonly byte[] _structures;
+        readonly RoadType[] _roads;
 
         public WorldGrid(int width, int height)
         {
@@ -29,6 +30,7 @@ namespace AfterCity.Core.World
             _walls = new bool[width * height];
             _features = new CellFeature[width * height];
             _structures = new byte[width * height];
+            _roads = new RoadType[width * height];
         }
 
         public bool InBounds(GridPos p) => p.X >= 0 && p.Y >= 0 && p.X < Width && p.Y < Height;
@@ -55,6 +57,9 @@ namespace AfterCity.Core.World
         public byte GetStructure(GridPos p) => _structures[Index(p)];
         public void SetStructure(GridPos p, byte value) => _structures[Index(p)] = value;
         public bool HasStructure(GridPos p) => _structures[Index(p)] != 0;
+
+        public RoadType GetRoad(GridPos p) => _roads[Index(p)];
+        public void SetRoad(GridPos p, RoadType road) => _roads[Index(p)] = road;
 
         /// <summary>
         /// Un marcheur peut-il passer de <paramref name="from"/> à <paramref name="to"/> ?

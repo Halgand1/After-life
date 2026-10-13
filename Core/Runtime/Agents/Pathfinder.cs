@@ -63,7 +63,8 @@ namespace AfterCity.Core.Agents
                     var n = c + d;
                     if (!_grid.InBounds(n) || !CanWalk(c, n)) continue;
                     int ni = n.Y * w + n.X;
-                    int tentative = _gScore[cur.index] + 10;
+                    // Les routes coutent moins cher : les survivants les empruntent d'eux-memes
+                    int tentative = _gScore[cur.index] + (int)Math.Round(10 / Roads.SpeedFactor(_grid.GetRoad(n)));
                     if (_stamp[ni] == _run && tentative >= _gScore[ni]) continue;
                     if (_stamp[ni] == _run) open.Remove((_gScore[ni] + Heuristic(n, goals), ni));
                     Touch(ni);
@@ -87,7 +88,7 @@ namespace AfterCity.Core.Agents
         {
             int best = int.MaxValue;
             foreach (var g in goals)
-                best = Math.Min(best, (Math.Abs(g.X - p.X) + Math.Abs(g.Y - p.Y)) * 10);
+                best = Math.Min(best, (Math.Abs(g.X - p.X) + Math.Abs(g.Y - p.Y)) * 5); // admissible meme sur asphalte
             return best;
         }
 

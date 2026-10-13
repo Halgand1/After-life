@@ -49,6 +49,8 @@ namespace AfterCity.Game.Phase0
                 colony.Order(JobType.Dig, new GridPos(farm.X + x, farm.Y - 7));
             for (int x = -2; x <= 2; x++)
                 colony.Order(JobType.Barricade, new GridPos(farm.X + x, farm.Y + 7));
+            for (int x = -4; x <= 4; x++)
+                colony.Order(JobType.Road, new GridPos(farm.X + x, farm.Y - 5));
             colony.Stock.Add(ResourceType.Wood, 20);
             colony.Stock.Add(ResourceType.Stone, 4);
             colony.PlaceBuilding(BuildingType.Shelter, new GridPos(farm.X - 3, farm.Y + 2));

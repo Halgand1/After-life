@@ -14,7 +14,7 @@ namespace AfterCity.Game
     public sealed class OrderTool : MonoBehaviour
     {
         public static readonly JobType[] Tools =
-            { JobType.Chop, JobType.Mine, JobType.Salvage, JobType.Dig, JobType.Raise, JobType.Barricade };
+            { JobType.Chop, JobType.Mine, JobType.Salvage, JobType.Dig, JobType.Raise, JobType.Barricade, JobType.Road };
 
         public static readonly BuildingType[] Buildings = { BuildingType.Shelter, BuildingType.Watchtower };
 
@@ -78,6 +78,7 @@ namespace AfterCity.Game
                 case JobType.Raise: return new Color(0.95f, 0.85f, 0.45f);
                 case JobType.Barricade: return new Color(0.90f, 0.35f, 0.25f);
                 case JobType.Construct: return new Color(0.55f, 0.75f, 0.95f);
+                case JobType.Road: return new Color(0.85f, 0.75f, 0.60f);
                 default: return Color.white;
             }
         }
@@ -93,6 +94,7 @@ namespace AfterCity.Game
                 case JobType.Raise: return "Remblayer";
                 case JobType.Barricade: return "Barricade (2 bois)";
                 case JobType.Construct: return "Construire";
+                case JobType.Road: return "Chemin de terre";
                 default: return t.ToString();
             }
         }
@@ -110,7 +112,7 @@ namespace AfterCity.Game
                 if (Input.GetKeyDown(KeyCode.Alpha1 + i) || Input.GetKeyDown(KeyCode.Keypad1 + i))
                     Current = Current == Tools[i] ? (JobType?)null : Tools[i];
             for (int i = 0; i < Buildings.Length; i++)
-                if (Input.GetKeyDown(KeyCode.Alpha7 + i) || Input.GetKeyDown(KeyCode.Keypad7 + i))
+                if (Input.GetKeyDown(KeyCode.Alpha8 + i) || Input.GetKeyDown(KeyCode.Keypad8 + i))
                     CurrentBuilding = CurrentBuilding == Buildings[i] ? (BuildingType?)null : Buildings[i];
             if (Input.GetKeyDown(KeyCode.Escape)) { Current = null; CurrentBuilding = null; _dragStart = null; }
 

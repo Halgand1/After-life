@@ -183,7 +183,7 @@ namespace AfterCity.Game
                 ? "Clic : poser le chantier (terrain plat et degage)    Clic droit : annuler    Echap : deselectionner"
                 : _tool.Current.HasValue
                 ? "Clic ou glisser : donner l'ordre    Clic droit : annuler    Echap : deselectionner"
-                : "Choisis un ordre (1 a 6) ou un batiment (7, 8). Clic droit / glisser droit pour annuler.";
+                : "Choisis un ordre (1 a 7) ou un batiment (8, 9). Clic droit / glisser droit pour annuler.";
             var hr = new Rect(r.x + 40, r.y - 34, r.width - 80, 28);
             GUI.Box(hr, GUIContent.none, _panel);
             GUI.Label(hr, hint, hintStyle);
@@ -225,6 +225,7 @@ namespace AfterCity.Game
                 case JobType.Raise: return "remblayer";
                 case JobType.Barricade: return "barricader";
                 case JobType.Construct: return "construire";
+                case JobType.Road: return "tracer un chemin";
                 default: return t.ToString();
             }
         }
@@ -288,8 +289,8 @@ namespace AfterCity.Game
             GUI.Label(new Rect(r.x + 24, r.y + 54, 592, 180),
                 "Tes 5 survivants viennent d'arriver a la ferme.\n" +
                 "1. Coupe du bois (touche 1, glisse sur la foret).\n" +
-                "2. Avant <b>20h30</b>, protege la ferme : barricades (6), douve de 2 niveaux (4, deux fois) ou tour de guet (8).\n" +
-                "Un abri (7) fait venir un nouveau survivant a chaque aube.\n" +
+                "2. Avant <b>20h30</b>, protege la ferme : barricades (6), douve de 2 niveaux (4, deux fois) ou tour de guet (9).\n" +
+                "Chemins de terre (7) : +50 % de vitesse. Un abri (8) fait venir un nouveau survivant a chaque aube.\n" +
                 "3. La nuit, les rodeurs sortent de la foret. Ils cassent les barricades mais restent coinces dans les fosses.\n" +
                 "Astuce : <b>N</b> fait tomber la nuit tout de suite, <b>F2</b> compare les effets visuels.",
                 new GUIStyle(_small) { fontSize = 16, wordWrap = true, alignment = TextAnchor.UpperLeft, normal = { textColor = new Color(0.92f, 0.92f, 0.9f) } });

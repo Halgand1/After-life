@@ -168,5 +168,22 @@ namespace AfterCity.Core.Tests
             Run(c, 30);
             Assert.That(c.Stock.Get(ResourceType.Wood), Is.EqualTo(18));
         }
+
+        [Test]
+        public void DirtRoadsAreFasterAndPreferred()
+        {
+            var g = Flat(20);
+            var c = new Colony(g);
+            var v = c.AddVillager(new GridPos(1, 1));
+            for (int x = 2; x < 6; x++) Assert.That(c.Order(JobType.Road, new GridPos(x, 1)), Is.True);
+            Run(c, 20);
+            for (int x = 2; x < 6; x++) Assert.That(g.GetRoad(new GridPos(x, 1)), Is.EqualTo(RoadType.Dirt));
+
+            // Un detour par la route est prefere a un chemin a peine plus court dans l'herbe
+            for (int x = 6; x < 15; x++) g.SetRoad(new GridPos(x, 1), RoadType.Dirt);
+            var path = new AfterCity.Core.Agents.Pathfinder(g).FindPath(new GridPos(2, 2), new[] { new GridPos(14, 2) });
+            Assert.That(path, Has.Member(new GridPos(8, 1)));
+        }
     }
 }
+

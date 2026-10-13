@@ -14,6 +14,7 @@ namespace AfterCity.Core.Sim
         Dig,        // abaisser le terrain d'un niveau : terre (douves, pieges)
         Raise,      // remblayer d'un niveau : consomme de la terre
         Barricade,  // barricade de bois sur la case
+        Road,       // tracer un chemin de terre
         Construct   // chantier d'un batiment (donne par PlaceBuilding)
     }
 
@@ -196,6 +197,9 @@ namespace AfterCity.Core.Sim
                 case JobType.Raise:
                     return feature == CellFeature.None && Grid.GetBiome(p) != Biome.Water && !Grid.HasWall(p)
                            && Grid.GetLevel(p) < WorldGrid.MaxLevel && Stock.Get(ResourceType.Earth) > PendingCount(JobType.Raise);
+                case JobType.Road:
+                    return feature == CellFeature.None && Grid.GetBiome(p) != Biome.Water && !Grid.HasWall(p)
+                           && Grid.GetRoad(p) == RoadType.None;
                 case JobType.Barricade:
                     return feature == CellFeature.None && Grid.GetBiome(p) != Biome.Water && !Grid.HasWall(p)
                            && Stock.Get(ResourceType.Wood) >= BarricadeWoodCost && !IsOccupied(p);
@@ -297,6 +301,7 @@ namespace AfterCity.Core.Sim
                 case JobType.Dig: return 2.5;
                 case JobType.Raise: return 2.5;
                 case JobType.Barricade: return 4.0;
+                case JobType.Road: return 1.5;
                 default: return 3.0;
             }
         }
@@ -378,7 +383,7 @@ namespace AfterCity.Core.Sim
                 }
                 return spots;
             }
-            bool onCell = job.Type == JobType.Chop || job.Type == JobType.Mine || job.Type == JobType.Salvage;
+            bool onCell = job.Type == JobType.Chop || job.Type == JobType.Mine || job.Type == JobType.Salvage || job.Type == JobType.Road;
             if (onCell && Grid.GetBiome(job.Cell) != Biome.Water) spots.Add(job.Cell);
             foreach (var d in GridPos.Neighbours4)
             {
@@ -392,7 +397,7 @@ namespace AfterCity.Core.Sim
 
         void Walk(Villager v, double dt)
         {
-            double remaining = WalkSpeed * dt;
+            double remaining = WalkSpeed * Roads.SpeedFactor(Grid.GetRoad(v.Cell)) * dt;
             while (remaining > 0 && v.Path.Count > 0)
             {
                 var next = v.Path.Peek();
@@ -469,6 +474,10 @@ namespace AfterCity.Core.Sim
                     return Terraformer.Dig(p);
                 case JobType.Raise:
                     return Terraformer.Raise(p);
+                case JobType.Road:
+                    if (Grid.GetRoad(p) != RoadType.None) return false;
+                    Grid.SetRoad(p, RoadType.Dirt);
+                    return true;
                 case JobType.Construct:
                 {
                     var b = job.Building;

@@ -144,6 +144,9 @@ namespace AfterCity.Game.World
                         : (dx & 1) == 0 ? new Color(0.48f, 0.38f, 0.24f)       // sillons
                                         : new Color(0.62f, 0.58f, 0.30f);      // ble sec
                 }
+                var road = grid.GetRoad(p);
+                if (road == RoadType.Dirt) col = Color.Lerp(new Color(0.55f, 0.45f, 0.32f), new Color(0.60f, 0.50f, 0.36f), Hash(x, y, 11));
+                else if (road == RoadType.Asphalt) col = new Color(0.20f, 0.21f, 0.22f);
                 float shade = 0.70f + level * 0.07f + (Hash(x, y, 1) - 0.5f) * 0.06f;
                 if (biome == Biome.Water) { top -= 0.15f; shade = 1f + (Hash(x, y, 2) - 0.5f) * 0.05f; }
                 var topCol = Lin(col * shade);
