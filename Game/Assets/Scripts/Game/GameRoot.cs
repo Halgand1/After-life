@@ -27,8 +27,36 @@ namespace AfterCity.Game
         public GameObject[] survivorPrefabs;
         public GameObject[] zombiePrefabs;
 
-        GameObject SurvivorPrefab(Villager v) =>
-            survivorPrefabs != null && survivorPrefabs.Length > 0 ? survivorPrefabs[v.Id % survivorPrefabs.Length] : villagerPrefab;
+        /// <summary>Modele du role du survivant (PF_SK_Survivant_&lt;role&gt;), sinon le modele par numero, sinon le modele de test.</summary>
+        GameObject SurvivorPrefab(Villager v)
+        {
+            if (survivorPrefabs == null || survivorPrefabs.Length == 0) return villagerPrefab;
+            string role = EquipmentSpec.ModelName(v.Role);
+            foreach (var p in survivorPrefabs) if (p != null && p.name.EndsWith(role)) return p;
+            return survivorPrefabs[v.Id % survivorPrefabs.Length];
+        }
+
+        /// <summary>Catalogue de l'equipe 3D : objet -> fichier SM_Equip_* et accroche SOCKET_*.</summary>
+        public TextAsset equipmentCatalogue;
+        Dictionary<string, (string file, string socket)> _equip;
+
+        public bool EquipModel(string id, out string file, out string socket)
+        {
+            file = socket = null;
+            if (_equip == null)
+            {
+                _equip = new Dictionary<string, (string, string)>();
+                if (equipmentCatalogue != null && MiniJson.Parse(equipmentCatalogue.text) is Dictionary<string, object> root
+                    && root.TryGetValue("objets", out var o) && o is Dictionary<string, object> items)
+                    foreach (var kv in items)
+                        if (kv.Value is Dictionary<string, object> e && e.TryGetValue("fichier", out var f) && e.TryGetValue("accroche", out var s))
+                            _equip[kv.Key] = (System.IO.Path.GetFileNameWithoutExtension((string)f), (string)s);
+            }
+            if (!_equip.TryGetValue(id, out var m)) return false;
+            file = m.file;
+            socket = m.socket;
+            return true;
+        }
 
         GameObject ZombiePrefab(Zombie z) =>
             zombiePrefabs != null && zombiePrefabs.Length > 0 ? zombiePrefabs[ZombieType(z.Id) % zombiePrefabs.Length] : zombiePrefab;
@@ -168,6 +196,12 @@ namespace AfterCity.Game
                 ? $"{BuildingSpec.Of(b.Type).Name} : confortable, ses habitants travaillent 10 % plus vite"
                 : $"{BuildingSpec.Of(b.Type).Name} : n'est plus confortable (il manque {MissingText(b)})", b.Comfortable);
             Colony.WaterDrawn += w => Say((Time.unscaledTime - AlertTime < 1f && Alert != null ? Alert + "  -  " : "") + $"Puits : +{w} eau", true);
+            Colony.ItemBroken += (v, item) =>
+            {
+                Say($"{v.Name} : {item.Id.Replace('_', ' ')} casse(e)");
+                if (_villagerViews.TryGetValue(v, out var view)) view.ApplyEquipment(this);
+            };
+            Colony.ItemFound += (p, item) => Say($"Trouve : {item.Id.Replace('_', ' ')} (range au stock)", true);
             Colony.HomeUpgraded += b => Say($"Logement ameliore : {BuildingSpec.Of(b.Type).Name}", true);
             Colony.Harvested += n => { if (n > 0) Say($"Recolte du soir : +{n} vivres"); };
             Colony.Ate += (eaten, hungry) =>
@@ -177,7 +211,7 @@ namespace AfterCity.Game
             Colony.Salvaged += (p, loot) => Say("Epave demontee :" + Describe(loot));
             Colony.SurvivorArrived += v =>
             {
-                _villagerViews[v] = VillagerView.Create(v, SurvivorPrefab(v), Map.Grid, transform, terrainMaterial);
+                _villagerViews[v] = VillagerView.Create(v, SurvivorPrefab(v), Map.Grid, transform, terrainMaterial, this);
                 Say($"{v.Name} a trouve la colonie et rejoint les survivants !");
             };
             Horde.WaveStarted += n =>
@@ -187,7 +221,7 @@ namespace AfterCity.Game
             };
 
             foreach (var v in Colony.Villagers)
-                _villagerViews[v] = VillagerView.Create(v, SurvivorPrefab(v), Map.Grid, transform, terrainMaterial);
+                _villagerViews[v] = VillagerView.Create(v, SurvivorPrefab(v), Map.Grid, transform, terrainMaterial, this);
             _zombieRoot = new GameObject("Horde").transform;
             _zombieRoot.SetParent(transform, false);
 

@@ -25,7 +25,7 @@ namespace AfterCity.Game
         float _y;
         Transform _model;
 
-        public static VillagerView Create(Villager v, GameObject prefab, WorldGrid grid, Transform parent, Material terrainMaterial = null)
+        public static VillagerView Create(Villager v, GameObject prefab, WorldGrid grid, Transform parent, Material terrainMaterial = null, GameRoot game = null)
         {
             var root = new GameObject($"Survivor_{v.Id}_{v.Name}");
             root.transform.SetParent(parent, false);
@@ -43,6 +43,7 @@ namespace AfterCity.Game
                 view._animator = model.GetComponentInChildren<Animator>();
                 // Les modeles de l'equipe 3D portent deja leur outil (hache, pioche...) sur les SOCKET_*
                 if (!prefab.name.StartsWith("PF_SK_")) view.CreateTool(model.transform, terrainMaterial);
+                else if (game != null) view.ApplyEquipment(game);
             }
             if (terrainMaterial != null) CreateRing(root.transform, Palette[v.Id % Palette.Length], terrainMaterial);
             view._y = TerrainMeshBuilder.TopY(grid.GetLevel(v.Cell));
@@ -51,6 +52,39 @@ namespace AfterCity.Game
         }
 
         float _dying = -1f;
+        readonly System.Collections.Generic.List<GameObject> _equipped = new System.Collections.Generic.List<GameObject>();
+
+        /// <summary>
+        /// Equipement reel du survivant (Villager.Equipment) : l'equipement fige dans le FBX est masque,
+        /// chaque objet porte est pose sur son SOCKET_* (catalogue_equipement.json) ; emplacement vide = rien.
+        /// </summary>
+        public void ApplyEquipment(GameRoot game)
+        {
+            if (_model == null) return;
+            foreach (var go in _equipped) if (go != null) Destroy(go);
+            _equipped.Clear();
+            var bones = new System.Collections.Generic.Dictionary<string, Transform>();
+            foreach (var t in _model.GetComponentsInChildren<Transform>(true))
+            {
+                if (t.name.StartsWith("SOCKET_") && !bones.ContainsKey(t.name)) bones[t.name] = t;
+                var r = t.GetComponent<Renderer>();
+                if (r != null && t.name.StartsWith("SM_Equip_")) r.enabled = false;
+            }
+            foreach (var item in Villager.Equipment.Items)
+            {
+                if (!game.EquipModel(item.Id, out var file, out var socket)) continue;
+                var prefab = game.PrefabNamed(file);
+                if (prefab == null || !bones.TryGetValue(socket, out var bone)) continue;
+                var go = Instantiate(prefab, bone);
+                go.transform.localPosition = Vector3.zero;
+                go.transform.localRotation = prefab.transform.localRotation;
+                var ls = go.transform.lossyScale;
+                var want = _model.lossyScale;
+                if (ls.x > 1e-4f && ls.y > 1e-4f && ls.z > 1e-4f)
+                    go.transform.localScale = Vector3.Scale(go.transform.localScale, new Vector3(want.x / ls.x, want.y / ls.y, want.z / ls.z));
+                _equipped.Add(go);
+            }
+        }
         float _shot;
         Light _flash;
 
