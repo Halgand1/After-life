@@ -511,8 +511,39 @@ namespace AfterCity.Game.World
                 default: return false;
             }
             var center = corner + new Vector3(size * Cell * 0.5f, 0, size * Cell * 0.5f);
+            if (bt == BuildingType.LivestockPen || bt == BuildingType.HorsePen) PenFence(kd, map, bt, corner, size);
             float yaw = bt == BuildingType.Farmhouse ? 180f : bt == BuildingType.LivestockPen || bt == BuildingType.HorsePen ? 0f : Mathf.Round(r * 4f) * 90f;
             return kd.Add(name, center, yaw, scale);
+        }
+
+        /// <summary>
+        /// Cloture complete sur le bord de l'emprise d'un enclos (kit SM_Cloture_* / SM_ClotureChevaux_*),
+        /// avec un portail au milieu du cote tourne vers la ferme.
+        /// </summary>
+        static void PenFence(DecorKit.Builder kd, GeneratedMap map, BuildingType bt, Vector3 corner, int size)
+        {
+            string straight = bt == BuildingType.HorsePen && kd.Has("ClotureChevaux_Droit") ? "ClotureChevaux_Droit" : "Cloture_Droit";
+            float len = size * Cell;
+            var center = corner + new Vector3(len * 0.5f, 0, len * 0.5f);
+            var farm = TerrainMeshBuilder.CellCenter(map.Grid, map.FarmCenter);
+            var toFarm = farm - center;
+            // Cote du portail : 0 = sud (z-), 1 = nord (z+), 2 = ouest (x-), 3 = est (x+)
+            int gateSide = Mathf.Abs(toFarm.x) > Mathf.Abs(toFarm.z) ? (toFarm.x < 0 ? 2 : 3) : (toFarm.z < 0 ? 0 : 1);
+            for (int side = 0; side < 4; side++)
+            for (int i = 0; i < size; i++)
+            {
+                float t = (i + 0.5f) * Cell;
+                Vector3 p; float yaw;
+                switch (side)
+                {
+                    case 0: p = corner + new Vector3(t, 0, 0.05f); yaw = 0f; break;
+                    case 1: p = corner + new Vector3(t, 0, len - 0.05f); yaw = 0f; break;
+                    case 2: p = corner + new Vector3(0.05f, 0, t); yaw = 90f; break;
+                    default: p = corner + new Vector3(len - 0.05f, 0, t); yaw = 90f; break;
+                }
+                bool gate = side == gateSide && i == size / 2;
+                kd.Add(gate && kd.Has("Cloture_Porte") ? "Cloture_Porte" : straight, p, yaw, 0.95f);
+            }
         }
 
         /// <summary>Barricade : palissade dans l'axe des barricades voisines (croisee dans les angles).</summary>
